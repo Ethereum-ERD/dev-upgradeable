@@ -170,7 +170,8 @@ contract BorrowerOperationsV2 is
         address _lowerHint
     ) external payable override {
         if (msg.value == 0) {
-            _requireLengthNonzero(_amounts.length);
+            // Function require length nonzero, used to save contract size on revert strings.
+            require(_amounts.length != 0, "BorrowerOps: Length is zero");
             _requireValidOpenTroveCollateral(_colls, _amounts);
         } else {
             _requireActiveCollateral(_colls);
@@ -442,7 +443,10 @@ contract BorrowerOperationsV2 is
         address _upperHint,
         address _lowerHint
     ) external override {
-        _requireCallerIsStabilityPool();
+        require(
+            msg.sender == stabilityPoolAddress,
+            "BorrowerOps: Caller is not Stability Pool"
+        );
         AdjustTrove_Params memory params;
         params.borrower = _borrower;
         params.collsIn = _collsIn;
@@ -543,7 +547,10 @@ contract BorrowerOperationsV2 is
                 params.maxFeePercentage,
                 isRecoveryMode
             );
-            _requireNonZeroDebtChange(params.EUSDChange);
+            require(
+                params.EUSDChange > 0,
+                "BorrowerOps: Debt increase requires non-zero debtChange"
+            );
         }
         _requireNonZeroAdjustment(
             params.amountsIn,
@@ -699,7 +706,10 @@ contract BorrowerOperationsV2 is
         _requireTroveisActive(troveManagerCached, msg.sender);
         uint256 price = priceFeed.fetchPrice();
         collateralManagerCached.priceUpdate();
-        _requireNotInRecoveryMode(price);
+        require(
+            !troveManager.checkRecoveryMode(price),
+            "BorrowerOps: Operation not permitted during Recovery Mode"
+        );
 
         troveManagerCached.applyPendingRewards(msg.sender);
 
@@ -1063,29 +1073,6 @@ contract BorrowerOperationsV2 is
         require(status != 1, "BorrowerOps: Trove is active");
     }
 
-    function _requireNonZeroDebtChange(uint256 _EUSDChange) internal pure {
-        require(
-            _EUSDChange > 0,
-            "BorrowerOps: Debt increase requires non-zero debtChange"
-        );
-    }
-
-    function _requireNotInRecoveryMode(uint256 _price) internal view {
-        require(
-            !troveManager.checkRecoveryMode(_price),
-            "BorrowerOps: Operation not permitted during Recovery Mode"
-        );
-    }
-
-    function _requireNoCollWithdrawal(
-        uint256[] memory _collWithdrawals
-    ) internal pure {
-        require(
-            !ERDMath._arrayIsNonzero(_collWithdrawals),
-            "BorrowerOps: Collateral withdrawal not permitted Recovery Mode"
-        );
-    }
-
     function _requireValidAdjustmentInCurrentMode(
         bool _isRecoveryMode,
         uint256[] memory _collWithdrawals,
@@ -1106,7 +1093,10 @@ contract BorrowerOperationsV2 is
          * - The adjustment won't pull the TCR below CCR
          */
         if (_isRecoveryMode) {
-            _requireNoCollWithdrawal(_collWithdrawals);
+            require(
+                !ERDMath._arrayIsNonzero(_collWithdrawals),
+                "BorrowerOps: Collateral withdrawal not permitted Recovery Mode"
+            );
             if (_isDebtIncrease) {
                 _requireICRisAboveCCR(_vars.newICR);
                 _requireNewICRisAboveOldICR(_vars.newICR, _vars.oldICR);
@@ -1174,13 +1164,6 @@ contract BorrowerOperationsV2 is
         );
     }
 
-    function _requireCallerIsStabilityPool() internal view {
-        require(
-            msg.sender == stabilityPoolAddress,
-            "BorrowerOps: Caller is not Stability Pool"
-        );
-    }
-
     function _requireSufficientEUSDBalance(
         IEUSDToken _eusdToken,
         address _borrower,
@@ -1208,11 +1191,6 @@ contract BorrowerOperationsV2 is
                 "Max fee percentage must be between 0.75% and 100%"
             );
         }
-    }
-
-    // Function require length nonzero, used to save contract size on revert strings.
-    function _requireLengthNonzero(uint256 length) internal pure {
-        require(length != 0, "BorrowerOps: Length is zero");
     }
 
     // Function require length equal, used to save contract size on revert strings.
@@ -1285,8 +1263,8 @@ contract BorrowerOperationsV2 is
     function EUSD_GAS_COMPENSATION() public view returns (uint256) {
         return collateralManager.getEUSDGasCompensation();
     }
-    
-    function version() public pure returns (string memory) {
+
+    function version() external pure returns (string memory) {
         return "V2";
     }
 }
