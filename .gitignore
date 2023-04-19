@@ -1,0 +1,24 @@
+
+**/node_modules
+**/.idea
+**/bin
+**/.idea
+**/build
+**/.openzeppelin
+**/web3
+**/artifacts
+**/cache
+
+
+# files
+.DS_Store
+.etherscanApiKey
+.infuraKey
+.mnemonic
+package-lock.json
+yarn.lock
+deploy.json
+.etherscanApi
+truffle-config.js
+hardhat.config.js
+# fsUtil.js
