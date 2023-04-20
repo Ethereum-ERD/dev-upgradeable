@@ -20,5 +20,5 @@ yarn.lock
 deploy.json
 .etherscanApi
 truffle-config.js
-hardhat.config.js
+# hardhat.config.js
 # fsUtil.js
