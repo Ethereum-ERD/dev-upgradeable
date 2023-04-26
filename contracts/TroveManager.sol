@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/ITroveManager.sol";
@@ -43,8 +43,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
      * (1/2) = d^720 => d = (1/2)^(1/720)
      */
     uint256 public constant MINUTE_DECAY_FACTOR = 999037758833783000;
-
-    uint256 internal deploymentStartTime;
 
     uint256 public baseRate;
 
@@ -138,6 +136,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         eusdToken = IEUSDToken(_eusdTokenAddress);
+        troveData.eusdTokenAddress = _eusdTokenAddress;
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
 
         troveManagerLiquidations = ITroveManagerLiquidations(
@@ -148,8 +147,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         );
 
         collateralManager = ICollateralManager(_collateralManagerAddress);
-
-        deploymentStartTime = block.timestamp;
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
@@ -786,7 +783,10 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         );
 
         uint256 TroveOwnersArrayLength = TroveOwners.length;
-        _requireMoreThanOneTroveInSystem(TroveOwnersArrayLength);
+        require(
+            TroveOwnersArrayLength > 1 && sortedTroves.getSize() > 1,
+            "TroveManager: Only one trove in the system"
+        );
         uint256 oldDebt = troveDebt.balanceOf(_borrower);
 
         troveData.updateState();
@@ -1106,21 +1106,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         require(_contract.isContract(), "TroveManager: Contract check error");
     }
 
-    function _requireCollNotExist(address _collateral) internal view {
-        uint256 status = uint256(getCollateralParams(_collateral).status);
-        require(status == 0, "TroveManager: Collateral already exists");
-    }
-
-    function _requireCollIsActive(address _collateral) internal view {
-        uint256 status = uint256(getCollateralParams(_collateral).status);
-        require(status == 1, "TroveManager: Collateral not pause");
-    }
-
-    function _requireCollIsPaused(address _collateral) internal view {
-        uint256 status = uint256(getCollateralParams(_collateral).status);
-        require(status == 2, "TroveManager: Collateral not pause");
-    }
-
     function _requireCallerIsBorrowerOperations() internal view {
         require(
             msg.sender == borrowerOperationsAddress,
@@ -1163,15 +1148,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         require(
             Troves[_borrower].status == DataTypes.Status.active,
             "TroveManager: Trove does not exist or is closed"
-        );
-    }
-
-    function _requireMoreThanOneTroveInSystem(
-        uint256 TroveOwnersArrayLength
-    ) internal view {
-        require(
-            TroveOwnersArrayLength > 1 && sortedTroves.getSize() > 1,
-            "TroveManager: Only one trove in the system"
         );
     }
 
@@ -1378,9 +1354,5 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
 
     function getEUSDGasCompensation() public view override returns (uint256) {
         return collateralManager.getEUSDGasCompensation();
-    }
-
-    function getDelayTime() external view override returns (uint256) {
-        return deploymentStartTime.add(collateralManager.getBootstrapPeriod());
     }
 }

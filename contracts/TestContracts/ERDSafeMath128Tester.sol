@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: IMT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "../Dependencies/ERDSafeMath128.sol";
 

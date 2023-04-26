@@ -93,8 +93,8 @@ contract('StabilityPool', async accounts => {
       //     contracts.troveManagerRedemptions.address,
       //     contracts.stabilityPool.address,
       //     contracts.borrowerOperations.address),
-        contracts = await deploymentHelper.deployEUSDTokenTester(contracts)
       const ERDContracts = await deploymentHelper.deployERDContracts()
+      contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
 
       priceFeedETH = contracts.priceFeedETH
       priceFeedSTETH = contracts.priceFeedSTETH

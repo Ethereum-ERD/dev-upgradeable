@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
@@ -52,6 +52,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
     address internal troveManagerRedemptionsAddress;
     address public stabilityPoolAddress;
     address public borrowerOperationsAddress;
+    address public treasuryAddress;
 
     // --- Events ---
     event TroveManagerAddressChanged(address _troveManagerAddress);
@@ -65,13 +66,17 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
     event BorrowerOperationsAddressChanged(
         address _newBorrowerOperationsAddress
     );
+    event TreasuryAddressChanged(
+        address _newTreasuryAddress
+    );
 
     function initialize(
         address _troveManagerAddress,
         address _troveManagerLiquidationsAddress,
         address _troveManagerRedemptionsAddress,
         address _stabilityPoolAddress,
-        address _borrowerOperationsAddress
+        address _borrowerOperationsAddress,
+        address _treasuryAddress
     ) public initializer {
         __ERC20_init(_NAME, _SYMBOL);
         _requireIsContract(_troveManagerAddress);
@@ -79,6 +84,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         _requireIsContract(_troveManagerRedemptionsAddress);
         _requireIsContract(_stabilityPoolAddress);
         _requireIsContract(_borrowerOperationsAddress);
+        _requireIsContract(_treasuryAddress);
 
         troveManagerAddress = _troveManagerAddress;
         emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -98,6 +104,9 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
+
+        treasuryAddress = _treasuryAddress;
+        emit TreasuryAddressChanged(_treasuryAddress);
 
         bytes32 hashedName = keccak256(bytes(_NAME));
         bytes32 hashedVersion = keccak256(bytes(_VERSION));
@@ -124,6 +133,11 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         _burn(_account, _amount);
     }
 
+    function mintToTreasury(uint256 _amount) external override {
+        _requireCallerIsTroveM();
+        _mint(treasuryAddress, _amount);
+    }
+
     function sendToPool(
         address _sender,
         address _poolAddress,
@@ -144,11 +158,10 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
 
     // --- External functions ---
 
-    function transfer(address recipient, uint256 amount)
-        public
-        override(IERC20Upgradeable, ERC20Upgradeable)
-        returns (bool)
-    {
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) public override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
         _requireValidRecipient(recipient);
         _transfer(msg.sender, recipient, amount);
         return true;
@@ -260,6 +273,13 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         require(
             msg.sender == borrowerOperationsAddress,
             "EUSDToken: Caller is not BorrowerOperations"
+        );
+    }
+
+    function _requireCallerIsTroveM() internal view {
+        require(
+            msg.sender == troveManagerAddress,
+            "EUSD: Caller is not TroveManager"
         );
     }
 

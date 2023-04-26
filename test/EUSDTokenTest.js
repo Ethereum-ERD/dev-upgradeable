@@ -83,9 +83,8 @@ contract('EUSDToken', async accounts => {
     withProxy = false
   }) => {
     beforeEach(async () => {
-      const contracts = await deploymentHelper.deployTesterContractsHardhat()
-
       const ERDContracts = await deploymentHelper.deployERDContracts()
+      const contracts = await deploymentHelper.deployTesterContractsHardhat(ERDContracts)
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 

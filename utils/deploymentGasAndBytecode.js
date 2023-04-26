@@ -111,8 +111,8 @@ const logContractBytecodeLengths = (contractABIs) => {
 // Run script: log deployment gas costs and bytecode lengths for all contracts
 async function main() {
   const coreContracts = await dh.deployERDCoreHardhat()
-  const ERDContracts = await dh.deployERDContractsHardhat(ARBITRARY_ADDRESS, ARBITRARY_ADDRESS)
-  const testerContracts = await dh.deployTesterContractsHardhat()
+  const ERDContracts = await dh.deployERDContractsHardhat()
+  const testerContracts = await dh.deployTesterContractsHardhat(ERDContracts)
 
   await dh.connectCoreContracts(coreContracts, ERDContracts)
   await dh.connectERDContracts(ERDContracts)

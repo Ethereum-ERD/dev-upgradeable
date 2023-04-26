@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "../EUSDToken.sol";
 
@@ -12,14 +12,16 @@ contract EUSDTokenTester is EUSDToken {
         address _troveManagerLiquidatorAddress,
         address _troveManagerRedemptionsAddress,
         address _stabilityPoolAddress,
-        address _borrowerOperationsAddress
+        address _borrowerOperationsAddress,
+        address _treasuryAddress
     ) {
         EUSDToken.initialize(
             _troveManagerAddress,
             _troveManagerLiquidatorAddress,
             _troveManagerRedemptionsAddress,
             _stabilityPoolAddress,
-            _borrowerOperationsAddress
+            _borrowerOperationsAddress,
+            _treasuryAddress
         );
     }
 

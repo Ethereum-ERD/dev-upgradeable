@@ -140,7 +140,8 @@ async function main() {
         troveManagerLiquidations.address,
         troveManagerRedemptions.address,
         stabilityPool.address,
-        borrowerOperations.address
+        borrowerOperations.address,
+        treasury.address
     ]);
     await eusdToken.deployed();
     console.log("eusdToken deployed to:", eusdToken.address);

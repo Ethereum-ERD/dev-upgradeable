@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "../Interfaces/ISortedTroves.sol";
 import "../SortedTroves.sol";

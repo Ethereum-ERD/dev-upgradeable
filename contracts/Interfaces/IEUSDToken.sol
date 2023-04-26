@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
@@ -19,6 +19,8 @@ interface IEUSDToken is IERC20Upgradeable, IERC20PermitUpgradeable {
     function mint(address _account, uint256 _amount) external;
 
     function burn(address _account, uint256 _amount) external;
+
+    function mintToTreasury(uint256 _amount) external;
 
     function sendToPool(
         address _sender,

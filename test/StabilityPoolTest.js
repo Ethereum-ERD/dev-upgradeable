@@ -71,13 +71,14 @@ contract('StabilityPool', async accounts => {
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
       const troveManagerLiquidations = await TroveManagerLiquidations.new()
-      contracts.eusdToken = await EUSDTokenTester.new(contracts.troveManager.address,
-          contracts.troveManagerLiquidations.address,
-          contracts.troveManagerRedemptions.address,
-          contracts.stabilityPool.address,
-          contracts.borrowerOperations.address),
-        contracts = await deploymentHelper.deployEUSDTokenTester(contracts)
+      // contracts.eusdToken = await EUSDTokenTester.new(contracts.troveManager.address,
+      //     contracts.troveManagerLiquidations.address,
+      //     contracts.troveManagerRedemptions.address,
+      //     contracts.stabilityPool.address,
+      //     contracts.borrowerOperations.address),
+      //   contracts = await deploymentHelper.deployEUSDTokenTester(contracts)
       const ERDContracts = await deploymentHelper.deployERDContracts()
+      contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
 
       priceFeed = contracts.priceFeedETH
       eusdToken = contracts.eusdToken

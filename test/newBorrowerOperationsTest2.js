@@ -74,8 +74,8 @@ contract('BorrowerOperations', async accounts => {
       // contracts.borrowerOperations = await BorrowerOperationsTester.new()
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
-      contracts = await deploymentHelper.deployEUSDTokenTester(contracts)
       const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
+      contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 

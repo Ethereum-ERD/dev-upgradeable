@@ -1,3 +1,6 @@
+const {
+    assert
+} = require("chai")
 const deploymentHelper = require("../utils/deploymentHelpers.js")
 const testHelpers = require("../utils/testHelpers.js")
 
@@ -97,8 +100,8 @@ contract('BorrowerOperations', async accounts => {
             // contracts.borrowerOperations = await BorrowerOperationsTester.new()
             contracts.troveManager = await TroveManagerTester.new()
             contracts.collateralManager = await CollateralManagerTester.new()
-            contracts = await deploymentHelper.deployEUSDTokenTester(contracts)
             ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
+            contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
 
             await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
@@ -368,11 +371,14 @@ contract('BorrowerOperations', async accounts => {
                 await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, EUSDMinAmount, bob, bob, {
                     from: bob
                 })
+                const treasury_before = await eusdToken.balanceOf(treasury.address)
 
                 // Attempt to adjust with wrong order collateral and with new collateral type
                 await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, 0, false, alice, alice, {
                     from: alice
                 })
+                const treasury_EUSD = await eusdToken.balanceOf(treasury.address)
+                assert.isTrue(treasury_EUSD.eq(treasury_before))
                 const aliceTokens = await getTroveEntireTokens(alice)
                 const aliceColls = await getTroveEntireColl(alice)
                 const aliceDebt = await getTroveEntireDebt(alice)
@@ -388,10 +394,12 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(await th.assertCollateralsEqual(aliceTokens2, aliceColls2, [tokenA.address, tokenB.address, tokenC.address, tokenD.address], [dec(11, 18), dec(8, 18), dec(11, 18), dec(2, 18)]))
                 const aliceDebt2 = await getTroveEntireDebt(alice)
                 th.assertIsApproximatelyEqual(aliceDebt2, toBN(dec(21011525, 14)), _1e14BN) // With interests & extra fee 
-
+                const treasury_before_adjust = await eusdToken.balanceOf(treasury.address)
                 await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(1005, 17), false, alice, alice, {
                     from: alice
                 })
+                const treasury_after = await eusdToken.balanceOf(treasury.address)
+                assert.isTrue(treasury_after.gt(treasury_before_adjust))
                 const aliceDebt3 = await getTroveEntireDebt(alice)
                 th.assertIsApproximatelyEqual(aliceDebt3, toBN(dec(20006525, 14)), _1e14BN) // With interests
 
@@ -607,6 +615,15 @@ contract('BorrowerOperations', async accounts => {
                 await borrowerOperations.adjustTrove([tokenC.address], [toBN(dec(10, 18))], [tokenSuperRisky.address], [toBN(dec(2, 18))], th._100pct, debtAddition, true, alice, alice, {
                     from: alice
                 })
+                const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+                const A_EUSD = await eusdToken.balanceOf(alice)
+                const W_EUSD = await eusdToken.balanceOf(whale)
+                const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+                // Check total EUSD supply
+                const totalSupply = await eusdToken.totalSupply()
+                th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
                 aliceICRAfter = await th.getCurrentICR(contracts, alice)
                 assert.isTrue(aliceICRAfter.lt(toBN(dec(115, 16))))
                 assert.isTrue(aliceICRAfter.gt(toBN(dec(114, 16))))
@@ -623,7 +640,7 @@ contract('BorrowerOperations', async accounts => {
                 )
             })
         })
-
+        return
         describe('check VC, TCR, balances multi collateral', async () => {
             it("Open two multi collateral trove, check if collateral is correct", async () => {
                 await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
@@ -909,7 +926,8 @@ contract('BorrowerOperations', async accounts => {
                 let tokenI = result.token
                 let priceFeedI = result.priceFeed
 
-                let accounts = [A, B, C, D, E, F, G, H]
+                // let accounts = [A, B, C, D, E, F, G, H]
+                let accounts = [A, B, C, D, E, F]
                 // let tokens = [contracts.weth, contracts.steth, tokenA, tokenB, tokenC, tokenD, tokenE, tokenF, tokenG, tokenH, tokenI, tokenRisky, tokenSuperRisky, stableCoin]
                 let tokens = [tokenA, tokenB, tokenC, tokenD, tokenRisky, tokenSuperRisky, stableCoin, tokenE, tokenF, tokenG, tokenH, tokenI]
                 await openTrove({

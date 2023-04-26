@@ -248,6 +248,8 @@ The six main contracts - `BorrowerOperations.sol`, `TroveManager.sol`, `Collater
 
 `TroveInterestRateStrategy.sol` - Variable interest rate strategy for trove's debt.
 
+`TroveLofic.sol` - Variable interest compute for trove's debt. When the debt changes(increase or decrease), the interest accumulated by Trove from last operation to the present will be mint to the `Treasury` .
+
 `ERDBase.sol` - Both TroveManager/TroveManagerLiquidations/TroveManagerRedemptions and BorrowerOperations inherit from the parent contract ERDBase, which contains global constants and some common functions.
 
 `DataTypes.sol` - All variable structure definitions in the system are in this lib.
@@ -433,20 +435,26 @@ The only time EUSD is transferred to/from a ERD contract, is when a user deposit
 |                               | Issuance fee                          | EUSD._mint(treasury,  EUSDFee)       |
 | withdrawEUSD                  | Drawn EUSD                            | EUSD._mint(msg.sender, _EUSDAmount)  |
 |                               | Issuance fee                          | EUSD._mint(treasury,  EUSDFee)       |
+|                               | Interest                              | EUSD._mint(treasury,  EUSDInterest)  |
 | repayEUSD                     | Repaid EUSD(with variable interests)  | EUSD._burn(msg.sender, _EUSDAmount)  |
+|                               | Interest                              | EUSD._mint(treasury,  EUSDInterest)  |
 | adjustTrove: withdrawing EUSD | Drawn EUSD                            | EUSD._mint(msg.sender, _EUSDAmount)  |
 |                               | Issuance fee                          | EUSD._mint(treasury,  EUSDFee)       |
+|                               | Interest                              | EUSD._mint(treasury,  EUSDInterest)  |
 | adjustTrove: repaying EUSD    | Repaid EUSD(with variable interests)  | EUSD._burn(msg.sender, _EUSDAmount)  |
+|                               | Interest                              | EUSD._mint(treasury,  EUSDInterest)  |
 | closeTrove                    | Repaid EUSD(with variable interests)  | EUSD._burn(msg.sender, _EUSDAmount)  |
+|                               | Interest                              | EUSD._mint(treasury,  EUSDInterest)  |
 
 **Trove Manager**
 
-| Function                      | EUSD Quantity            | ERC20 Operation                                  |
-|-------------------------------|--------------------------|--------------------------------------------------|
-| liquidate (offset)            | EUSD to offset with debt | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
-| liquidateTroves (offset)      | EUSD to offset with debt | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
-| batchLiquidateTroves (offset) | EUSD to offset with debt | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
-| redeemCollateral              | EUSD to redeem           | EUSD._burn(msg.sender, _EUSD)                    |
+| Function                      | EUSD Quantity                  | ERC20 Operation                                  |
+|-------------------------------|--------------------------------|--------------------------------------------------|
+| liquidate (offset)            | EUSD to offset with debt       | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
+| liquidateTroves (offset)      | EUSD to offset with debt       | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
+| batchLiquidateTroves (offset) | EUSD to offset with debt       | EUSD._burn(stabilityPoolAddress, _debtToOffset); |
+| redeemCollateral              | EUSD to redeem                 | EUSD._burn(msg.sender, _EUSD)                    |
+|                               | Interest  accumulated by Trove | EUSD._mint(treasury,  EUSDInterest)              |
 
 **Stability Pool**
 

@@ -342,27 +342,27 @@ contract('Fee arithmetic tests', async accounts => {
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
   })
 
-  it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {
-    await troveManagerTester.setLastFeeOpTimeToNow()
-    const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
+  // it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {
+  //   await troveManagerTester.setLastFeeOpTimeToNow()
+  //   const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
 
-    assert.equal(minutesPassed, '0')
-  })
+  //   assert.equal(minutesPassed, '0')
+  // })
 
-  it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
-    for (testPair of secondsToMinutesRoundedDown) {
-      await troveManagerTester.setLastFeeOpTimeToNow()
+  // it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
+  //   for (testPair of secondsToMinutesRoundedDown) {
+  //     await troveManagerTester.setLastFeeOpTimeToNow()
 
-      const seconds = testPair[0]
-      const expectedHoursPassed = testPair[1]
+  //     const seconds = testPair[0]
+  //     const expectedHoursPassed = testPair[1]
 
-      await th.fastForwardTime(seconds, web3.currentProvider)
+  //     await th.fastForwardTime(seconds, web3.currentProvider)
 
-      const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
+  //     const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
 
-      assert.equal(expectedHoursPassed.toString(), minutesPassed.toString())
-    }
-  })
+  //     assert.equal(expectedHoursPassed.toString(), minutesPassed.toString())
+  //   }
+  // })
 
   it("decayBaseRateFromBorrowing(): returns the initial base rate for no time increase", async () => {
     await troveManagerTester.setBaseRate(dec(5, 17))

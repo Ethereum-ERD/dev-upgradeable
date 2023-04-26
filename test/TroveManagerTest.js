@@ -1,3 +1,6 @@
+const {
+  assert
+} = require("chai")
 const deploymentHelper = require("../utils/deploymentHelpers.js")
 const testHelpers = require("../utils/testHelpers.js")
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
@@ -57,14 +60,15 @@ contract('TroveManager', async accounts => {
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
+    const ERDContracts = await deploymentHelper.deployERDContracts()
     contracts.eusdToken = await EUSDTokenTester.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      ERDContracts.treasury.address
     )
-    const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = contracts.priceFeedETH
 
@@ -86,6 +90,8 @@ contract('TroveManager', async accounts => {
     communityIssuance = ERDContracts.communityIssuance
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+
+    EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
   })
 
   it('liquidate(): closes a Trove that has ICR < MCR', async () => {
@@ -141,6 +147,16 @@ contract('TroveManager', async accounts => {
     assert.equal(status, 3) // status enum 3 corresponds to "Closed by liquidation"
     const alice_Trove_isInSortedList = await sortedTroves.contains(alice)
     assert.isFalse(alice_Trove_isInSortedList)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): decreases ActivePool ETH and EUSDDebt by correct amounts", async () => {
@@ -195,6 +211,16 @@ contract('TroveManager', async accounts => {
     assert.equal(activePool_ETH_After, A_collateral)
     assert.equal(activePool_RawEther_After, A_collateral)
     th.assertIsApproximatelyEqual(activePool_EUSDDebt_After, A_totalDebt, _dec(14))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): increases DefaultPool ETH and EUSD debt by correct amounts", async () => {
@@ -357,6 +383,20 @@ contract('TroveManager', async accounts => {
     // Liquidate carol
     await troveManager.liquidate(carol)
 
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     // Check Carol no longer has an active trove
     assert.isFalse(await sortedTroves.contains(carol))
 
@@ -366,7 +406,7 @@ contract('TroveManager', async accounts => {
 
     /* After Carol is removed from array, the last element (Erin's address) should have been moved to fill 
     the empty slot left by Carol, and the array length decreased by one.  The final TroveOwners array should be:
-  
+
     [W, A, B, E, D] 
 
     Check all remaining troves in the array are in the correct order */
@@ -440,7 +480,7 @@ contract('TroveManager', async accounts => {
 
     /* check snapshots after. Total stakes should be equal to the  remaining stake then the system: 
     10 ether, Alice's stake.
-     
+
     Total collateral should be equal to Alice's collateral plus her pending ETH reward (Bob’s collaterale*0.995 ether), earned
     from the liquidation of Bob's Trove */
     const totalStakesSnapshot_After = (await troveManager.totalStakesSnapshot(weth.address)).toString()
@@ -495,6 +535,17 @@ contract('TroveManager', async accounts => {
     });
     assert.isFalse(await sortedTroves.contains(carol));
 
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     // Carol's ether*0.995 and EUSD should be added to the DefaultPool.
     const L_ETH_AfterCarolLiquidated = await troveManager.L_Coll(weth.address)
     const L_EUSDDebt_AfterCarolLiquidated = await troveManager.L_EUSDDebt(weth.address)
@@ -530,13 +581,13 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(bob))
 
     /* Alice now has all the active stake. totalStakes in the system is now 10 ether.
-   
+
    Bob's pending collateral reward and debt reward are applied to his Trove
    before his liquidation.
    His total collateral*0.995 and debt are then added to the DefaultPool. 
-   
+
    The system rewards-per-unit-staked should now be:
-   
+
    L_ETH = (0.995 / 20) + (10.4975*0.995  / 10) = 1.09425125 ETH
    L_EUSDDebt = (180 / 20) + (890 / 10) = 98 EUSD */
     const L_ETH_AfterBobLiquidated = await troveManager.L_Coll(weth.address)
@@ -604,6 +655,17 @@ contract('TroveManager', async accounts => {
 
     const bob_isInSortedList = await sortedTroves.contains(bob)
     assert.isTrue(bob_isInSortedList)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): reverts if trove is non-existent", async () => {
@@ -816,6 +878,24 @@ contract('TroveManager', async accounts => {
 
     const TCR_After = (await th.getTCR(contracts)).toString()
     th.assertIsApproximatelyEqual(TCR_Before, TCR_After, _dec(12))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let D1_EUSD = await eusdToken.balanceOf(defaulter_1)
+    let D2_EUSD = await eusdToken.balanceOf(defaulter_2)
+    let D3_EUSD = await eusdToken.balanceOf(defaulter_3)
+    let D4_EUSD = await eusdToken.balanceOf(defaulter_4)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): Pool offsets increase the TCR", async () => {
@@ -1048,6 +1128,24 @@ contract('TroveManager', async accounts => {
       .mul(adjust20)
       .div(entireSystemDebtBefore)
     th.assertIsApproximatelyEqual(expectedTCR_4, TCR_4, _dec(12))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let D1_EUSD = await eusdToken.balanceOf(defaulter_1)
+    let D2_EUSD = await eusdToken.balanceOf(defaulter_2)
+    let D3_EUSD = await eusdToken.balanceOf(defaulter_3)
+    let D4_EUSD = await eusdToken.balanceOf(defaulter_4)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): does not affect the SP deposit or ETH gain when called on an SP depositor's address that has no trove", async () => {
@@ -1114,6 +1212,19 @@ contract('TroveManager', async accounts => {
     const dennis_ETHGain_After = (await stabilityPool.getDepositorCollateralGain(dennis))[1][0].toString()
     assert.equal(dennis_Deposit_Before, dennis_Deposit_After)
     assert.equal(dennis_ETHGain_Before, dennis_ETHGain_After)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): does not liquidate a SP depositor's trove with ICR > 110%, and does not affect their SP deposit or ETH gain", async () => {
@@ -1174,6 +1285,18 @@ contract('TroveManager', async accounts => {
     const bob_ETHGain_After = (await stabilityPool.getDepositorCollateralGain(bob))[1][0].toString()
     assert.equal(bob_Deposit_Before, bob_Deposit_After)
     assert.equal(bob_ETHGain_Before, bob_ETHGain_After)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): liquidates a SP depositor's trove with ICR < 110%, and the liquidation correctly impacts their SP deposit and ETH gain", async () => {
@@ -1335,6 +1458,19 @@ contract('TroveManager', async accounts => {
     assert.equal((await eusdToken.balanceOf(alice)).toString(), A_eusdAmount)
     assert.equal((await eusdToken.balanceOf(bob)).toString(), B_eusdAmount)
     assert.equal((await eusdToken.balanceOf(carol)).toString(), C_eusdAmount)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
@@ -1446,6 +1582,20 @@ contract('TroveManager', async accounts => {
     assert.equal((await troveManager.getTroveStatus(alice)).toString(), '1')
     assert.equal((await troveManager.getTroveStatus(bob)).toString(), '3')
     assert.equal((await troveManager.getTroveStatus(carol)).toString(), '3')
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D1_EUSD = await eusdToken.balanceOf(defaulter_1)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D1_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("liquidate(): when SP > 0, triggers Gain reward event - increases the sum G", async () => {
@@ -1629,6 +1779,20 @@ contract('TroveManager', async accounts => {
     assert.isTrue(liqTxA.receipt.status)
     assert.isFalse(await sortedTroves.contains(A))
 
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let D_EUSD = await eusdToken.balanceOf(D)
+    let E_EUSD = await eusdToken.balanceOf(E)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     // A adds 10 EUSD to the SP, but less than C's debt
     await stabilityPool.provideToSP(dec(10, 18), ZERO_ADDRESS, {
       from: A
@@ -1660,14 +1824,32 @@ contract('TroveManager', async accounts => {
     assert.isTrue(await sortedTroves.contains(D))
     assert.isTrue(await sortedTroves.contains(E))
 
+    treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    A_EUSD = await eusdToken.balanceOf(A)
+    B_EUSD = await eusdToken.balanceOf(B)
+    C_EUSD = await eusdToken.balanceOf(C)
+    D_EUSD = await eusdToken.balanceOf(D)
+    E_EUSD = await eusdToken.balanceOf(E)
+    SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    O_EUSD = await eusdToken.balanceOf(owner)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     // // All remaining troves D and E repay a little debt, applying their pending rewards
     assert.isTrue((await sortedTroves.getSize()).eq(toBN('3')))
     await borrowerOperations.repayEUSD(dec(1, 18), D, D, {
       from: D
     })
+    const treasury_after_D = await eusdToken.balanceOf(treasury.address)
+    assert.isTrue(treasury_after_D.gt(treasuryEUSD))
     await borrowerOperations.repayEUSD(dec(1, 18), E, E, {
       from: E
     })
+    const treasury_after_E = await eusdToken.balanceOf(treasury.address)
+    assert.isTrue(treasury_after_E.gt(treasury_after_D))
 
     // Check C is the only trove that has pending rewards
     assert.isTrue(await troveManager.hasPendingRewards(C))
@@ -1708,6 +1890,20 @@ contract('TroveManager', async accounts => {
     assert.isTrue(await sortedTroves.contains(D))
     assert.isTrue(await sortedTroves.contains(E))
     assert.isTrue((await sortedTroves.getSize()).eq(toBN('2')))
+
+    treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    A_EUSD = await eusdToken.balanceOf(A)
+    B_EUSD = await eusdToken.balanceOf(B)
+    C_EUSD = await eusdToken.balanceOf(C)
+    D_EUSD = await eusdToken.balanceOf(D)
+    E_EUSD = await eusdToken.balanceOf(E)
+    SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    O_EUSD = await eusdToken.balanceOf(owner)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it('batchLiquidateTroves(): closes every Trove with ICR < MCR, when n > number of undercollateralized troves', async () => {
@@ -1818,6 +2014,24 @@ contract('TroveManager', async accounts => {
 
     // Check sorted list has been reduced to length 4 
     assert.equal((await sortedTroves.getSize()).toString(), '4')
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let F_EUSD = await eusdToken.balanceOf(flyn)
+    let G_EUSD = await eusdToken.balanceOf(graham)
+    let H_EUSD = await eusdToken.balanceOf(harriet)
+    let I_EUSD = await eusdToken.balanceOf(ida)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(H_EUSD).add(I_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it('batchLiquidateTroves(): liquidates  up to the requested number of undercollateralized troves', async () => {
@@ -1905,6 +2119,21 @@ contract('TroveManager', async accounts => {
 
     assert.isTrue(dennis_isInSortedList)
     assert.isTrue(erin_isInSortedList)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it('batchLiquidateTroves(): does nothing if all troves have ICR > 110%', async () => {
@@ -2061,6 +2290,20 @@ contract('TroveManager', async accounts => {
     assert.equal((await troveManager.getTroveStatus(alice)).toString(), '1')
     assert.equal((await troveManager.getTroveStatus(bob)).toString(), '3')
     assert.equal((await troveManager.getTroveStatus(carol)).toString(), '3')
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(defaulter_1)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("batchLiquidateTroves(): reverts if _troveArray empty", async () => {
@@ -2211,6 +2454,22 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(dennis))
     assert.isFalse(await sortedTroves.contains(erin))
     assert.isFalse(await sortedTroves.contains(flyn))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let F_EUSD = await eusdToken.balanceOf(flyn)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("batchLiquidateTroves(): does not affect the liquidated user's token balances", async () => {
@@ -2273,6 +2532,19 @@ contract('TroveManager', async accounts => {
     assert.equal((await eusdToken.balanceOf(dennis)).toString(), D_balanceBefore)
     assert.equal((await eusdToken.balanceOf(erin)).toString(), E_balanceBefore)
     assert.equal((await eusdToken.balanceOf(flyn)).toString(), F_balanceBefore)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let F_EUSD = await eusdToken.balanceOf(flyn)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = F_EUSD.add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("batchLiquidateTroves(): A liquidation sequence containing Pool offsets increases the TCR", async () => {
@@ -3870,6 +4142,17 @@ contract('TroveManager', async accounts => {
 
     const dennis_EUSDBalance_After = (await eusdToken.balanceOf(dennis)).toString()
     assert.equal(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(alice)
+    const B_EUSD = await eusdToken.balanceOf(bob)
+    const C_EUSD = await eusdToken.balanceOf(carol)
+    const D_EUSD = await eusdToken.balanceOf(dennis)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it('redeemCollateral(): with invalid first hint, trove below MCR', async () => {
@@ -3997,6 +4280,18 @@ contract('TroveManager', async accounts => {
 
     const dennis_EUSDBalance_After = (await eusdToken.balanceOf(dennis))
     th.assertIsApproximatelyEqual(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(alice)
+    const B_EUSD = await eusdToken.balanceOf(bob)
+    const C_EUSD = await eusdToken.balanceOf(carol)
+    const D_EUSD = await eusdToken.balanceOf(dennis)
+    const E_EUSD = await eusdToken.balanceOf(erin)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): doesn't perform partial redemption if resultant debt would be < minimum net debt", async () => {
@@ -4039,6 +4334,16 @@ contract('TroveManager', async accounts => {
     // Since this is below the min net debt of 100, A should be skipped and untouched by the redemption
     const A_debt = await troveManager.getTroveDebt(A)
     th.assertIsApproximatelyEqual(A_debt, A_debt_before, _dec(14))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(A)
+    const B_EUSD = await eusdToken.balanceOf(B)
+    const C_EUSD = await eusdToken.balanceOf(C)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it('redeemCollateral(): doesnt perform the final partial redemption in the sequence if the hint is out-of-date', async () => {
@@ -4178,6 +4483,17 @@ contract('TroveManager', async accounts => {
 
     const dennis_EUSDBalance_After = (await eusdToken.balanceOf(dennis)).toString()
     th.assertIsApproximatelyEqual(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(alice)
+    const B_EUSD = await eusdToken.balanceOf(bob)
+    const C_EUSD = await eusdToken.balanceOf(carol)
+    const D_EUSD = await eusdToken.balanceOf(dennis)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): doesn't touch Troves with ICR < 110%", async () => {
@@ -4235,6 +4551,16 @@ contract('TroveManager', async accounts => {
     // Bob's Trove was left untouched
     const bob_Debt_After = await troveManager.getTroveDebt(bob)
     th.assertIsApproximatelyEqual(bob_Debt_After, bob_Debt_Before, _dec(14))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(alice)
+    const B_EUSD = await eusdToken.balanceOf(bob)
+    const C_EUSD = await eusdToken.balanceOf(carol)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   });
 
   it("redeemCollateral(): finds the last Trove with ICR == 110% even if there is more than one", async () => {
@@ -4336,6 +4662,18 @@ contract('TroveManager', async accounts => {
     assert.equal(carol_Debt_After, '0')
 
     th.assertIsApproximatelyEqual(dennis_Debt_After, dennis_Debt_Before, _dec(14))
+
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(alice)
+    const B_EUSD = await eusdToken.balanceOf(bob)
+    const C_EUSD = await eusdToken.balanceOf(carol)
+    const D_EUSD = await eusdToken.balanceOf(dennis)
+    const W_EUSD = await eusdToken.balanceOf(whale)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    const totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   });
 
   it("redeemCollateral(): reverts when TCR < MCR", async () => {
@@ -4532,7 +4870,11 @@ contract('TroveManager', async accounts => {
         from: C
       }
     })
-    const expectedTotalSupply = A_totalDebt.add(B_totalDebt).add(C_totalDebt)
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(A)
+    const B_EUSD = await eusdToken.balanceOf(B)
+    const C_EUSD = await eusdToken.balanceOf(C)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4595,8 +4937,12 @@ contract('TroveManager', async accounts => {
         from: C
       }
     })
-    const expectedTotalSupply = A_totalDebt.add(B_totalDebt).add(C_totalDebt)
 
+    const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const A_EUSD = await eusdToken.balanceOf(A)
+    const B_EUSD = await eusdToken.balanceOf(B)
+    const C_EUSD = await eusdToken.balanceOf(C)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD)
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
     th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
@@ -4730,6 +5076,22 @@ contract('TroveManager', async accounts => {
     await troveManager.liquidate(flyn)
     assert.isFalse(await sortedTroves.contains(flyn))
 
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let F_EUSD = await eusdToken.balanceOf(flyn)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    let O_EUSD = await eusdToken.balanceOf(owner)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     // Price bounces back, bringing B, C, D back above MCR
     await priceFeed.setPrice(dec(200, 18))
 
@@ -4779,6 +5141,22 @@ contract('TroveManager', async accounts => {
     assert.equal(bob_ETHGain_before, bob_ETHGain_after)
     assert.equal(carol_ETHGain_before, carol_ETHGain_after)
     assert.equal(dennis_ETHGain_before, dennis_ETHGain_after)
+
+    treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    A_EUSD = await eusdToken.balanceOf(alice)
+    B_EUSD = await eusdToken.balanceOf(bob)
+    C_EUSD = await eusdToken.balanceOf(carol)
+    D_EUSD = await eusdToken.balanceOf(dennis)
+    E_EUSD = await eusdToken.balanceOf(erin)
+    F_EUSD = await eusdToken.balanceOf(flyn)
+    W_EUSD = await eusdToken.balanceOf(whale)
+    SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
+    O_EUSD = await eusdToken.balanceOf(owner)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): caller can redeem their entire EUSDToken balance", async () => {
@@ -4894,6 +5272,18 @@ contract('TroveManager', async accounts => {
     const erin_balance_after = (await eusdToken.balanceOf(erin)).toString()
 
     th.assertIsApproximatelyEqual(erin_balance_after, 0)
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): reverts when requested redemption amount exceeds caller's EUSD token balance", async () => {
@@ -5151,6 +5541,20 @@ contract('TroveManager', async accounts => {
       })
 
     assert.isTrue(redemption_1.receipt.status);
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(alice)
+    let B_EUSD = await eusdToken.balanceOf(bob)
+    let C_EUSD = await eusdToken.balanceOf(carol)
+    let D_EUSD = await eusdToken.balanceOf(dennis)
+    let E_EUSD = await eusdToken.balanceOf(erin)
+    let F_EUSD = await eusdToken.balanceOf(flyn)
+    let G_EUSD = await eusdToken.balanceOf(graham)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
 
     /* 120 EUSD redeemed.  Expect $120 worth of ETH removed. At ETH:USD price of $200, 
     ETH removed = (120/200) = 0.6 ETH
@@ -5187,6 +5591,21 @@ contract('TroveManager', async accounts => {
 
     assert.isTrue(redemption_2.receipt.status);
 
+    treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    A_EUSD = await eusdToken.balanceOf(alice)
+    B_EUSD = await eusdToken.balanceOf(bob)
+    C_EUSD = await eusdToken.balanceOf(carol)
+    D_EUSD = await eusdToken.balanceOf(dennis)
+    E_EUSD = await eusdToken.balanceOf(erin)
+    F_EUSD = await eusdToken.balanceOf(flyn)
+    G_EUSD = await eusdToken.balanceOf(graham)
+    W_EUSD = await eusdToken.balanceOf(whale)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+
     /* 373 EUSD redeemed.  Expect $373 worth of ETH removed. At ETH:USD price of $200, 
     ETH removed = (373/200) = 1.865 ETH
     Total active ETH = 279.4 - 1.865 = 277.535 ETH */
@@ -5220,6 +5639,21 @@ contract('TroveManager', async accounts => {
       })
 
     assert.isTrue(redemption_3.receipt.status);
+
+    treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    A_EUSD = await eusdToken.balanceOf(alice)
+    B_EUSD = await eusdToken.balanceOf(bob)
+    C_EUSD = await eusdToken.balanceOf(carol)
+    D_EUSD = await eusdToken.balanceOf(dennis)
+    E_EUSD = await eusdToken.balanceOf(erin)
+    F_EUSD = await eusdToken.balanceOf(flyn)
+    G_EUSD = await eusdToken.balanceOf(graham)
+    W_EUSD = await eusdToken.balanceOf(whale)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
 
     /* 950 EUSD redeemed.  Expect $950 worth of ETH removed. At ETH:USD price of $200, 
     ETH removed = (950/200) = 4.75 ETH
@@ -5446,6 +5880,17 @@ contract('TroveManager', async accounts => {
 
     // Check baseRate has again increased
     assert.isTrue(baseRate_2.gt(baseRate_1))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): lastFeeOpTime doesn't update if less time than decay interval has passed since the last fee operation [ @skip-on-coverage ]", async () => {
@@ -5522,6 +5967,17 @@ contract('TroveManager', async accounts => {
     // Check that the last fee operation time DID update, as A's 2rd redemption occured
     // after minimum interval had passed 
     assert.isTrue(lastFeeOpTime_3.gt(lastFeeOpTime_1))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): a redemption made at zero base rate send a non-zero ETHFee to Gain staking contract", async () => {
@@ -5571,6 +6027,17 @@ contract('TroveManager', async accounts => {
     // Check baseRate is now non-zero
     const baseRate_1 = await troveManager.baseRate()
     assert.isTrue(baseRate_1.gt(toBN('0')))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): a redemption made at zero base increases the ETH-fees", async () => {
@@ -5620,6 +6087,17 @@ contract('TroveManager', async accounts => {
     // Check baseRate is now non-zero
     const baseRate_1 = await troveManager.baseRate()
     assert.isTrue(baseRate_1.gt(toBN('0')))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   it("redeemCollateral(): a redemption made at a non-zero base rate send a non-zero ETHFee to contract", async () => {
@@ -5872,6 +6350,18 @@ contract('TroveManager', async accounts => {
 
     // Check D remains active
     assert.isTrue(await sortedTroves.contains(D))
+
+    let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let A_EUSD = await eusdToken.balanceOf(A)
+    let B_EUSD = await eusdToken.balanceOf(B)
+    let C_EUSD = await eusdToken.balanceOf(C)
+    let D_EUSD = await eusdToken.balanceOf(D)
+    let W_EUSD = await eusdToken.balanceOf(whale)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+
+    // Check total EUSD supply
+    let totalSupply = await eusdToken.totalSupply()
+    th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
   })
 
   const redeemCollateral3Full1Partial = async () => {

@@ -163,7 +163,7 @@ class DeploymentHelper {
     return coreContracts
   }
 
-  static async deployTesterContractsHardhat() {
+  static async deployTesterContractsHardhat(ERDContracts) {
     const testerContracts = {}
 
     // Contract without testers (yet)
@@ -189,7 +189,8 @@ class DeploymentHelper {
       testerContracts.troveManagerLiquidations.address,
       testerContracts.troveManagerRedemptions.address,
       testerContracts.stabilityPool.address,
-      testerContracts.borrowerOperations.address
+      testerContracts.borrowerOperations.address,
+      ERDContracts.treasury.address
     )
 
     testerContracts.troveInterestRateStrategy = await TroveInterestRateStrategy.new(
@@ -308,13 +309,14 @@ class DeploymentHelper {
     return contracts
   }
 
-  static async deployEUSDTokenTester(contracts) {
+  static async deployEUSDTokenTester(contracts, ERDContracts) {
     contracts.eusdToken = await EUSDTokenTester.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      ERDContracts.treasury.address
     )
     return contracts
   }
@@ -370,7 +372,8 @@ class DeploymentHelper {
         contracts.troveManagerLiquidations.address,
         contracts.troveManagerRedemptions.address,
         contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
+        contracts.borrowerOperations.address,
+        ERDContracts.treasury.address
       )
     } catch (err) {}
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "../TroveManager.sol";
 
@@ -21,9 +21,9 @@ contract TroveManagerTester is TroveManager {
         return baseRate;
     }
 
-    function minutesPassedSinceLastFeeOp() external view returns (uint256) {
-        return _minutesPassedSinceLastFeeOp();
-    }
+    // function minutesPassedSinceLastFeeOp() external view returns (uint256) {
+    //     return _minutesPassedSinceLastFeeOp();
+    // }
 
     function setLastFeeOpTimeToNow() external {
         lastFeeOperationTime = block.timestamp;

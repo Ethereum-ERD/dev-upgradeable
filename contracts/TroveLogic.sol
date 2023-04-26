@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MITs
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./DataTypes.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveDebt.sol";
 import "./Interfaces/ITroveInterestRateStrategy.sol";
+import "./Interfaces/IEUSDToken.sol";
 import "./Dependencies/ERDMath.sol";
 import "./Dependencies/WadRayMath.sol";
 
@@ -83,20 +84,29 @@ library TroveLogic {
      * @dev Updates the liquidity cumulative index and the borrow index.
      * @param trove the reserve object
      **/
-    function updateState(DataTypes.TroveData storage trove) internal {
+    function updateState(
+        DataTypes.TroveData storage trove
+    ) internal {
         uint256 scaledDebt = ITroveDebt(trove.troveDebtAddress)
             .scaledTotalSupply();
         uint256 previousBorrowIndex = trove.borrowIndex;
         uint256 previousLiquidityIndex = trove.liquidityIndex;
         uint40 lastUpdatedTimestamp = trove.lastUpdateTimestamp;
 
-        /*(uint256 newLiquidityIndex, uint256 newBorrowIndex) = */
-        _updateIndexes(
+        (uint256 newLiquidityIndex, uint256 newBorrowIndex) = _updateIndexes(
             trove,
             scaledDebt,
             previousLiquidityIndex,
             previousBorrowIndex,
             lastUpdatedTimestamp
+        );
+
+        _mintToTreasury(
+            trove,
+            scaledDebt,
+            previousBorrowIndex,
+            newLiquidityIndex,
+            newBorrowIndex
         );
     }
 
@@ -136,9 +146,56 @@ library TroveLogic {
         );
     }
 
+    struct MintToTreasuryLocalVars {
+        uint256 currentDebt;
+        uint256 previousDebt;
+        uint256 avgStableRate;
+        uint256 cumulatedStableInterest;
+        uint256 totalDebtAccrued;
+        uint256 amountToMint;
+        uint256 reserveFactor;
+        uint40 stableSupplyUpdatedTimestamp;
+    }
+
+    /**
+     * @dev Mints part of the repaid interest to the reserve treasury as a function of the reserveFactor for the
+     * specific asset.
+     * @param trove The reserve to be updated
+     * @param scaledDebt The current scaled total debt
+     * @param previousBorrowIndex The borrow index before the last accumulation of the interest
+     * @param newLiquidityIndex The new liquidity index
+     * @param newBorrowIndex The borrow index after the last accumulation of the interest
+     **/
+    function _mintToTreasury(
+        DataTypes.TroveData storage trove,
+        uint256 scaledDebt,
+        uint256 previousBorrowIndex,
+        uint256 newLiquidityIndex,
+        uint256 newBorrowIndex
+    ) internal {
+        MintToTreasuryLocalVars memory vars;
+
+        //calculate the last principal variable debt
+        vars.previousDebt = scaledDebt.rayMul(previousBorrowIndex);
+
+        //calculate the new total supply after accumulation of the index
+        vars.currentDebt = scaledDebt.rayMul(newBorrowIndex);
+
+        //debt accrued is the sum of the current debt minus the sum of the debt at the last update
+        vars.totalDebtAccrued = vars.currentDebt.sub(vars.previousDebt);
+
+        vars.amountToMint = vars.totalDebtAccrued.rayDiv(newLiquidityIndex);
+
+        if (vars.amountToMint != 0) {
+            IEUSDToken(trove.eusdTokenAddress).mintToTreasury(
+                vars.amountToMint
+            );
+        }
+    }
+
     /**
      * @dev Updates the reserve indexes and the timestamp of the update
-     * @param trove The reserve reserve to be updated
+     * @param trove The reserve to be updated
      * @param scaledDebt The scaled debt
      * @param liquidityIndex The last stored liquidity index
      * @param borrowIndex The last stored borrow index

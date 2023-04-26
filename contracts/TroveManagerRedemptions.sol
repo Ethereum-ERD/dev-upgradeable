@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/ITroveManagerRedemptions.sol";
@@ -38,6 +38,8 @@ contract TroveManagerRedemptions is
      * Corresponds to (1 / ALPHA) in the white paper.
      */
     uint256 public constant BETA = 2;
+
+    uint256 internal deploymentStartTime;
 
     // --- Dependency setter ---
     function initialize() public initializer {
@@ -80,6 +82,8 @@ contract TroveManagerRedemptions is
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         troveManager = ITroveManager(_troveManagerAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
+
+        deploymentStartTime = block.timestamp;
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
@@ -663,7 +667,7 @@ contract TroveManagerRedemptions is
 
     function _requireAfterBootstrapPeriod() internal view {
         require(
-            block.timestamp >= troveManager.getDelayTime(),
+            block.timestamp >= deploymentStartTime.add(collateralManager.getBootstrapPeriod()),
             "TroveManagerRedemptions: Redemptions are not allowed during bootstrap phase"
         );
     }

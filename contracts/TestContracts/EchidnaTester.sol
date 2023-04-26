@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "../TroveManager.sol";
 import "../BorrowerOperations.sol";
@@ -66,17 +66,19 @@ contract EchidnaTester {
         gasPool = new GasPool();
         troveManagerLiquidations = new TroveManagerLiquidations();
         troveManagerRedemptions = new TroveManagerRedemptions();
+        collateralManager = new CollateralManager();
+        treasury = new Treasury();
+        troveDebt = new TroveDebt();
         eusdToken = new EUSDToken();
         eusdToken.initialize(
             address(troveManager),
             address(troveManagerLiquidations),
             address(troveManagerRedemptions),
             address(stabilityPool),
-            address(borrowerOperations)
+            address(borrowerOperations),
+            address(treasury)
         );
-        collateralManager = new CollateralManager();
-        treasury = new Treasury();
-        troveDebt = new TroveDebt();
+        
         troveInterestRateStrategy = new TroveInterestRateStrategy();
         troveInterestRateStrategy.initialize(
             2e27,

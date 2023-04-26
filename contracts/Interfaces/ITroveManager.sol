@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "./IERDBase.sol";
 import "./IStabilityPool.sol";
@@ -241,8 +241,6 @@ interface ITroveManager is IERDBase {
     function getCCR() external view returns (uint256);
 
     function getEUSDGasCompensation() external view returns (uint256);
-
-    function getDelayTime() external view returns (uint256);
 
     function getTroveData() external view returns (DataTypes.TroveData memory);
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ICollateralManager.sol";
@@ -62,6 +62,8 @@ library DataTypes {
         address troveDebtAddress;
         //address of the interest rate strategy
         address interestRateAddress;
+        //address of the EUSD token
+        address eusdTokenAddress;
     }
 
     // Object containing the ETH/wrapperETH and EUSD snapshots for a given active trove

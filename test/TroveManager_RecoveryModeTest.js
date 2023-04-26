@@ -62,14 +62,15 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
+    const ERDContracts = await deploymentHelper.deployERDContracts()
     contracts.eusdToken = await EUSDTokenTester.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      ERDContracts.treasury.address
     )
-    const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = contracts.priceFeedETH
     priceFeedSTETH = contracts.priceFeedSTETH
@@ -5157,7 +5158,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // price drops to 1ETH:67EUSD, reducing TCR below 130%
     await priceFeed.setPrice('67000000000000000000')
     const price = await priceFeed.getPrice()
-    
+
     // check Recovery Mode kicks in
     const recoveryMode_Before = await th.checkRecoveryMode(contracts)
     assert.isTrue(recoveryMode_Before)
@@ -5184,7 +5185,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     dennis_ICR = await th.getCurrentICR(contracts, dennis)
     erin_ICR = await th.getCurrentICR(contracts, erin)
     freddy_ICR = await th.getCurrentICR(contracts, freddy)
-    
+
     // Alice should have ICR > 130%
     assert.isTrue(alice_ICR.gt(_130percent))
     // All other Troves should have ICR < 130%

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Code from https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol
 
-pragma solidity 0.8.7;
+pragma solidity 0.8.18;
 
 interface AggregatorV3Interface {
     function decimals() external view returns (uint8);
