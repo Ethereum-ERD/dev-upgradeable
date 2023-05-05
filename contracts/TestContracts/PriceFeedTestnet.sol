@@ -33,14 +33,6 @@ contract PriceFeedTestnet is IPriceFeed {
         return _price;
     }
 
-    function adjustIn(uint _ethAmount) external view returns (uint) {
-        return _ethAmount;
-    }
-
-    function adjustOut(uint _shareAmount) external view returns (uint) {
-        return _shareAmount;
-    }
-
     // Manual external price setter.
     function setPrice(uint256 price) external returns (bool) {
         _price = price;

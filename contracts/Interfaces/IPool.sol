@@ -7,7 +7,8 @@ interface IPool {
     event BorrowerOperationsAddressChanged(
         address _newBorrowerOperationsAddress
     );
-    event TreasuryAddressChanged(address _newtreasuryAddress);
+    event TreasuryAddressChanged(address _newTreasuryAddress);
+    event LiquidityIncentiveAddressChanged(address _newLiquidityIncentiveAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event CollateralManagerAddressChanged(address _newCollateralManagerAddress);
     event TroveManagerRedemptionsAddressChanged(

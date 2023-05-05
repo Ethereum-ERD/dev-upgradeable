@@ -120,7 +120,7 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
      **/
     function calculateInterestRates() public view override returns (uint256, uint256) {
         DataTypes.TroveData memory troveData = troveManager.getTroveData();
-        
+
         uint256 tcr = troveManager.getTCR(priceFeed.fetchPrice_view());
         uint256 ccr = collateralManager.getCCR();
         CalcInterestRatesLocalVars memory vars;

@@ -18,6 +18,7 @@ const _hintHelpersAddress = deploy.hintHelpers;
 const _sortedTrovesAddress = deploy.sortedTroves;
 const _stabilityPoolAddress = deploy.stabilityPool;
 const _treasuryAddress = deploy.treasury;
+const _liquidityIncentiveAddress = deploy.liquidityIncentive;
 const _troveDebtAddress = deploy.troveDebt;
 const _troveInterestRateStrategyAddress = deploy.troveInterestRateStrategy;
 const _troveManagerAddress = deploy.troveManager;
@@ -27,6 +28,8 @@ const _multiTroveGetterAddress = deploy.multiTroveGetter;
 const _eusdTokenAddress = deploy.eusdToken;
 const _priceFeedAddress = deploy.priceFeed;
 const _stETHOracleAddress = deploy.stETHOracle;
+const _eETHAddress = deploy.eETH;
+const _eStETHAddress = deploy.eSTETH;
 const _wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 const _stETHAddress = '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84';
 const _priceAggregatorAddress = '0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419';
@@ -46,6 +49,7 @@ async function main() {
         _stabilityPoolAddress,
         _defaultPoolAddress,
         _treasuryAddress,
+        _liquidityIncentiveAddress,
         _collSurplusPoolAddress,
         _wethAddress
     );
@@ -80,9 +84,12 @@ async function main() {
     const CollateralManager = await ethers.getContractFactory("CollateralManager");
     const collateralManager = await CollateralManager.attach(_collateralManagerAddress);
     var tx = await collateralManager.setAddresses(
+        _activePoolAddress,
         _borrowerOperationsAddress,
+        _defaultPoolAddress,
         _priceFeedAddress,
         _troveManagerAddress,
+        _troveManagerRedemptionsAddress,
         _wethAddress
     );
     await tx.wait(); // wait mining
@@ -232,7 +239,6 @@ async function main() {
     );
     await tx.wait(); // wait mining
     var initTx = await troveManagerLiquidations.init(
-        _treasuryAddress,
         _troveDebtAddress
     );
     await initTx.wait();
@@ -256,7 +262,6 @@ async function main() {
     );
     await tx.wait(); // wait mining
     var initTx = await troveManagerRedemptions.init(
-        _treasuryAddress,
         _troveDebtAddress
     );
     await initTx.wait();
@@ -266,6 +271,22 @@ async function main() {
     const StETHOracleTestnet = await ethers.getContractFactory("StETHOracleTestnet");
     const stETHOracle = await StETHOracleTestnet.attach(_stETHOracleAddress);
     var tx = await stETHOracle.setPrice(ethers.utils.parseEther("1"));
+    await tx.wait(); // wait mining
+
+    const EETH = await ethers.getContractFactory("EToken");
+    const eETH = await EETH.attach(_eETHAddress);
+    var tx = await eETH.setAddresses(
+        _collateralManagerAddress,
+        _wethAddress
+    );
+    await tx.wait(); // wait mining
+
+    const ESTETH = await ethers.getContractFactory("EToken");
+    const eStETH = await ESTETH.attach(_eStETHAddress);
+    var tx = await eStETH.setAddresses(
+        _collateralManagerAddress,
+        _stETHAddress
+    );
     await tx.wait(); // wait mining
 
 }

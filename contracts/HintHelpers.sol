@@ -16,7 +16,6 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
 
     ISortedTroves public sortedTroves;
     ITroveManager public troveManager;
-    ICollateralManager public collateralManager;
 
     // --- Events ---
 

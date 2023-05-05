@@ -34,8 +34,8 @@ contract('Gas cost tests', async accounts => {
   let data = []
 
   beforeEach(async () => {
-    contracts = await deploymentHelper.deployTesterContractsHardhat()
-    const ERDContracts = await deploymentHelper.deployERDContracts(bountyAddress, lpRewardsAddress)
+    const ERDContracts = await deploymentHelper.deployERDContracts()
+    contracts = await deploymentHelper.deployTesterContractsHardhat(ERDContracts)
 
     priceFeed = contracts.priceFeedETH
     eusdToken = contracts.eusdToken
@@ -50,11 +50,10 @@ contract('Gas cost tests', async accounts => {
     functionCaller = contracts.functionCaller
 
     communityIssuance = ERDContracts.communityIssuance
-    lockupContractFactory = ERDContracts.lockupContractFactory
+    treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
 
-    await deploymentHelper.connectERDContracts(ERDContracts)
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-    await deploymentHelper.connectERDContractsToCore(ERDContracts, contracts)
   })
 
   // --- TESTS ---

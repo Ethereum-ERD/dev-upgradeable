@@ -49,6 +49,7 @@ contract('StabilityPool', async accounts => {
   let defaultPool
   let borrowerOperations
   let treasury
+  let liquidityIncentive
   let communityIssuance
   let weth
   let steth
@@ -93,6 +94,7 @@ contract('StabilityPool', async accounts => {
       steth = contracts.steth
 
       treasury = ERDContracts.treasury
+      liquidityIncentive = ERDContracts.liquidityIncentive
       communityIssuance = ERDContracts.communityIssuance
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)

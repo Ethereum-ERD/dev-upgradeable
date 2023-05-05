@@ -19,6 +19,11 @@ interface IActivePool is IPool {
         uint256[] memory _colls
     ) external;
 
+    function sendCollFees(
+        address[] memory _collaterals,
+        uint256[] memory _colls
+    ) external;
+
     function increaseEUSDDebt(uint256 _amount) external;
 
     function decreaseEUSDDebt(uint256 _amount) external;

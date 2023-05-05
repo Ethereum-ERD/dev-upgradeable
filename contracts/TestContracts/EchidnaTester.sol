@@ -15,6 +15,7 @@ import "../TroveManagerLiquidations.sol";
 import "../TroveManagerRedemptions.sol";
 import "../CollateralManager.sol";
 import "../Treasury.sol";
+import "../LiquidityIncentive.sol";
 import "../TroveDebt.sol";
 import "../TroveInterestRateStrategy.sol";
 import "./TestAssets/WETH.sol";
@@ -48,6 +49,7 @@ contract EchidnaTester {
     SortedTroves sortedTroves;
     CollateralManager collateralManager;
     Treasury treasury;
+    LiquidityIncentive liquidityIncentive;
     TroveDebt troveDebt;
     TroveInterestRateStrategy troveInterestRateStrategy;
 
@@ -68,6 +70,7 @@ contract EchidnaTester {
         troveManagerRedemptions = new TroveManagerRedemptions();
         collateralManager = new CollateralManager();
         treasury = new Treasury();
+        liquidityIncentive = new LiquidityIncentive();
         troveDebt = new TroveDebt();
         eusdToken = new EUSDToken();
         eusdToken.initialize(
@@ -76,7 +79,8 @@ contract EchidnaTester {
             address(troveManagerRedemptions),
             address(stabilityPool),
             address(borrowerOperations),
-            address(treasury)
+            address(treasury),
+            address(liquidityIncentive)
         );
         
         troveInterestRateStrategy = new TroveInterestRateStrategy();
@@ -128,7 +132,7 @@ contract EchidnaTester {
             address(collateralManager)
         );
 
-        troveManagerLiquidations.init(address(treasury), address(troveDebt));
+        troveManagerLiquidations.init(address(troveDebt));
 
         troveManagerRedemptions.setAddresses(
             address(borrowerOperations),
@@ -143,8 +147,6 @@ contract EchidnaTester {
             address(troveManager),
             address(collateralManager)
         );
-
-        troveManagerRedemptions.init(address(treasury), address(troveDebt));
 
         borrowerOperations.setAddresses(
             address(troveManager),
@@ -173,6 +175,7 @@ contract EchidnaTester {
             address(stabilityPool),
             address(defaultPool),
             address(treasury),
+            address(liquidityIncentive),
             address(collSurplusPool),
             address(weth)
         );

@@ -37,7 +37,8 @@ contract('Gas costs for math functions', async accounts => {
     hintHelpers = contracts.hintHelpers
 
     communityIssuance = ERDContracts.communityIssuance
-    lockupContractFactory = ERDContracts.lockupContractFactory
+    treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
   })

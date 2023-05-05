@@ -13,7 +13,8 @@ contract EUSDTokenTester is EUSDToken {
         address _troveManagerRedemptionsAddress,
         address _stabilityPoolAddress,
         address _borrowerOperationsAddress,
-        address _treasuryAddress
+        address _treasuryAddress,
+        address _liquidityIncentiveAddress
     ) {
         EUSDToken.initialize(
             _troveManagerAddress,
@@ -21,7 +22,8 @@ contract EUSDTokenTester is EUSDToken {
             _troveManagerRedemptionsAddress,
             _stabilityPoolAddress,
             _borrowerOperationsAddress,
-            _treasuryAddress
+            _treasuryAddress,
+            _liquidityIncentiveAddress
         );
     }
 

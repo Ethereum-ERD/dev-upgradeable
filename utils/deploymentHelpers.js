@@ -16,6 +16,7 @@ const HintHelpers = artifacts.require("./HintHelpers.sol")
 const CollateralManager = artifacts.require("./CollateralManager.sol")
 const TroveInterestRateStrategy = artifacts.require("./TroveInterestRateStrategy.sol")
 const TroveDebt = artifacts.require("./TroveDebt.sol")
+const EToken = artifacts.require("./EToken.sol")
 
 // const ERC20TokenETH = artifacts.require("./TestContracts/TestAssets/ERC20Token.sol")
 // const ERC20TokenAVAX = artifacts.require("./TestContracts/TestAssets/ERC20Token.sol")
@@ -26,6 +27,7 @@ const WETH = artifacts.require("./TestContracts/TestAssets/WETH.sol")
 
 const CommunityIssuance = artifacts.require("./CommunityIssuance.sol")
 const Treasury = artifacts.require("./Treasury.sol")
+const LiquidityIncentive = artifacts.require("./LiquidityIncentive.sol")
 
 const CommunityIssuanceTester = artifacts.require("./CommunityIssuanceTester.sol")
 const StabilityPoolTester = artifacts.require("./StabilityPoolTester.sol")
@@ -105,6 +107,9 @@ class DeploymentHelper {
 
     const troveDebt = await TroveDebt.new()
 
+    const eTokenETH = await EToken.new()
+    const eTokenSTETH = await EToken.new()
+
 
     const weth = await WETH.new()
     // const weth = await ERC20Token.new("WETH", "Wrapped Ether", 18)
@@ -137,6 +142,8 @@ class DeploymentHelper {
     HintHelpers.setAsDeployed(hintHelpers)
     TroveInterestRateStrategy.setAsDeployed(troveInterestRateStrategy)
     TroveDebt.setAsDeployed(troveDebt)
+    EToken.setAsDeployed(eTokenETH)
+    EToken.setAsDeployed(eTokenSTETH)
 
     const coreContracts = {
       priceFeedSTETH,
@@ -158,7 +165,9 @@ class DeploymentHelper {
       troveManagerLiquidations,
       troveManagerRedemptions,
       troveDebt,
-      troveInterestRateStrategy
+      troveInterestRateStrategy,
+      eTokenETH,
+      eTokenSTETH
     }
     return coreContracts
   }
@@ -190,7 +199,8 @@ class DeploymentHelper {
       testerContracts.troveManagerRedemptions.address,
       testerContracts.stabilityPool.address,
       testerContracts.borrowerOperations.address,
-      ERDContracts.treasury.address
+      ERDContracts.treasury.address,
+      ERDContracts.liquidityIncentive.address
     )
 
     testerContracts.troveInterestRateStrategy = await TroveInterestRateStrategy.new(
@@ -201,6 +211,8 @@ class DeploymentHelper {
     )
 
     testerContracts.troveDebt = await TroveDebt.new()
+    testerContracts.eTokenETH = await EToken.new()
+    testerContracts.eTokenSTETH = await EToken.new()
 
     testerContracts.weth = await WETH.new()
 
@@ -216,11 +228,14 @@ class DeploymentHelper {
   static async deployERDContractsHardhat() {
     const communityIssuance = await CommunityIssuance.new()
     const treasury = await Treasury.new()
+    const liquidityIncentive = await LiquidityIncentive.new()
     CommunityIssuance.setAsDeployed(communityIssuance)
     Treasury.setAsDeployed(treasury)
+    LiquidityIncentive.setAsDeployed(liquidityIncentive)
 
     const ERDContracts = {
       treasury,
+      liquidityIncentive,
       communityIssuance
     }
     return ERDContracts
@@ -229,12 +244,15 @@ class DeploymentHelper {
   static async deployERDTesterContractsHardhat() {
     const communityIssuance = await CommunityIssuanceTester.new()
     const treasury = await Treasury.new()
+    const liquidityIncentive = await LiquidityIncentive.new()
 
     CommunityIssuanceTester.setAsDeployed(communityIssuance)
     Treasury.setAsDeployed(treasury)
+    LiquidityIncentive.setAsDeployed(liquidityIncentive)
 
     const ERDContracts = {
       treasury,
+      liquidityIncentive,
       communityIssuance
     }
     return ERDContracts
@@ -270,6 +288,8 @@ class DeploymentHelper {
       web3.utils.toWei('20000000', 'ether') // 2%
     )
     const troveDebt = await TroveDebt.new()
+    const eTokenETH = await EToken.new()
+    const eTokenSTETH = await EToken.new()
     const coreContracts = {
       priceFeedSTETH,
       priceFeedETH,
@@ -288,7 +308,9 @@ class DeploymentHelper {
       hintHelpers,
       collateralManager,
       troveDebt,
-      troveInterestRateStrategy
+      troveInterestRateStrategy,
+      eTokenETH,
+      eTokenSTETH
     }
     return coreContracts
   }
@@ -296,9 +318,11 @@ class DeploymentHelper {
   static async deployERDContractsTruffle() {
     const communityIssuance = await CommunityIssuance.new()
     const treasury = await Treasury.new()
+    const liquidityIncentive = await LiquidityIncentive.new()
 
     const ERDContracts = {
       treasury,
+      liquidityIncentive,
       communityIssuance
     }
     return ERDContracts
@@ -316,7 +340,8 @@ class DeploymentHelper {
       contracts.troveManagerRedemptions.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,
-      ERDContracts.treasury.address
+      ERDContracts.treasury.address,
+      ERDContracts.liquidityIncentive.address
     )
     return contracts
   }
@@ -351,6 +376,7 @@ class DeploymentHelper {
   static async connectCoreContracts(contracts, ERDContracts) {
     await ERDContracts.communityIssuance.initialize()
     await ERDContracts.treasury.initialize()
+    await ERDContracts.liquidityIncentive.initialize()
     await contracts.sortedTroves.initialize()
     await contracts.troveManager.initialize(
       contracts.troveDebt.address,
@@ -373,7 +399,8 @@ class DeploymentHelper {
         contracts.troveManagerRedemptions.address,
         contracts.stabilityPool.address,
         contracts.borrowerOperations.address,
-        ERDContracts.treasury.address
+        ERDContracts.treasury.address,
+        ERDContracts.liquidityIncentive.address
       )
     } catch (err) {}
 
@@ -382,6 +409,16 @@ class DeploymentHelper {
       web3.utils.toWei('7500000', 'ether'), // 0.75%
       web3.utils.toWei('10000000', 'ether'), // 1%
       web3.utils.toWei('20000000', 'ether') // 2%
+    )
+
+    await contracts.eTokenETH.initialize(
+      "ERD Wrapped ETH",
+      "eETH"
+    )
+
+    await contracts.eTokenSTETH.initialize(
+      "ERD Wrapped STETH",
+      "eSTETH"
     )
     // set TroveManager addr in SortedTroves
     await contracts.sortedTroves.setParams(
@@ -435,7 +472,6 @@ class DeploymentHelper {
     )
 
     await contracts.troveManagerRedemptions.init(
-      ERDContracts.treasury.address,
       contracts.troveDebt.address
     )
 
@@ -454,7 +490,6 @@ class DeploymentHelper {
     )
 
     await contracts.troveManagerLiquidations.init(
-      ERDContracts.treasury.address,
       contracts.troveDebt.address
     )
 
@@ -500,6 +535,7 @@ class DeploymentHelper {
       contracts.stabilityPool.address,
       contracts.defaultPool.address,
       ERDContracts.treasury.address,
+      ERDContracts.liquidityIncentive.address,
       contracts.collSurplusPool.address,
       contracts.weth.address
     )
@@ -527,9 +563,12 @@ class DeploymentHelper {
 
     // set contracts in CollateralManager
     await contracts.collateralManager.setAddresses(
+      contracts.activePool.address,
       contracts.borrowerOperations.address,
+      contracts.defaultPool.address,
       contracts.priceFeedETH.address,
       contracts.troveManager.address,
+      contracts.troveManagerRedemptions.address,
       contracts.weth.address,
     )
 
@@ -544,11 +583,21 @@ class DeploymentHelper {
       contracts.priceFeedETH.address,
     )
 
+    await contracts.eTokenETH.setAddresses(
+      contracts.collateralManager.address,
+      contracts.weth.address
+    )
+
+    await contracts.eTokenSTETH.setAddresses(
+      contracts.collateralManager.address,
+      contracts.steth.address
+    )
+
     //   console.log("init")
     // console.log(await contracts.collateralManager.getCollateralSupport())
     // console.log(await contracts.collateralManager.getIsActive(contracts.weth.address))
 
-    await contracts.collateralManager.addCollateral(contracts.weth.address, contracts.priceFeedETH.address);
+    await contracts.collateralManager.addCollateral(contracts.weth.address, contracts.priceFeedETH.address, contracts.eTokenETH.address, web3.utils.toWei('1', 'ether'));
     // await contracts.collateralManager.addCollateral(contracts.steth.address, contracts.priceFeedSTETH.address);
   }
 
@@ -561,19 +610,25 @@ class DeploymentHelper {
       name,
       symbol,
       decimals,
-      price
+      price,
+      ratio
     } = params
 
     const newToken = await ERC20Token.new(symbol, name, decimals);
 
     const newPriceFeed = await PriceFeedTestnet.new();
+
+    const newEToken = await EToken.new();
+    await newEToken.initialize("ERD Wrapped ".concat(name), "e".concat(symbol))
+    await newEToken.setAddresses(contracts.collateralManager.address, newToken.address)
     // TODO: Adjust & Oracle solidity script
-    await contracts.collateralManager.addCollateral(newToken.address, newPriceFeed.address);
+    await contracts.collateralManager.addCollateral(newToken.address, newPriceFeed.address, newEToken.address, ratio);
     await newPriceFeed.setPrice(price)
     // console.log(name, (await newPriceFeed.getPrice()).toString())
     return {
       token: newToken,
-      priceFeed: newPriceFeed
+      priceFeed: newPriceFeed,
+      eToken: newEToken
     }
   }
 }

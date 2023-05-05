@@ -1,22 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+// import {DataTypes} from "../DataTypes.sol";
 import "../DataTypes.sol";
 
 interface ICollateralManager {
     function setAddresses(
+        address _activePoolAddress,
         address _borrowerOperationsAddress,
+        address _defaultPoolAddress,
         address _priceFeedAddress,
         address _troveManagerAddress,
+        address _troveManagerRedemptionsAddress,
         address _wethAddress
     ) external;
 
-    function addCollateral(address _collateral, address _oracle) external;
+    function addCollateral(
+        address _collateral,
+        address _oracle,
+        address _eTokenAddress,
+        uint256 _ratio
+    ) external;
 
     function removeCollateral(address _collateral) external;
 
-    function setCollateralPriority(address _collateral, uint256 _newIndex)
-        external;
+    function setCollateralPriority(
+        address _collateral,
+        uint256 _newIndex
+    ) external;
 
     function pauseCollateral(address _collateral) external;
 
@@ -24,28 +35,83 @@ interface ICollateralManager {
 
     function setOracle(address _collateral, address _oracle) external;
 
+    function setEToken(address _collateral, address _eTokenAddress) external;
+
+    function setRatio(address _collateral, uint256 _ratio) external;
+
     function priceUpdate() external;
 
-    function adjustIn(address[] memory _collaterals, uint256[] memory _amounts)
-        external
-        view
-        returns (uint256[] memory);
+    function getShares(
+        address[] memory _collaterals,
+        uint256[] memory _amounts
+    ) external view returns (uint256[] memory);
 
-    function adjustIn(address _collateral, uint256 _amount)
-        external
-        view
-        returns (uint256);
+    function mintEToken(
+        address[] memory _collaterals,
+        uint256[] memory _amounts,
+        address _account,
+        uint256 _price
+    ) external returns (uint256[] memory, uint256);
 
-    function adjustOut(address[] memory _collaterals, uint256[] memory _amounts)
-        external
-        view
-        returns (uint256[] memory);
+    function applyRewards(
+        address _borrower,
+        uint256[] memory _pendingRewards
+    ) external returns (uint256[] memory);
 
-    function adjustOut(address _collateral, uint256 _amount)
+    function burnEToken(
+        address[] memory _collaterals,
+        uint256[] memory _amounts,
+        address _account,
+        uint256 _price
+    ) external returns (uint256[] memory, uint256);
+
+    function clearEToken(
+        address _account,
+        DataTypes.Status closedStatus
+    ) external returns (address[] memory);
+
+    function resetEToken(
+        address _account,
+        address[] memory _collaterals,
+        uint256[] memory _amounts
+    ) external returns (uint256[] memory);
+
+    function getAmounts(
+        address[] memory _collaterals,
+        uint256[] memory _shares
+    ) external view returns (uint256[] memory);
+
+    function getTroveColls(
+        address _borrower
+    )
         external
         view
-        returns (uint256);
-    
+        returns (uint256[] memory, uint256[] memory, address[] memory);
+
+    function getTroveColl(
+        address _borrower,
+        address _collateral
+    ) external view returns (uint256, uint256);
+
+    function getCollateralShares(
+        address _borrower
+    ) external view returns (address[] memory, uint256[] memory);
+
+    function getEntireCollValue(
+        uint256 _price
+    ) external view returns (address[] memory, uint256[] memory, uint256);
+
+    function getEntireCollValue()
+        external
+        view
+        returns (address[] memory, uint256[] memory, uint256);
+
+    function validAdjustment(
+        address _account,
+        address _collateral,
+        uint256 _amount
+    ) external view returns (bool);
+
     function adjustColls(
         uint256[] memory _initialAmounts,
         address[] memory _collsIn,
@@ -56,27 +122,19 @@ interface ICollateralManager {
 
     function getCollateralSupport() external view returns (address[] memory);
 
-    function getIsActive(address _collateral)
-        external
-        view
-        returns (bool);
+    function getIsActive(address _collateral) external view returns (bool);
 
-    function getIsSupport(address _collateral)
-        external
-        view
-        returns (bool);
+    function getIsSupport(address _collateral) external view returns (bool);
 
-    function getCollateralOracle(address _collateral)
-        external
-        view
-        returns (address);
+    function getCollateralOracle(
+        address _collateral
+    ) external view returns (address);
 
     function getCollateralOracles() external view returns (address[] memory);
 
-    function getCollateralParams(address _collateral)
-        external
-        view
-        returns (DataTypes.CollateralParams memory);
+    function getCollateralParams(
+        address _collateral
+    ) external view returns (DataTypes.CollateralParams memory);
 
     function getCollateralsAmount() external view returns (uint256);
 
@@ -114,6 +172,10 @@ interface ICollateralManager {
 
     function setBootstrapPeriod(uint256 _period) external;
 
+    function setFactor(uint256 _factor) external;
+
+    function getFactor() external view returns (uint256);
+
     function getMCR() external view returns (uint256);
 
     function getCCR() external view returns (uint256);
@@ -133,4 +195,6 @@ interface ICollateralManager {
     function getBootstrapPeriod() external view returns (uint256);
 
     function getIndex(address _collateral) external view returns (uint256);
+
+    function getRatio(address _collateral) external view returns (uint256);
 }

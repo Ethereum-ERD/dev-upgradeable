@@ -53,6 +53,7 @@ contract('BorrowerOperations', async accounts => {
   let defaultPool
   let borrowerOperations
   let treasury
+  let liquidityIncentive
   let collateralManager
 
   let contracts
@@ -106,6 +107,7 @@ contract('BorrowerOperations', async accounts => {
       collateralManager = contracts.collateralManager
 
       treasury = ERDContracts.treasury
+      liquidityIncentive = ERDContracts.liquidityIncentive
       communityIssuance = ERDContracts.communityIssuance
 
       EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
@@ -177,7 +179,6 @@ contract('BorrowerOperations', async accounts => {
           from: alice
         }
       })
-
       const coll_before = await troveManager.getTroveColls(alice)
       const status_Before = await troveManager.getTroveStatus(alice)
 
@@ -194,7 +195,6 @@ contract('BorrowerOperations', async accounts => {
 
       const coll_After = await troveManager.getTroveColls(alice)
       const status_After = await troveManager.getTroveStatus(alice)
-
       // check coll increases by correct amount,and status remains active
       assert.isTrue(coll_After[0][0].eq(coll_before[0][0].add(toBN(dec(1, 'ether')))))
       assert.equal(status_After, 1)
@@ -1042,12 +1042,16 @@ contract('BorrowerOperations', async accounts => {
       // 2 hours pass
       th.fastForwardTime(7200, web3.currentProvider)
       const treasury_before_withdraw = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentive_before_withdraw = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before_withdraw = treasury_before_withdraw.add(liquidityIncentive_before_withdraw)
       // D withdraws EUSD
       await borrowerOperations.withdrawEUSD(dec(1, 18), A, A, th._100pct, {
         from: D
       })
       const treasury_after_withdraw = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_after_withdraw.gt(treasury_before_withdraw))
+      const liquidityIncentive_after_withdraw = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_withdraw = treasury_after_withdraw.add(liquidityIncentive_after_withdraw)
+      assert.isTrue(fee_after_withdraw.gt(fee_before_withdraw))
       // Check baseRate has decreased
       const baseRate_2 = await troveManager.baseRate()
       assert.isTrue(baseRate_2.lt(baseRate_1))
@@ -1060,7 +1064,9 @@ contract('BorrowerOperations', async accounts => {
         from: E
       })
       const treasury_after_withdraw_E = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_after_withdraw_E.gt(treasury_after_withdraw))
+      const liquidityIncentive_after_withdraw_E = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_withdraw_E = treasury_after_withdraw_E.add(liquidityIncentive_after_withdraw_E)
+      assert.isTrue(fee_after_withdraw_E.gt(fee_after_withdraw))
       const baseRate_3 = await troveManager.baseRate()
       assert.isTrue(baseRate_3.lt(baseRate_2))
     })
@@ -1272,6 +1278,8 @@ contract('BorrowerOperations', async accounts => {
       let baseRate = await troveManager.baseRate() // expect 5% base rate
       assert.isTrue(baseRate.eq(toBN(dec(5, 16))))
       const treasury_before_withdraw = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentive_before_withdraw = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before_withdraw = treasury_before_withdraw.add(liquidityIncentive_before_withdraw)
       // Attempt with maxFee > 5%
       const moreThan5pct = '50000000000000001'
       const tx1 = await borrowerOperations.withdrawEUSD(dec(1, 18), A, A, moreThan5pct, {
@@ -1279,7 +1287,9 @@ contract('BorrowerOperations', async accounts => {
       })
       assert.isTrue(tx1.receipt.status)
       const treasury_after_withdraw = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_after_withdraw.gt(treasury_before_withdraw))
+      const liquidityIncentive_after_withdraw = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_withdraw = treasury_after_withdraw.add(liquidityIncentive_after_withdraw)
+      assert.isTrue(fee_after_withdraw.gt(fee_before_withdraw))
 
       baseRate = await troveManager.baseRate() // expect 5% base rate
       assert.equal(baseRate, dec(5, 16))
@@ -1290,7 +1300,9 @@ contract('BorrowerOperations', async accounts => {
       })
       assert.isTrue(tx2.receipt.status)
       const treasury_after_withdraw_B = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_after_withdraw_B.gt(treasury_after_withdraw))
+      const liquidityIncentive_after_withdraw_B = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_withdraw_B = treasury_after_withdraw_B.add(liquidityIncentive_after_withdraw_B)
+      assert.isTrue(fee_after_withdraw_B.gt(fee_after_withdraw))
 
       baseRate = await troveManager.baseRate() // expect 5% base rate
       assert.equal(baseRate, dec(5, 16))
@@ -1317,12 +1329,13 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(tx5.receipt.status)
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const D_EUSD = await eusdToken.balanceOf(D)
       const E_EUSD = await eusdToken.balanceOf(E)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -1401,13 +1414,14 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(baseRate_3, '0')
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const D_EUSD = await eusdToken.balanceOf(D)
       const E_EUSD = await eusdToken.balanceOf(E)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("6"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("6"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -1487,11 +1501,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(lastFeeOpTime_3.gt(lastFeeOpTime_1))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -1557,11 +1572,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(baseRate_2.lt(baseRate_1))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -1635,16 +1651,17 @@ contract('BorrowerOperations', async accounts => {
         th.assertIsApproximatelyEqual(newDebt.div(toBN(dec(1, 17))), (D_debtBefore.add(withdrawal_D).add(emittedFee)).div(toBN(dec(1, 17))), 1)
 
         const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      const A_EUSD = await eusdToken.balanceOf(A)
-      const B_EUSD = await eusdToken.balanceOf(B)
-      const C_EUSD = await eusdToken.balanceOf(C)
-      const D_EUSD = await eusdToken.balanceOf(D)
-      const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+        const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+        const A_EUSD = await eusdToken.balanceOf(A)
+        const B_EUSD = await eusdToken.balanceOf(B)
+        const C_EUSD = await eusdToken.balanceOf(C)
+        const D_EUSD = await eusdToken.balanceOf(D)
+        const W_EUSD = await eusdToken.balanceOf(whale)
+        const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
-      // Check total EUSD supply
-      const totalSupply = await eusdToken.totalSupply()
-      th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+        // Check total EUSD supply
+        const totalSupply = await eusdToken.totalSupply()
+        th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
       })
     }
 
@@ -1708,11 +1725,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(D_EUSDBalanceAfter.eq(D_EUSDBalanceBefore.add(D_EUSDRequest)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -1777,11 +1795,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(D_EUSDBalanceAfter.eq(D_EUSDBalanceBefore.add(D_EUSDRequest)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2002,8 +2021,9 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(toEther(aliceDebtAfter), toEther(aliceDebtBefore).add(toBN(1)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
-      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2035,8 +2055,9 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(toEther(activePool_EUSD_After), toEther(activePool_EUSD_Before).add(toBN(10000)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
-      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2065,8 +2086,9 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(toEther(alice_EUSDTokenBalance_After).eq(toEther(alice_EUSDTokenBalance_Before).add(toBN(10000))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
-      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2127,9 +2149,10 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(repayTxB.receipt.status)
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2247,9 +2270,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(aliceDebtAfter, aliceDebtBefore.mul(toBN(9)).div(toBN(10)), toBN(dec(1, 13))) // check 9/10 debt remaining
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2287,9 +2311,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(activePool_EUSD_After, activePool_EUSD_Before.sub(aliceDebtBefore.div(toBN(10))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2327,9 +2352,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(alice_EUSDTokenBalance_After, alice_EUSDTokenBalance_Before.sub(aliceDebtBefore.div(toBN(10))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2370,9 +2396,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(aliceDebtAfter, aliceDebtBefore.mul(toBN(9)).div(toBN(10)), toBN(dec(1, 14)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2569,13 +2596,14 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(baseRate_3.lt(baseRate_2))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const D_EUSD = await eusdToken.balanceOf(D)
       const E_EUSD = await eusdToken.balanceOf(E)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("6"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("6"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2686,9 +2714,10 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(baseRate_3, '0')
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const D_EUSD = await eusdToken.balanceOf(D)
       const E_EUSD = await eusdToken.balanceOf(E)
-      const expectedTotalSupply = D_EUSD.add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = D_EUSD.add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2767,11 +2796,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(lastFeeOpTime_3.gt(lastFeeOpTime_1))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2833,11 +2863,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(baseRate_2.lt(baseRate_1))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -2912,16 +2943,17 @@ contract('BorrowerOperations', async accounts => {
         assert.isTrue(toEther(D_newDebt).eq(toEther(D_debtBefore.add(emittedFee).add(withdrawal_D))))
 
         const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      const A_EUSD = await eusdToken.balanceOf(A)
-      const B_EUSD = await eusdToken.balanceOf(B)
-      const C_EUSD = await eusdToken.balanceOf(C)
-      const D_EUSD = await eusdToken.balanceOf(D)
-      const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+        const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+        const A_EUSD = await eusdToken.balanceOf(A)
+        const B_EUSD = await eusdToken.balanceOf(B)
+        const C_EUSD = await eusdToken.balanceOf(C)
+        const D_EUSD = await eusdToken.balanceOf(D)
+        const W_EUSD = await eusdToken.balanceOf(whale)
+        const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
-      // Check total EUSD supply
-      const totalSupply = await eusdToken.totalSupply()
-      th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
+        // Check total EUSD supply
+        const totalSupply = await eusdToken.totalSupply()
+        th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
       })
     }
 
@@ -2988,11 +3020,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(D_EUSDBalanceAfter.eq(D_EUSDBalanceBefore.add(EUSDRequest_D)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3056,11 +3089,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(EUSDBalanceAfter.eq(D_EUSDBalBefore.add(EUSDRequest_D)))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(A)
       const B_EUSD = await eusdToken.balanceOf(B)
       const C_EUSD = await eusdToken.balanceOf(C)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSDBalanceAfter).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3349,9 +3383,10 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(actualNewICR.gt(CCR))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3395,6 +3430,8 @@ contract('BorrowerOperations', async accounts => {
       // Check new ICR would be > old ICR
       assert.isTrue(newICR.gt(initialICR))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
       const tx = await borrowerOperations.adjustTrove([], [], [], [], th._100pct, debtIncrease, true, alice, alice, {
         from: alice,
         value: collIncrease
@@ -3405,10 +3442,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(actualNewICR.gt(initialICR))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3437,7 +3476,9 @@ contract('BorrowerOperations', async accounts => {
 
       assert.isTrue(await th.checkRecoveryMode(contracts))
       const treasuryEUSDBalanceBefore = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSDBalanceBefore.gt(toBN('0')))
+      const liquidityIncentiveEUSDBefore = await eusdToken.balanceOf(liquidityIncentive.address)
+      const feeBefore = treasuryEUSDBalanceBefore.add(liquidityIncentiveEUSDBefore)
+      assert.isTrue(feeBefore.gt(toBN('0')))
 
       const txAlice = await borrowerOperations.adjustTrove([], [], [], [], th._100pct, toBN(dec(50, 18)), true, alice, alice, {
         from: alice,
@@ -3452,11 +3493,14 @@ contract('BorrowerOperations', async accounts => {
 
       // Check no fee was sent to staking contract
       const treasuryEUSDBalanceAfter = await eusdToken.balanceOf(treasury.address)
-      th.assertIsApproximatelyEqual(treasuryEUSDBalanceAfter, treasuryEUSDBalanceBefore.add(emittedFee), toBN(dec(1, 15)))
+      const liquidityIncentiveEUSDAfter = await eusdToken.balanceOf(liquidityIncentive.address)
+      const feeAfter = treasuryEUSDBalanceAfter.add(liquidityIncentiveEUSDAfter)
+
+      th.assertIsApproximatelyEqual(feeAfter, feeBefore.add(emittedFee), toBN(dec(1, 15)))
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSDBalanceAfter)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(feeAfter)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3646,13 +3690,17 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(aliceDebtBefore.gt(toBN('0')))
       assert.isTrue(aliceDebtBefore.eq(activePoolDebtBefore))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
       // Alice adjusts trove. Coll change, no debt change
       await borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, false, alice, alice, {
         from: alice,
         value: toBN(dec(1, 'ether'))
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD_before.eq(treasuryEUSD))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_before.eq(fee_after))
       const aliceDebtAfter = await getTroveEntireDebt(alice)
       const activePoolDebtAfter = await activePool.getEUSDDebt()
       // switch to Ether because of variable borrow rate
@@ -3695,9 +3743,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(collAfter[0], collBefore[0].add(toBN(dec(1, 18))), 10000)
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3726,12 +3775,16 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(debtBefore.gt(toBN('0')))
       assert.isTrue(collBefore[0].gt(toBN('0')))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
       // Alice adjusts trove coll and debt decrease (-0.5 ETH, -50EUSD)
       await borrowerOperations.adjustTrove([], [], [contracts.weth.address], [toBN(dec(500, 'finney'))], th._100pct, toBN(dec(50, 18)), false, alice, alice, {
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const debtAfter = await getTroveEntireDebt(alice)
       const collAfter = await getTroveEntireColl(alice)
@@ -3740,7 +3793,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3770,6 +3823,8 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(collBefore[0].gt(toBN('0')))
 
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice adjusts trove - coll increase and debt decrease (+0.5 ETH, -50EUSD)
       await borrowerOperations.adjustTrove([], [], [], [], th._100pct, toBN(dec(50, 18)), false, alice, alice, {
@@ -3777,7 +3832,9 @@ contract('BorrowerOperations', async accounts => {
         value: toBN(dec(500, 'finney'))
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const debtAfter = await getTroveEntireDebt(alice)
       const collAfter = await getTroveEntireColl(alice)
@@ -3787,7 +3844,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3828,9 +3885,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(collAfter[0], collBefore[0].sub(toBN(dec(1, 17))), 10000)
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3872,9 +3930,10 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(totalStakesAfter.eq(totalStakesBefore.add(toBN(dec(1, 18)))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3904,12 +3963,16 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(totalStakesBefore.gt(toBN('0')))
 
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove([], [], [contracts.weth.address], [toBN(dec(500, 'finney'))], th._100pct, toBN(dec(50, 18)), false, alice, alice, {
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const stakeAfter = await troveManager.getTroveStake(alice, contracts.weth.address)
       const totalStakesAfter = await th.getTotalStake(contracts, contracts.weth.address)
@@ -3919,7 +3982,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3946,13 +4009,17 @@ contract('BorrowerOperations', async accounts => {
       const alice_EUSDTokenBalance_Before = await eusdToken.balanceOf(alice)
       assert.isTrue(alice_EUSDTokenBalance_Before.gt(toBN('0')))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove([], [], [contracts.weth.address], [toBN(dec(100, 'finney'))], th._100pct, toBN(dec(10, 18)), false, alice, alice, {
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // check after
       const alice_EUSDTokenBalance_After = await eusdToken.balanceOf(alice)
@@ -3960,7 +4027,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -3998,8 +4065,9 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(alice_EUSDTokenBalance_After.eq(alice_EUSDTokenBalance_Before.add(toBN(dec(100, 18)))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = alice_EUSDTokenBalance_After.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = alice_EUSDTokenBalance_After.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4028,13 +4096,17 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(activePool_ETH_Before.gt(toBN('0')))
       assert.isTrue(activePool_RawEther_Before.gt(toBN('0')))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove([], [], [contracts.weth.address], [toBN(dec(100, 'finney'))], th._100pct, toBN(dec(10, 18)), false, alice, alice, {
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const activePool_ETH_After = await activePool.getCollateralAmount(contracts.weth.address)
       const activePool_RawEther_After = toBN(await contracts.weth.balanceOf(activePool.address))
@@ -4043,7 +4115,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4084,9 +4156,10 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(activePool_RawEther_After.eq(activePool_ETH_Before.add(toBN(dec(1, 18)))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4113,6 +4186,8 @@ contract('BorrowerOperations', async accounts => {
       const activePool_EUSDDebt_Before = await activePool.getEUSDDebt()
       assert.isTrue(activePool_EUSDDebt_Before.gt(toBN('0')))
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice adjusts trove - coll increase and debt decrease
       await borrowerOperations.adjustTrove([], [], [], [], th._100pct, toBN(dec(30, 18)), false, alice, alice, {
@@ -4120,14 +4195,16 @@ contract('BorrowerOperations', async accounts => {
         value: toBN(dec(1, 'ether'))
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const activePool_EUSDDebt_After = await activePool.getEUSDDebt()
       assert.isTrue(activePool_EUSDDebt_After.eq(activePool_EUSDDebt_Before.sub(toBN(dec(30, 18)))))
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4164,9 +4241,10 @@ contract('BorrowerOperations', async accounts => {
       th.assertIsApproximatelyEqual(activePool_EUSDDebt_After, activePool_EUSDDebt_Before.add(toBN(dec(100, 18))))
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
       const A_EUSD = await eusdToken.balanceOf(alice)
       const W_EUSD = await eusdToken.balanceOf(whale)
-      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4354,7 +4432,7 @@ contract('BorrowerOperations', async accounts => {
       await eusdToken.transfer(alice, dec(300, 18), {
         from: bob
       })
-
+      console.log("TCR", (await th.getTCR(contracts)).toString())
       assert.isFalse(await th.checkRecoveryMode(contracts))
 
       await assertRevert(
@@ -4496,20 +4574,24 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
       const A_debt = await troveManager.getTroveDebt(alice)
       // Alice attempts to close trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const aliceCollAfter = await getTroveEntireColl(alice)
       assert.isTrue(aliceCollAfter.length == 0)
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4543,13 +4625,17 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice attempts to close trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const aliceCollAfter = await getTroveEntireColl(alice)
       assert.isTrue(th.isZeroArray(aliceCollAfter))
@@ -4557,7 +4643,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4592,13 +4678,17 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice attempts to close trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const stakeAfter = ((await troveManager.getTroveStake(alice, contracts.weth.address))).toString()
       assert.equal(stakeAfter, '0')
@@ -4606,7 +4696,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4690,16 +4780,18 @@ contract('BorrowerOperations', async accounts => {
       // console.log("Price raised to 200")
       await priceFeed.setPrice(dec(200, 18))
 
-      // console.log("TCR")
-      // console.log((await th.getTCR(contracts)).toString())
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice closes trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // Check Alice's pending reward snapshots are zero
       const L_ETH_Snapshot_A_afterAliceCloses = await troveManager.getRewardSnapshotColl(alice, contracts.weth.address)
@@ -4712,7 +4804,7 @@ contract('BorrowerOperations', async accounts => {
       const B_EUSD = await eusdToken.balanceOf(bob)
       const C_EUSD = await eusdToken.balanceOf(carol)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4747,6 +4839,8 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Close the trove
       await borrowerOperations.closeTrove({
@@ -4754,7 +4848,9 @@ contract('BorrowerOperations', async accounts => {
       })
 
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       const status_After = await troveManager.getTroveStatus(alice)
 
@@ -4763,7 +4859,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4804,13 +4900,17 @@ contract('BorrowerOperations', async accounts => {
       })
 
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Close the trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // Check after
       const activePool_ETH_After = await activePool.getCollateralAmount(contracts.weth.address)
@@ -4820,7 +4920,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4859,13 +4959,17 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Close the trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // Check after
       const activePool_Debt_After = (await activePool.getEUSDDebt()).toString()
@@ -4873,7 +4977,7 @@ contract('BorrowerOperations', async accounts => {
 
       const A_EUSD = await eusdToken.balanceOf(alice)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4920,13 +5024,17 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // Alice closes trove
       await borrowerOperations.closeTrove({
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // Check stake and total stakes get updated
       const aliceStakeAfter = await troveManager.getTroveStake(alice, contracts.weth.address)
@@ -4938,7 +5046,7 @@ contract('BorrowerOperations', async accounts => {
       const A_EUSD = await eusdToken.balanceOf(alice)
       const B_EUSD = await eusdToken.balanceOf(bob)
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+      const expectedTotalSupply = A_EUSD.add(B_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -4972,12 +5080,16 @@ contract('BorrowerOperations', async accounts => {
           from: dennis
         })
         const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+        const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+        const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
         let tx = await borrowerOperations.closeTrove({
           from: alice
         })
         const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-        assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+        const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+        const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+        assert.isTrue(fee_after.gt(fee_before))
 
         const alice_ETHBalance_After = toBN(await web3.eth.getBalance(alice))
         const balanceDiff = alice_ETHBalance_After.sub(alice_ETHBalance_Before).add(th.getGasFee(tx))
@@ -4985,7 +5097,7 @@ contract('BorrowerOperations', async accounts => {
 
         const A_EUSD = await eusdToken.balanceOf(alice)
         const D_EUSD = await eusdToken.balanceOf(dennis)
-        const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+        const expectedTotalSupply = A_EUSD.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
         // Check total EUSD supply
         const totalSupply = await eusdToken.totalSupply()
@@ -5017,6 +5129,8 @@ contract('BorrowerOperations', async accounts => {
         from: dennis
       })
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       const alice_EUSDBalance_Before = await eusdToken.balanceOf(alice)
       assert.isTrue(alice_EUSDBalance_Before.gt(toBN('0')))
@@ -5026,14 +5140,16 @@ contract('BorrowerOperations', async accounts => {
         from: alice
       })
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
 
       // check alice EUSD balance after
       const alice_EUSDBalance_After = await eusdToken.balanceOf(alice)
       th.assertIsApproximatelyEqual(alice_EUSDBalance_After, alice_EUSDBalance_Before.sub(aliceDebt.sub(EUSD_GAS_COMPENSATION)), _1e14BN)
 
       const D_EUSD = await eusdToken.balanceOf(dennis)
-      const expectedTotalSupply = alice_EUSDBalance_After.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+      const expectedTotalSupply = alice_EUSDBalance_After.add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(fee_after)
 
       // Check total EUSD supply
       const totalSupply = await eusdToken.totalSupply()
@@ -5084,6 +5200,8 @@ contract('BorrowerOperations', async accounts => {
       // price drops to 1ETH:100EUSD, reducing Carol's ICR below MCR
       await priceFeed.setPrice(dec(105, 18));
       const treasuryEUSD_before = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before = treasuryEUSD_before.add(liquidityIncentiveEUSD_before)
 
       // liquidate Carol's Trove, Alice and Bob earn rewards.
       const liquidationTx = await troveManager.liquidate(carol, {
@@ -5091,12 +5209,15 @@ contract('BorrowerOperations', async accounts => {
       });
       const [liquidatedDebt_C, liquidatedColls_C, gasComps_C, eusdGas_C] = th.getEmittedLiquidationValues(liquidationTx)
       const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD.gt(treasuryEUSD_before))
+      const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after = treasuryEUSD.add(liquidityIncentiveEUSD)
+      assert.isTrue(fee_after.gt(fee_before))
+
       let A_EUSD = await eusdToken.balanceOf(alice)
       let B_EUSD = await eusdToken.balanceOf(bob)
       let C_EUSD = await eusdToken.balanceOf(carol)
       let W_EUSD = await eusdToken.balanceOf(whale)
-      let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(eusdGas_C).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+      let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(eusdGas_C).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(fee_after)
 
       // Check total EUSD supply
       let totalSupply = await eusdToken.totalSupply()
@@ -5135,6 +5256,8 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(pendingCollReward_A.gt('0'))
       assert.isTrue(pendingDebtReward_A.gt('0'))
       const treasuryEUSD_before_alice = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before_alice = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before_alice = treasuryEUSD_before_alice.add(liquidityIncentiveEUSD_before_alice)
 
       // Close Alice's trove. Alice's pending rewards should be removed from the DefaultPool when she close.
       await borrowerOperations.closeTrove({
@@ -5142,13 +5265,16 @@ contract('BorrowerOperations', async accounts => {
       })
 
       const treasuryEUSD_after_alice = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD_after_alice.gt(treasuryEUSD_before_alice))
+      const liquidityIncentiveEUSD_after_alice = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_alice = treasuryEUSD_after_alice.add(liquidityIncentiveEUSD_after_alice)
+      assert.isTrue(fee_after_alice.gt(fee_before_alice))
+
       A_EUSD = await eusdToken.balanceOf(alice)
       B_EUSD = await eusdToken.balanceOf(bob)
       C_EUSD = await eusdToken.balanceOf(carol)
       W_EUSD = await eusdToken.balanceOf(whale)
       let O_EUSD = await eusdToken.balanceOf(owner)
-      expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD_after_alice)
+      expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(fee_after_alice)
 
       // Check total EUSD supply
       totalSupply = await eusdToken.totalSupply()
@@ -5169,12 +5295,16 @@ contract('BorrowerOperations', async accounts => {
       const pendingCollReward_B = (await troveManager.getPendingCollReward(bob))[0][0] //amounts, 0th index
       const pendingDebtReward_B = await troveManager.getPendingEUSDDebtReward(bob)
       const treasuryEUSD_before_bob = await eusdToken.balanceOf(treasury.address)
+      const liquidityIncentiveEUSD_before_bob = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_before_bob = treasuryEUSD_before_bob.add(liquidityIncentiveEUSD_before_bob)
       // Close Bob's trove. Expect DefaultPool coll and debt to drop to 0, since closing pulls his rewards out.
       await borrowerOperations.closeTrove({
         from: bob
       })
       const treasuryEUSD_after_bob = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasuryEUSD_after_bob.gt(treasuryEUSD_before_bob))
+      const liquidityIncentiveEUSD_after_bob = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_after_bob = treasuryEUSD_after_bob.add(liquidityIncentiveEUSD_after_bob)
+      assert.isTrue(fee_after_bob.gt(fee_before_bob))
 
       const defaultPool_ETH_afterBobCloses = await defaultPool.getCollateralAmount(contracts.weth.address)
       const defaultPool_EUSDDebt_afterBobCloses = await defaultPool.getEUSDDebt()
@@ -5187,7 +5317,7 @@ contract('BorrowerOperations', async accounts => {
       C_EUSD = await eusdToken.balanceOf(carol)
       W_EUSD = await eusdToken.balanceOf(whale)
       O_EUSD = await eusdToken.balanceOf(owner)
-      expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD_after_bob)
+      expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(fee_after_bob)
 
       // Check total EUSD supply
       totalSupply = await eusdToken.totalSupply()
@@ -5835,7 +5965,9 @@ contract('BorrowerOperations', async accounts => {
 
       // Check treasury EUSD balance before == 0
       const treasury_EUSDBalance_Before = await eusdToken.balanceOf(treasury.address)
-      assert.equal(treasury_EUSDBalance_Before, '0')
+      const liquidityIncentive_EUSDBalance_Before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_EUSDBalance_Before = treasury_EUSDBalance_Before.add(liquidityIncentive_EUSDBalance_Before)
+      assert.equal(fee_EUSDBalance_Before, '0')
 
       await openTrove({
         extraEUSDAmount: toBN(dec(10000, 18)),
@@ -5888,7 +6020,9 @@ contract('BorrowerOperations', async accounts => {
 
       // Check treasury EUSD balance after has increased
       const treasury_EUSDBalance_After = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_EUSDBalance_After.gt(treasury_EUSDBalance_Before))
+      const liquidityIncentive_EUSDBalance_After = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_EUSDBalance_After = treasury_EUSDBalance_After.add(liquidityIncentive_EUSDBalance_After)
+      assert.isTrue(fee_EUSDBalance_After.gt(fee_EUSDBalance_Before))
     })
 
     if (!withProxy) { // TODO: use rawLogs instead of logs
@@ -5960,7 +6094,9 @@ contract('BorrowerOperations', async accounts => {
 
       // Check treasury Staking contract balance before == 0
       const treasury_EUSDBalance_Before = await eusdToken.balanceOf(treasury.address)
-      assert.equal(treasury_EUSDBalance_Before, '0')
+      const liquidityIncentive_EUSDBalance_Before = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_EUSDBalance_Before = treasury_EUSDBalance_Before.add(liquidityIncentive_EUSDBalance_Before)
+      assert.equal(fee_EUSDBalance_Before, '0')
 
       await openTrove({
         extraEUSDAmount: toBN(dec(10000, 18)),
@@ -6011,7 +6147,9 @@ contract('BorrowerOperations', async accounts => {
 
       // Check treasury EUSD balance has increased
       const treasury_EUSDBalance_After = await eusdToken.balanceOf(treasury.address)
-      assert.isTrue(treasury_EUSDBalance_After.gt(treasury_EUSDBalance_Before))
+      const liquidityIncentive_EUSDBalance_After = await eusdToken.balanceOf(liquidityIncentive.address)
+      const fee_EUSDBalance_After = treasury_EUSDBalance_After.add(liquidityIncentive_EUSDBalance_After)
+      assert.isTrue(fee_EUSDBalance_After.gt(fee_EUSDBalance_Before))
 
       // Check D's EUSD balance now equals their requested EUSD
       const EUSDBalance_D = await eusdToken.balanceOf(D)
@@ -6451,7 +6589,7 @@ contract('BorrowerOperations', async accounts => {
 
       assert.isTrue(L_ETH.gt(toBN('0')))
       assert.isTrue(L_EUSD.gt(toBN('0')))
-
+      // console.log("TCR", (await th.getTCR(contracts)).toString())
       // Bob opens trove
       await openTrove({
         extraEUSDAmount: toBN(dec(10000, 18)),

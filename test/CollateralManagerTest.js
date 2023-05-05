@@ -52,6 +52,7 @@ contract('newBorrowerOperations', async accounts => {
     let defaultPool
     let borrowerOperations
     let treasury
+    let liquidityIncentive
 
     let contracts
 
@@ -105,6 +106,7 @@ contract('newBorrowerOperations', async accounts => {
             weth = contracts.weth
             steth = contracts.steth
             treasury = ERDContracts.treasury
+            liquidityIncentive = ERDContracts.liquidityIncentive
             communityIssuance = ERDContracts.communityIssuance
 
             var params = {
@@ -120,7 +122,7 @@ contract('newBorrowerOperations', async accounts => {
             EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
             MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
-            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             await priceFeedSTETH.setPrice(dec(1, 18))
             tokensToOracles.set(contracts.weth.address, priceFeedETH);
             tokensToOracles.set(contracts.steth.address, priceFeedSTETH);
@@ -190,7 +192,7 @@ contract('newBorrowerOperations', async accounts => {
             })
             await assertRevert(openTxAPromise, "BorrowerOps: Collateral does not active or is paused")
 
-            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             // 1 ETH : 1 STETH
             await priceFeedSTETH.setPrice(toBN(dec(1, 18)))
 

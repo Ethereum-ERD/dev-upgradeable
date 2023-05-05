@@ -36,7 +36,7 @@ contract('Gas cost tests', async accounts => {
 
   beforeEach(async () => {
     contracts = await deploymentHelper.deployERDCore()
-    const ERDContracts = await deploymentHelper.deployERDContracts(bountyAddress, lpRewardsAddress)
+    const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = contracts.priceFeedETH
     eusdToken = contracts.eusdToken
@@ -49,11 +49,10 @@ contract('Gas cost tests', async accounts => {
     hintHelpers = contracts.hintHelpers
 
     communityIssuance = ERDContracts.communityIssuance
-    lockupContractFactory = ERDContracts.lockupContractFactory
+    treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
 
-    await deploymentHelper.connectERDContracts(ERDContracts)
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-    await deploymentHelper.connectERDContractsToCore(ERDContracts, contracts)
   })
 
   // --- liquidateTroves RECOVERY MODE - pure redistribution ---

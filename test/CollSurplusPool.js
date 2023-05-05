@@ -24,6 +24,7 @@ contract('CollSurplusPool', async accounts => {
   let collSurplusPool
   let weth
   let treasury
+  let liquidityIncentive
 
   let contracts
 
@@ -49,6 +50,7 @@ contract('CollSurplusPool', async accounts => {
     weth = contracts.weth;
     collateralManager = contracts.collateralManager
     treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
   })
@@ -63,7 +65,7 @@ contract('CollSurplusPool', async accounts => {
     const { collateral: B_coll, netDebt: B_netDebt } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: B } })
 
     await openTrove({ extraEUSDAmount: B_netDebt.add(toBN(dec(500, 18))), extraParams: { from: A, value: dec(3000, 'ether') } })
-    
+
     // skip bootstrapping phase
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_WEEK * 2, web3.currentProvider)
     await contracts.troveManager.setBaseRate(toBN(dec(1, 16)))

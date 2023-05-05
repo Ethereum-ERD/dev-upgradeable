@@ -52,6 +52,7 @@ contract('BorrowerOperations', async accounts => {
     let defaultPool
     let borrowerOperations
     let treasury
+    let liquidityIncentive
     let weth
     let steth
     let tokenA
@@ -127,6 +128,7 @@ contract('BorrowerOperations', async accounts => {
             steth = contracts.steth
 
             treasury = ERDContracts.treasury
+            liquidityIncentive = ERDContracts.liquidityIncentive
             communityIssuance = ERDContracts.communityIssuance
 
             EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
@@ -137,71 +139,85 @@ contract('BorrowerOperations', async accounts => {
                 name: "Token A",
                 symbol: "T.A",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             let result = await deploymentHelper.deployExtraCollateral(contracts, paramsA)
             tokenA = result.token
             priceFeedA = result.priceFeed
+            eTokenA = result.eToken
 
             const paramsB = {
                 name: "Token B",
                 symbol: "T.B",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsB)
             tokenB = result.token
             priceFeedB = result.priceFeed
+            eTokenB = result.eToken
 
             const paramsC = {
                 name: "Token C",
                 symbol: "T.C",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsC)
             tokenC = result.token
             priceFeedC = result.priceFeed
+            eTokenC = result.eToken
 
             const paramsD = {
                 name: "Token D",
                 symbol: "T.D",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsD)
             tokenD = result.token
             priceFeedD = result.priceFeed
+            eTokenD = result.eToken
 
             const paramsRisky = {
                 name: "Risky Token",
                 symbol: "T.R",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsRisky)
             tokenRisky = result.token
             priceFeedRisky = result.priceFeed
+            eTokenRisky = result.eToken
 
             const paramsSuperRisky = {
                 name: "Super Risky Token",
                 symbol: "T.SR",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsSuperRisky)
             tokenSuperRisky = result.token
             priceFeedSuperRisky = result.priceFeed
+            eTokenSuperRisky = result.eToken
 
             const paramsStableCoin = {
                 name: "USD Coin",
                 symbol: "USDC",
                 decimals: 18,
-                price: toBN(dec(1, 18))
+                price: toBN(dec(1, 18)),
+                ratio: toBN(dec(1, 18))
             }
             result = await deploymentHelper.deployExtraCollateral(contracts, paramsStableCoin)
             stableCoin = result.token
             priceFeedStableCoin = result.priceFeed
+            eTokenStableCoin = result.eToken
         })
 
         // --- openTrove() --- 
@@ -372,13 +388,17 @@ contract('BorrowerOperations', async accounts => {
                     from: bob
                 })
                 const treasury_before = await eusdToken.balanceOf(treasury.address)
+                const liquidityIncentiveEUSD_before = await eusdToken.balanceOf(liquidityIncentive.address)
+                const fee_before = treasury_before.add(liquidityIncentiveEUSD_before)
 
                 // Attempt to adjust with wrong order collateral and with new collateral type
                 await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, 0, false, alice, alice, {
                     from: alice
                 })
                 const treasury_EUSD = await eusdToken.balanceOf(treasury.address)
-                assert.isTrue(treasury_EUSD.eq(treasury_before))
+                const liquidityIncentive_EUSD = await eusdToken.balanceOf(liquidityIncentive.address)
+                const fee_after = treasury_EUSD.add(liquidityIncentive_EUSD)
+                assert.isTrue(fee_after.eq(fee_before))
                 const aliceTokens = await getTroveEntireTokens(alice)
                 const aliceColls = await getTroveEntireColl(alice)
                 const aliceDebt = await getTroveEntireDebt(alice)
@@ -395,11 +415,15 @@ contract('BorrowerOperations', async accounts => {
                 const aliceDebt2 = await getTroveEntireDebt(alice)
                 th.assertIsApproximatelyEqual(aliceDebt2, toBN(dec(21011525, 14)), _1e14BN) // With interests & extra fee 
                 const treasury_before_adjust = await eusdToken.balanceOf(treasury.address)
+                const liquidityIncentive_before_adjust = await eusdToken.balanceOf(liquidityIncentive.address)
+                const fee_before_adjust = treasury_before_adjust.add(liquidityIncentive_before_adjust)
                 await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(1005, 17), false, alice, alice, {
                     from: alice
                 })
                 const treasury_after = await eusdToken.balanceOf(treasury.address)
-                assert.isTrue(treasury_after.gt(treasury_before_adjust))
+                const liquidityIncentive_after = await eusdToken.balanceOf(liquidityIncentive.address)
+                const fee_after_adjust = treasury_after.add(liquidityIncentive_after)
+                assert.isTrue(fee_after_adjust.gt(fee_after))
                 const aliceDebt3 = await getTroveEntireDebt(alice)
                 th.assertIsApproximatelyEqual(aliceDebt3, toBN(dec(20006525, 14)), _1e14BN) // With interests
 
@@ -616,9 +640,10 @@ contract('BorrowerOperations', async accounts => {
                     from: alice
                 })
                 const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+                const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
                 const A_EUSD = await eusdToken.balanceOf(alice)
                 const W_EUSD = await eusdToken.balanceOf(whale)
-                const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+                const expectedTotalSupply = A_EUSD.add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
                 // Check total EUSD supply
                 const totalSupply = await eusdToken.totalSupply()
@@ -640,7 +665,7 @@ contract('BorrowerOperations', async accounts => {
                 )
             })
         })
-        return
+
         describe('check VC, TCR, balances multi collateral', async () => {
             it("Open two multi collateral trove, check if collateral is correct", async () => {
                 await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
@@ -880,54 +905,64 @@ contract('BorrowerOperations', async accounts => {
                     name: "Token E",
                     symbol: "T.E",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 let result = await deploymentHelper.deployExtraCollateral(contracts, paramsE)
                 let tokenE = result.token
                 let priceFeedE = result.priceFeed
+                let eTokenE = result.eToken
 
                 const paramsF = {
                     name: "Token F",
                     symbol: "T.F",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenF = result.token
                 let priceFeedF = result.priceFeed
+                let eTokenF = result.eToken
 
                 const paramsG = {
                     name: "Token G",
                     symbol: "T.G",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsG)
                 let tokenG = result.token
                 let priceFeedG = result.priceFeed
+                let eTokenG = result.eToken
 
                 const paramsH = {
                     name: "Token H",
                     symbol: "T.H",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsH)
                 let tokenH = result.token
                 let priceFeedH = result.priceFeed
+                let eTokenH = result.eToken
 
                 const paramsI = {
                     name: "Token I",
                     symbol: "T.I",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsI)
                 let tokenI = result.token
                 let priceFeedI = result.priceFeed
+                let eTokenI = result.eToken
 
                 // let accounts = [A, B, C, D, E, F, G, H]
-                let accounts = [A, B, C, D, E, F]
+                let accounts = [A, B, C, D]
                 // let tokens = [contracts.weth, contracts.steth, tokenA, tokenB, tokenC, tokenD, tokenE, tokenF, tokenG, tokenH, tokenI, tokenRisky, tokenSuperRisky, stableCoin]
                 let tokens = [tokenA, tokenB, tokenC, tokenD, tokenRisky, tokenSuperRisky, stableCoin, tokenE, tokenF, tokenG, tokenH, tokenI]
                 await openTrove({
@@ -973,13 +1008,14 @@ contract('BorrowerOperations', async accounts => {
             it("Basic get fee flat open trove before and after", async () => {
                 // skip fee bootstrap period 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token
@@ -1018,13 +1054,14 @@ contract('BorrowerOperations', async accounts => {
                 // skip fee bootstrap period. 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
 
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token
@@ -1068,13 +1105,14 @@ contract('BorrowerOperations', async accounts => {
                 // skip fee bootstrap period. 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
 
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token
@@ -1116,13 +1154,14 @@ contract('BorrowerOperations', async accounts => {
                 // skip fee bootstrap period. 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
 
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token
@@ -1152,13 +1191,14 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("During bootstrapping period, max fee is 1%", async () => {
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token
@@ -1205,13 +1245,14 @@ contract('BorrowerOperations', async accounts => {
                 // skip fee bootstrap period. 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
 
-                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+                await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
                 await contracts.priceFeedSTETH.setPrice(toBN(dec(1, 18)))
                 const paramsF = {
                     name: "Token A",
                     symbol: "T.A",
                     decimals: 18,
-                    price: toBN(dec(1, 18))
+                    price: toBN(dec(1, 18)),
+                    ratio: toBN(dec(1, 18))
                 }
                 result = await deploymentHelper.deployExtraCollateral(contracts, paramsF)
                 let tokenA = result.token

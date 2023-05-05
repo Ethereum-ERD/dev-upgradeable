@@ -60,6 +60,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     collateralManager = contracts.collateralManager
 
     treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
     communityIssuance = ERDContracts.communityIssuance
 
     EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()

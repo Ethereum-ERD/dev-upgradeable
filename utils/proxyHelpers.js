@@ -183,8 +183,8 @@ class TroveManagerProxy extends Proxy {
     return this.proxyFunctionWithUser('getTroveColl', user)
   }
 
-  async getTroveColl(...params) {
-    return this.proxyFunctionWithUser('getTroveColl', params)
+  async getTroveColls(...params) {
+    return this.proxyFunctionWithUser('getTroveColls', params)
   }
 
   async totalStakes(user) {

@@ -53,7 +53,7 @@ contract('ActivePool', async accounts => {
     const dumbContractAddress = (await NonPayable.new()).address
     tokenAddress = (await ERC20Token.new("STETH", "stake ETH", 18)).address
     await activePool.initialize()
-    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
+    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
   it('getETH(): gets the recorded ETH balance', async () => {

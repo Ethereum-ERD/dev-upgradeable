@@ -90,6 +90,13 @@ async function main() {
     console.log("treasury deployed to:", treasury.address);
     saveData("treasury", treasury.address);
 
+    // deploy LiquidityIncentive
+    const LiquidityIncentive = await ethers.getContractFactory("LiquidityIncentive");
+    const liquidityIncentive = await upgrades.deployProxy(LiquidityIncentive);
+    await liquidityIncentive.deployed();
+    console.log("liquidityIncentive deployed to:", liquidityIncentive.address);
+    saveData("liquidityIncentive", liquidityIncentive.address);
+
     // deploy TroveDebt
     const TroveDebt = await ethers.getContractFactory("TroveDebt");
     const troveDebt = await upgrades.deployProxy(TroveDebt);
@@ -141,7 +148,8 @@ async function main() {
         troveManagerRedemptions.address,
         stabilityPool.address,
         borrowerOperations.address,
-        treasury.address
+        treasury.address,
+        liquidityIncentive.address
     ]);
     await eusdToken.deployed();
     console.log("eusdToken deployed to:", eusdToken.address);
@@ -174,6 +182,20 @@ async function main() {
     // await stETHOracle.deployed();
     // console.log("stETHOracle deployed to:", stETHOracle.address);
     // saveData("stETHOracle", stETHOracle.address);
+
+    // deploy EToken - eETH
+    const EETH = await ethers.getContractFactory("EToken");
+    const eETH = await upgrades.deployProxy(EETH, ["ERD Wrapped ETH", "eETH"]);
+    await eETH.deployed();
+    console.log("eETH deployed to:", eETH.address);
+    saveData("eETH", eETH.address);
+
+    // deploy EToken - eSTETH
+    const ESTETH = await ethers.getContractFactory("EToken");
+    const eSTETH = await upgrades.deployProxy(ESTETH, ["ERD WErapped StETH", "eStETH"]);
+    await eSTETH.deployed();
+    console.log("eSTETH deployed to:", eSTETH.address);
+    saveData("eSTETH", eSTETH.address);
 }
 
 main().catch((error) => {

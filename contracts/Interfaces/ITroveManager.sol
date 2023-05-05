@@ -35,24 +35,18 @@ interface ITroveManager is IERDBase {
 
     function getCollateralSupport() external view returns (address[] memory);
 
-    function getCollateralParams(address _collateral)
-        external
-        view
-        returns (DataTypes.CollateralParams memory);
-
     function getTroveNormalizedDebt() external view returns (uint256);
 
     function getTroveOwnersCount() external view returns (uint256);
 
-    function getTroveFromTroveOwnersArray(uint256 _index)
-        external
-        view
-        returns (address);
+    function getTroveFromTroveOwnersArray(
+        uint256 _index
+    ) external view returns (address);
 
-    function getCurrentICR(address _borrower, uint256 _price)
-        external
-        view
-        returns (uint256);
+    function getCurrentICR(
+        address _borrower,
+        uint256 _price
+    ) external view returns (uint256);
 
     function liquidate(address _borrower) external;
 
@@ -74,29 +68,28 @@ interface ITroveManager is IERDBase {
 
     function updateTroveRewardSnapshots(address _borrower) external;
 
-    function addTroveOwnerToArray(address _borrower)
-        external
-        returns (uint256 index);
+    function addTroveOwnerToArray(
+        address _borrower
+    ) external returns (uint256 index);
 
     function applyPendingRewards(address _borrower) external;
 
-    function getPendingCollReward(address _borrower)
+    function getPendingCollReward(
+        address _borrower
+    )
         external
         view
-        returns (
-            uint256[] memory,
-            uint256[] memory,
-            address[] memory
-        );
+        returns (uint256[] memory, uint256[] memory, address[] memory);
 
-    function getPendingEUSDDebtReward(address _borrower)
-        external
-        view
-        returns (uint256);
+    function getPendingEUSDDebtReward(
+        address _borrower
+    ) external view returns (uint256);
 
     function hasPendingRewards(address _borrower) external view returns (bool);
 
-    function getEntireDebtAndColl(address _borrower)
+    function getEntireDebtAndColl(
+        address _borrower
+    )
         external
         view
         returns (
@@ -126,10 +119,9 @@ interface ITroveManager is IERDBase {
 
     function getBorrowingFee(uint256 EUSDDebt) external view returns (uint256);
 
-    function getBorrowingFeeWithDecay(uint256 _EUSDDebt)
-        external
-        view
-        returns (uint256);
+    function getBorrowingFeeWithDecay(
+        uint256 _EUSDDebt
+    ) external view returns (uint256);
 
     function decayBaseRateFromBorrowing() external;
 
@@ -137,65 +129,52 @@ interface ITroveManager is IERDBase {
 
     function getTroveDebt(address _borrower) external view returns (uint256);
 
-    function getTroveColl(address _borrower, address _collateral)
-        external
-        view
-        returns (uint256, uint256);
+    function getTroveColl(
+        address _borrower,
+        address _collateral
+    ) external view returns (uint256, uint256);
 
-    function getTroveColls(address _borrower)
+    function getTroveColls(
+        address _borrower
+    )
         external
         view
-        returns (
-            uint256[] memory,
-            uint256[] memory,
-            address[] memory
-        );
+        returns (uint256[] memory, uint256[] memory, address[] memory);
 
-    function getTroveStake(address _borrower, address _collateral)
-        external
-        view
-        returns (uint256);
+    function getTroveStake(
+        address _borrower,
+        address _collateral
+    ) external view returns (uint256);
 
-    function getTroveStakes(address _borrower)
-        external
-        view
-        returns (
-            uint256[] memory,
-            uint256,
-            address[] memory
-        );
+    function getTroveStakes(
+        address _borrower
+    ) external view returns (uint256[] memory, uint256, address[] memory);
 
-    function getRewardSnapshotColl(address _borrower, address _collateral)
-        external
-        view
-        returns (uint256);
+    function getRewardSnapshotColl(
+        address _borrower,
+        address _collateral
+    ) external view returns (uint256);
 
-    function getRewardSnapshotEUSD(address _borrower, address _collateral)
-        external
-        view
-        returns (uint256);
+    function getRewardSnapshotEUSD(
+        address _borrower,
+        address _collateral
+    ) external view returns (uint256);
 
     function setTroveStatus(address _borrower, uint256 num) external;
 
-    function updateTroveColl(
+    function increaseTroveDebt(
         address _borrower,
-        address[] memory _collaterals,
-        uint256[] memory _amounts
-    ) external;
+        uint256 _debtIncrease
+    ) external returns (uint256);
 
-    function updateTroveCollTMR(
+    function decreaseTroveDebt(
         address _borrower,
-        address[] memory _collaterals,
-        uint256[] memory _amounts
-    ) external;
+        uint256 _collDecrease
+    ) external returns (uint256);
 
-    function increaseTroveDebt(address _borrower, uint256 _debtIncrease)
-        external
-        returns (uint256);
+    function setFactor(uint256 _factor) external;
 
-    function decreaseTroveDebt(address _borrower, uint256 _collDecrease)
-        external
-        returns (uint256);
+    function getFactor() external view returns (uint256);
 
     function getTCR(uint256 _price) external view returns (uint256);
 
@@ -210,14 +189,9 @@ interface ITroveManager is IERDBase {
         uint256[] memory collAmounts
     ) external;
 
-    function getCurrentTroveAmounts(address _borrower)
-        external
-        view
-        returns (
-            uint256[] memory,
-            address[] memory,
-            uint256
-        );
+    function getCurrentTroveAmounts(
+        address _borrower
+    ) external view returns (uint256[] memory, address[] memory, uint256);
 
     function redistributeDebtAndColl(
         IActivePool,

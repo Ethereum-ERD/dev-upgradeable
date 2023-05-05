@@ -499,13 +499,13 @@ contract('SortedTroves', async accounts => {
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
       // contracts.borrowerOperations = await SortedTrovesBOTester.new()
-      contracts.eusdToken = await EUSDToken.new(
-        contracts.troveManager.address,
-        contracts.troveManagerLiquidations.address,
-        contracts.troveManagerRedemptions.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
-      )
+      // contracts.eusdToken = await EUSDToken.new(
+      //   contracts.troveManager.address,
+      //   contracts.troveManagerLiquidations.address,
+      //   contracts.troveManagerRedemptions.address,
+      //   contracts.stabilityPool.address,
+      //   contracts.borrowerOperations.address
+      // )
       const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
 
       sortedTrovesTester = await SortedTrovesTester.new()
@@ -520,29 +520,33 @@ contract('SortedTroves', async accounts => {
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
       // Deploy new trove manager
-      await collateralManager.addCollateral(contracts.steth.address, contracts.priceFeedSTETH.address)
+      await collateralManager.addCollateral(contracts.steth.address, contracts.priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
       await contracts.priceFeedSTETH.setPrice(dec(1, 18))
 
       const paramsRisky = {
         name: "Risky Token",
         symbol: "T.R",
         decimals: 18,
-        price: dec(1, 18)
+        price: dec(1, 18),
+        ratio: toBN(dec(1, 18))
       }
       let result = await deploymentHelper.deployExtraCollateral(contracts, paramsRisky)
       tokenRisky = result.token
       priceFeedRisky = result.priceFeed
+      eTokenRisky = result.eToken
 
 
       const paramsStableCoin = {
         name: "USD Coin",
         symbol: "USDC",
         decimals: 18,
-        price: dec(1, 18)
+        price: dec(1, 18),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsStableCoin)
       stableCoin = result.token
       priceFeedStableCoin = result.priceFeed
+      eTokenStableCoin = result.eToken
 
 
       await contracts.priceFeedETH.setPrice(dec(100, 18))

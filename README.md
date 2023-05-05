@@ -248,13 +248,15 @@ The six main contracts - `BorrowerOperations.sol`, `TroveManager.sol`, `Collater
 
 `TroveInterestRateStrategy.sol` - Variable interest rate strategy for trove's debt.
 
-`TroveLofic.sol` - Variable interest compute for trove's debt. When the debt changes(increase or decrease), the interest accumulated by Trove from last operation to the present will be mint to the `Treasury` .
+`TroveLogic.sol` - Variable interest compute for trove's debt. When the debt changes(increase or decrease), the interest accumulated by Trove from last operation to the present will be mint to the `Treasury` .
 
 `ERDBase.sol` - Both TroveManager/TroveManagerLiquidations/TroveManagerRedemptions and BorrowerOperations inherit from the parent contract ERDBase, which contains global constants and some common functions.
 
 `DataTypes.sol` - All variable structure definitions in the system are in this lib.
 
 `StabilityPool.sol` - contains functionality for Stability Pool operations: making deposits, and withdrawing compounded deposits and accumulated ETH/LSDs and other gains. Holds the EUSD Stability Pool deposits, and the ETH/LSDs gains for depositors, from liquidations.
+
+`EToken.sol` - the wrapped token contract, certificate of deposit on behalf of collateral. The balance of the wrapped `EToken` is the user's collateral amount in system. Users can `transfer` their EToken, but must ensure that the `ICR` is greater than the `CCR`. The contract mints(deposit collateral), burns(withdrawl collateral/ close Trove) and transfers wrapped tokens.
 
 `EUSDToken.sol` - the stablecoin token contract, which implements the ERC20 fungible token standard in conjunction with EIP-2612 and a mechanism that blocks (accidental) transfers to addresses like the StabilityPool and address(0) that are not supposed to receive funds through direct transfers. The contract mints, burns and transfers EUSD tokens.
 
@@ -292,7 +294,7 @@ The fallback logic distinguishes 3 different failure modes for Chainlink and 2 f
 
 There is also a return condition `bothOraclesLiveAndUnbrokenAndSimilarPrice` which is a function returning true if both oracles are live and not broken, and the percentual difference between the two reported prices is below 5%.
 
-The current `PriceFeed.sol` contract has an external `fetchPrice()` function that is called by core ERD functions which require a current ETH:USD price.  `fetchPrice()` calls each oracle's proxy, asserts on the responses, and converts returned prices to 18 digits.
+The current `PriceFeed.sol` contract has an external `fetchPrice()` function that is called by core ERD functions which require a current ETH:USD price.  `fetchPrice()` calls each oracle's proxy, asserts on the responses, and converts returned prices to 18 digits. `fetchPrice_view()` calls the `lastGoodPrice` .
 
 ### Tellor price data lag
 

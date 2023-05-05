@@ -48,6 +48,7 @@ contract('newBorrowerOperations', async accounts => {
     let defaultPool
     let borrowerOperations
     let treasury
+    let liquidityIncentive
 
     let contracts
 
@@ -98,12 +99,13 @@ contract('newBorrowerOperations', async accounts => {
             collateralManager = contracts.collateralManager
 
             treasury = ERDContracts.treasury
+            liquidityIncentive = ERDContracts.liquidityIncentive
             communityIssuance = ERDContracts.communityIssuance
 
             EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
             MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
-            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+            await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             await priceFeedSTETH.setPrice(dec(1, 18))
         })
 

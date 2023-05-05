@@ -23,8 +23,6 @@ contract TroveManagerLiquidations is
     IStabilityPool public override stabilityPool;
 
     ITroveManager internal troveManager;
-    ICollateralManager internal collateralManager;
-    address treasuryAddress;
 
     ICollSurplusPool collSurplusPool;
 
@@ -124,16 +122,12 @@ contract TroveManagerLiquidations is
     }
 
     function init(
-        address _treasuryAddress,
         address _troveDebtAddress
     ) external onlyOwner {
-        _requireIsContract(_treasuryAddress);
         _requireIsContract(_troveDebtAddress);
-
-        treasuryAddress = _treasuryAddress;
+        
         troveDebt = ITroveDebt(_troveDebtAddress);
-
-        emit TreasuryAddressChanged(_treasuryAddress);
+        
         emit TroveDebtAddressChanged(_troveDebtAddress);
     }
 

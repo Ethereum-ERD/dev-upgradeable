@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IWETH.sol";
-import "./Interfaces/IAdjust.sol";
 import "./Dependencies/ERDBase.sol";
 
 contract BorrowerOperations is
@@ -16,13 +15,13 @@ contract BorrowerOperations is
     IBorrowerOperations
 {
     string public constant NAME = "BorrowerOperations";
+    
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
 
     // --- Connected contract declarations ---
 
     ITroveManager public troveManager;
-    ICollateralManager internal collateralManager;
 
     IWETH public WETH;
 
@@ -194,16 +193,24 @@ contract BorrowerOperations is
             activePool,
             eusdToken
         );
-        vars.netShares = contractsCache.collateralManager.adjustIn(
-            vars.collaterals,
-            vars.netColls
-        );
-
-        _requireTroveisNotActive(contractsCache.troveManager, msg.sender);
 
         // Update all collateral price
         vars.price = priceFeed.fetchPrice();
         contractsCache.collateralManager.priceUpdate();
+        (vars.netShares, vars.value) = contractsCache
+            .collateralManager
+            .mintEToken(
+                vars.collaterals,
+                vars.netColls,
+                msg.sender,
+                vars.price
+            );
+
+        require(
+            contractsCache.troveManager.getTroveStatus(msg.sender) != 1,
+            "BorrowerOps: Trove is active"
+        );
+
         bool isRecoveryMode = contractsCache.troveManager.checkRecoveryMode(
             vars.price
         );
@@ -212,11 +219,6 @@ contract BorrowerOperations is
 
         vars.EUSDFee;
         vars.netDebt = _EUSDAmount;
-        (vars.value, ) = contractsCache.collateralManager.getValue(
-            vars.collaterals,
-            vars.netColls,
-            vars.price
-        );
 
         // Different borrowing fee for different mode
         vars.EUSDFee = _triggerBorrowingFee(
@@ -243,8 +245,6 @@ contract BorrowerOperations is
             // collateral already transfer to activePool
             // pass collChange = 0 to function
             uint256 newTCR = _getNewTCRFromTroveChange(
-                0,
-                true,
                 vars.compositeDebt,
                 true,
                 vars.price
@@ -254,11 +254,6 @@ contract BorrowerOperations is
         }
         // Set the trove struct's properties
         contractsCache.troveManager.setTroveStatus(msg.sender, 1);
-        contractsCache.troveManager.updateTroveColl(
-            msg.sender,
-            vars.collaterals,
-            vars.netShares
-        );
 
         contractsCache.troveManager.increaseTroveDebt(msg.sender, vars.netDebt);
         contractsCache.troveManager.updateTroveRewardSnapshots(msg.sender);
@@ -367,7 +362,7 @@ contract BorrowerOperations is
         );
 
         _activePoolAddColl(msg.sender, params.collsIn, params.amountsIn);
-        params.sharesIn = collateralManager.adjustIn(
+        params.sharesIn = collateralManager.getShares(
             params.collsIn,
             params.amountsIn
         );
@@ -395,7 +390,7 @@ contract BorrowerOperations is
             params.amountsOut
         );
         _requireNoDuplicateColls(params.collsOut);
-        params.sharesOut = collateralManager.adjustIn(
+        params.sharesOut = collateralManager.getShares(
             params.collsOut,
             params.amountsOut
         );
@@ -456,7 +451,7 @@ contract BorrowerOperations is
 
         _requireValidAdjustCollateralAmounts(params.collsIn, params.amountsIn);
         _requireNoDuplicateColls(params.collsIn);
-        params.sharesIn = collateralManager.adjustIn(
+        params.sharesIn = collateralManager.getShares(
             params.collsIn,
             params.amountsIn
         );
@@ -494,11 +489,11 @@ contract BorrowerOperations is
             uint256[] memory adjustAmountsIn
         ) = _adjustArray(_collsIn, _amountsIn, msg.value);
 
-        uint256[] memory adjustSharesIn = collateralManager.adjustIn(
+        uint256[] memory adjustSharesIn = collateralManager.getShares(
             adjustCollsIn,
             adjustAmountsIn
         );
-        uint256[] memory adjustSharesOut = collateralManager.adjustIn(
+        uint256[] memory adjustSharesOut = collateralManager.getShares(
             _collsOut,
             _amountsOut
         );
@@ -568,14 +563,27 @@ contract BorrowerOperations is
 
         contractsCache.troveManager.applyPendingRewards(params.borrower);
 
-        (vars.valueIn, ) = contractsCache.collateralManager.getValue(
-            params.collsIn,
-            params.amountsIn,
+        (vars.colls, vars.shares, vars.collaterals) = contractsCache
+            .troveManager
+            .getTroveColls(params.borrower);
+
+        (vars.currValue, ) = contractsCache.collateralManager.getValue(
+            vars.collaterals,
+            vars.colls,
             vars.price
         );
-        (vars.valueOut, ) = contractsCache.collateralManager.getValue(
+
+        (, vars.valueIn) = contractsCache.collateralManager.mintEToken(
+            params.collsIn,
+            params.amountsIn,
+            params.borrower,
+            vars.price
+        );
+
+        (, vars.valueOut) = contractsCache.collateralManager.burnEToken(
             params.collsOut,
             params.amountsOut,
+            params.borrower,
             vars.price
         );
 
@@ -594,15 +602,6 @@ contract BorrowerOperations is
         }
 
         vars.debt = contractsCache.troveManager.getTroveDebt(params.borrower);
-        (vars.colls, vars.shares, vars.collaterals) = contractsCache
-            .troveManager
-            .getTroveColls(params.borrower);
-
-        (vars.currValue, ) = contractsCache.collateralManager.getValue(
-            vars.collaterals,
-            vars.colls,
-            vars.price
-        );
 
         (vars.newValue, vars.newDebt) = _getNewTroveAmounts(
             vars.currValue,
@@ -646,18 +645,9 @@ contract BorrowerOperations is
             );
         }
 
-        vars.newShares = contractsCache.collateralManager.adjustColls(
-            vars.shares,
-            params.collsIn,
-            params.sharesIn,
-            params.collsOut,
-            params.sharesOut
-        );
         _updateTroveFromAdjustment(
             contractsCache.troveManager,
             params.borrower,
-            vars.collaterals,
-            vars.newShares,
             vars.netDebtChange,
             params.isDebtIncrease
         );
@@ -671,15 +661,16 @@ contract BorrowerOperations is
             params.lowerHint
         );
 
+        (vars.colls, vars.newShares, ) = contractsCache
+            .troveManager
+            .getTroveColls(params.borrower);
+
         emit TroveUpdated(
             params.borrower,
             vars.newDebt,
             vars.collaterals,
             vars.newShares,
-            contractsCache.collateralManager.adjustOut(
-                vars.collaterals,
-                vars.newShares
-            ),
+            vars.colls,
             BorrowerOperation.adjustTrove
         );
         emit EUSDBorrowingFeePaid(msg.sender, vars.EUSDFee);
@@ -717,15 +708,16 @@ contract BorrowerOperations is
             uint256[] memory collAmounts,
             ,
             address[] memory collaterals
-        ) = troveManagerCached.getTroveColls(msg.sender);
+        ) = collateralManagerCached.getTroveColls(msg.sender);
 
-        (uint256 value, ) = collateralManagerCached.getValue(
+        collateralManagerCached.burnEToken(
             collaterals,
             collAmounts,
-            price
+            msg.sender,
+            0
         );
         uint256 debt = troveManagerCached.getTroveDebt(msg.sender);
-
+        
         uint256 gas = EUSD_GAS_COMPENSATION();
         _requireSufficientEUSDBalance(
             eusdTokenCached,
@@ -733,13 +725,7 @@ contract BorrowerOperations is
             debt.sub(gas)
         );
 
-        uint256 newTCR = _getNewTCRFromTroveChange(
-            value,
-            false,
-            debt,
-            false,
-            price
-        );
+        uint256 newTCR = _getNewTCRFromTroveChange(debt, false, price);
         _requireNewTCRisAboveCCR(newTCR);
 
         troveManagerCached.removeStake(msg.sender);
@@ -843,33 +829,18 @@ contract BorrowerOperations is
         _requireUserAcceptsFee(EUSDFee, _EUSDAmount, _maxFeePercentage);
 
         // Send fee to treasury contract
-        _eusdToken.mint(treasuryAddress, EUSDFee);
-
+        _eusdToken.mintToTreasury(EUSDFee, _troveManager.getFactor());
+        
         return EUSDFee;
-    }
-
-    function _getCollChange(
-        uint256 _coll,
-        uint256 _newColl
-    ) internal pure returns (uint256 collChange, bool isCollIncrease) {
-        if (_newColl > _coll) {
-            isCollIncrease = true;
-            collChange = _newColl.sub(_coll);
-        } else {
-            collChange = _coll.sub(_newColl);
-        }
     }
 
     // Update trove's coll and debt based on whether they increase or decrease
     function _updateTroveFromAdjustment(
         ITroveManager _troveManager,
         address _borrower,
-        address[] memory _colls,
-        uint256[] memory _newShares,
         uint256 _debtChange,
         bool _isDebtIncrease
     ) internal {
-        _troveManager.updateTroveColl(_borrower, _colls, _newShares);
         if (_debtChange > 0) {
             if (_isDebtIncrease) {
                 _troveManager.increaseTroveDebt(_borrower, _debtChange);
@@ -925,36 +896,6 @@ contract BorrowerOperations is
         _activePool.decreaseEUSDDebt(_EUSD);
         _eusdToken.burn(_account, _EUSD);
     }
-
-    // function updateTrove(
-    //     address[] calldata _borrowers,
-    //     address[] calldata _lowerHints,
-    //     address[] calldata _upperHints
-    // ) external {
-    //     uint256 lowerHintsLen = _lowerHints.length;
-    //     require(
-    //         lowerHintsLen == _upperHints.length &&
-    //             lowerHintsLen == _borrowers.length,
-    //         "TM: Length mismatch"
-    //     );
-    //     uint256 price = priceFeed.fetchPrice_view();
-    //     for (uint256 i = 0; i < lowerHintsLen; i++) {
-    //         _updateTrove(_borrowers[i], _lowerHints[i], _upperHints[i], price);
-    //         // unchecked {
-    //         //     i++;
-    //         // }
-    //     }
-    // }
-
-    // function _updateTrove(
-    //     address _borrower,
-    //     address _lowerHint,
-    //     address _upperHint,
-    //     uint256 _price
-    // ) internal {
-    //     uint256 _ICR = troveManager.getCurrentICR(_borrower, _price);
-    //     sortedTroves.reInsert(_borrower, _ICR, _lowerHint, _upperHint);
-    // }
 
     // --- 'Require' wrapper functions ---
 
@@ -1104,10 +1045,7 @@ contract BorrowerOperations is
         } else {
             // if Normal Mode
             _requireICRisAboveMCR(_vars.newICR);
-            uint256 collChange = _vars.isCollIncrease ? 0 : _vars.collChange;
             _vars.newTCR = _getNewTCRFromTroveChange(
-                collChange,
-                _vars.isCollIncrease,
                 _vars.netDebtChange,
                 _isDebtIncrease,
                 _vars.price
@@ -1218,26 +1156,13 @@ contract BorrowerOperations is
     }
 
     function _getNewTCRFromTroveChange(
-        uint256 _collChange,
-        bool _isCollIncrease,
         uint256 _debtChange,
         bool _isDebtIncrease,
         uint256 _price
     ) internal view returns (uint256) {
-        (
-            address[] memory collaterals,
-            uint256[] memory colls
-        ) = getEntireSystemColl();
-        (uint256 totalValue, ) = collateralManager.getValue(
-            collaterals,
-            colls,
-            _price
-        );
+        (, , uint256 totalValue) = getEntireSystemColl(_price);
         uint256 totalDebt = getEntireSystemDebt();
 
-        totalValue = _isCollIncrease
-            ? totalValue.add(_collChange)
-            : totalValue.sub(_collChange);
         totalDebt = _isDebtIncrease
             ? totalDebt.add(_debtChange)
             : totalDebt.sub(_debtChange);

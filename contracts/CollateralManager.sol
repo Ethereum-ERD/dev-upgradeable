@@ -9,7 +9,8 @@ import "./DataTypes.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/IPriceFeed.sol";
-import "./Interfaces/IAdjust.sol";
+import "./Interfaces/IOracle.sol";
+import "./Interfaces/IEToken.sol";
 
 contract CollateralManager is
     OwnableUpgradeable,
@@ -41,6 +42,7 @@ contract CollateralManager is
     uint256 public MAX_BORROWING_FEE;
 
     address public borrowerOperationsAddress;
+    address public troveManagerRedemptionsAddress;
     address public wethAddress;
 
     ITroveManager internal troveManager;
@@ -69,46 +71,71 @@ contract CollateralManager is
     }
 
     function setAddresses(
+        address _activePoolAddress,
         address _borrowerOperationsAddress,
+        address _defaultPoolAddress,
         address _priceFeedAddress,
         address _troveManagerAddress,
+        address _troveManagerRedemptionsAddress,
         address _wethAddress
     ) external override onlyOwner {
+        _requireIsContract(_activePoolAddress);
         _requireIsContract(_borrowerOperationsAddress);
+        _requireIsContract(_defaultPoolAddress);
         _requireIsContract(_priceFeedAddress);
         _requireIsContract(_wethAddress);
         _requireIsContract(_troveManagerAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
+        activePool = IActivePool(_activePoolAddress);
+        defaultPool = IDefaultPool(_defaultPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         wethAddress = _wethAddress;
 
-        // collateralSupport.push(_wethAddress);
-        // collateralsCount = collateralsCount.add(1);
-
         troveManager = ITroveManager(_troveManagerAddress);
 
+        troveManagerRedemptionsAddress = _troveManagerRedemptionsAddress;
+
+        emit ActivePoolAddressChanged(_activePoolAddress);
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
+        emit DefaultPoolAddressChanged(_defaultPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
+        emit TroveManagerRedemptionsAddressChanged(
+            _troveManagerRedemptionsAddress
+        );
         emit WETHAddressChanged(_wethAddress);
     }
 
     function addCollateral(
         address _collateral,
-        address _oracle
+        address _oracle,
+        address _eTokenAddress,
+        uint256 _ratio
     ) external override onlyOwner {
-        _requireCollNotExist(_collateral);
-        setOracle(_collateral, _oracle);
-        _setStatus(_collateral, 1);
-        collateralParams[_collateral].index = collateralsCount;
+        require(
+            !getIsSupport(_collateral),
+            "CollateralManager: Collateral already exists"
+        );
+        _requireRatioLegal(_ratio);
+
+        collateralParams[_collateral] = DataTypes.CollateralParams(
+            _ratio,
+            _eTokenAddress,
+            _oracle,
+            DataTypes.CollStatus(1),
+            collateralsCount
+        );
         collateralSupport.push(_collateral);
         collateralsCount = collateralsCount.add(1);
     }
 
     function removeCollateral(address _collateral) external override onlyOwner {
         address collAddress = _collateral;
-        _requireCollIsPaused(collAddress);
+        require(
+            getIsSupport(collAddress) && !getIsActive(collAddress),
+            "CollateralManager: Collateral not pause"
+        );
         require(
             collateralsCount > 1,
             "CollateralManager: Need at least one collateral support"
@@ -196,12 +223,28 @@ contract CollateralManager is
         collateralParams[_collateral].oracle = _oracle;
     }
 
+    function setEToken(
+        address _collateral,
+        address _eTokenAddress
+    ) public override onlyOwner {
+        collateralParams[_collateral].eToken = _eTokenAddress;
+    }
+
+    function setRatio(
+        address _collateral,
+        uint256 _ratio
+    ) public override onlyOwner {
+        _requireCollIsActive(_collateral);
+        _requireRatioLegal(_ratio);
+        collateralParams[_collateral].ratio = _ratio;
+    }
+
     function priceUpdate() external override {
-        if (collateralsCount < 2) {
+        if (collateralsCount < 3) {
             return;
         }
         for (uint256 i = 1; i < collateralsCount; ) {
-            IAdjust(collateralParams[collateralSupport[i]].oracle).fetchPrice();
+            IOracle(collateralParams[collateralSupport[i]].oracle).fetchPrice();
             unchecked {
                 i++;
             }
@@ -231,38 +274,39 @@ contract CollateralManager is
         override
         returns (uint256 totalValue, uint256[] memory values)
     {
-        uint256 price = _price;
         uint256 collLen = _collaterals.length;
         require(collLen == _amounts.length, "Length mismatch");
         values = new uint256[](collLen);
-        address collateral;
-        uint256 amount;
         for (uint256 i = 0; i < collLen; ) {
-            collateral = _collaterals[i];
-            amount = _amounts[i];
-            if (amount != 0) {
-                if (collateral != wethAddress) {
-                    IAdjust coll_adjust = IAdjust(
-                        collateralParams[collateral].oracle
-                    );
-                    uint256 value = coll_adjust
-                        .fetchPrice_view()
-                        .mul(amount)
-                        .div(DECIMAL_PRECISION)
-                        .mul(price)
-                        .div(DECIMAL_PRECISION);
-                    totalValue = totalValue.add(value);
-                    values[i] = value;
-                } else {
-                    uint256 value = amount.mul(price).div(DECIMAL_PRECISION);
-                    totalValue = totalValue.add(value);
-                    values[i] = value;
-                }
+            if (_amounts[i] != 0) {
+                values[i] = _calcValue(_collaterals[i], _amounts[i], _price);
+                totalValue = totalValue.add(values[i]);
             }
 
             unchecked {
                 i++;
             }
+        }
+    }
+
+    function _calcValue(
+        address _collateral,
+        uint256 _amount,
+        uint256 _price
+    ) internal view returns (uint256 value) {
+        if (_collateral != wethAddress) {
+            IOracle coll_adjust = IOracle(collateralParams[_collateral].oracle);
+            uint256 valueRatio = collateralParams[_collateral].ratio;
+            value = coll_adjust
+                .fetchPrice_view()
+                .mul(valueRatio)
+                .div(DECIMAL_PRECISION)
+                .mul(_amount)
+                .div(DECIMAL_PRECISION)
+                .mul(_price)
+                .div(DECIMAL_PRECISION);
+        } else {
+            value = _amount.mul(_price).div(DECIMAL_PRECISION);
         }
     }
 
@@ -277,17 +321,155 @@ contract CollateralManager is
         );
     }
 
-    function adjustIn(
+    function mintEToken(
+        address[] memory _collaterals,
+        uint256[] memory _amounts,
+        address _account,
+        uint256 _price
+    ) external override returns (uint256[] memory, uint256) {
+        _requireCollIsBO();
+        uint256 collLen = _collaterals.length;
+        uint256[] memory shares = new uint256[](collLen);
+        for (uint256 i = 0; i < collLen; ) {
+            if (_amounts[i] != 0) {
+                shares[i] = mint(_account, _collaterals[i], _amounts[i]);
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+        if (_price != 0) {
+            (uint256 value, ) = getValue(_collaterals, _amounts, _price);
+            return (shares, value);
+        } else {
+            return (shares, 0);
+        }
+    }
+
+    function applyRewards(
+        address _borrower,
+        uint256[] memory _pendingRewards
+    ) external override returns (uint256[] memory) {
+        _requireCollIsTM();
+        uint256[] memory newShares = new uint256[](collateralsCount);
+        for (uint256 i = 0; i < collateralsCount; ) {
+            if (_pendingRewards[i] != 0) {
+                mint(_borrower, collateralSupport[i], _pendingRewards[i]);
+            }
+            newShares[i] = IEToken(
+                collateralParams[collateralSupport[i]].eToken
+            ).sharesOf(_borrower);
+            unchecked {
+                i++;
+            }
+        }
+        return newShares;
+    }
+
+    function burnEToken(
+        address[] memory _collaterals,
+        uint256[] memory _amounts,
+        address _account,
+        uint256 _price
+    ) external override returns (uint256[] memory, uint256) {
+        _requireCollIsBO();
+        uint256 collLen = _collaterals.length;
+        uint256[] memory shares = new uint256[](collLen);
+        for (uint256 i = 0; i < collLen; ) {
+            if (_amounts[i] != 0) {
+                shares[i] = burn(_account, _collaterals[i], _amounts[i]);
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+        if (_price != 0) {
+            (uint256 value, ) = getValue(_collaterals, _amounts, _price);
+            return (shares, value);
+        } else {
+            return (shares, 0);
+        }
+    }
+
+    function mint(
+        address _account,
+        address _collateral,
+        uint256 _amount
+    ) internal returns (uint256) {
+        return
+            IEToken(collateralParams[_collateral].eToken).mint(
+                _account,
+                _amount
+            );
+    }
+
+    function burn(
+        address _account,
+        address _collateral,
+        uint256 _amount
+    ) internal returns (uint256) {
+        return
+            IEToken(collateralParams[_collateral].eToken).burn(
+                _account,
+                _amount
+            );
+    }
+
+    function clearEToken(
+        address _account,
+        DataTypes.Status closedStatus
+    ) external override returns (address[] memory) {
+        _requireCollIsTM();
+        if (closedStatus == DataTypes.Status.closedByOwner) {
+            return collateralSupport;
+        }
+        for (uint256 i = 0; i < collateralsCount; ) {
+            IEToken(collateralParams[collateralSupport[i]].eToken).clear(
+                _account
+            );
+            unchecked {
+                i++;
+            }
+        }
+        return collateralSupport;
+    }
+
+    function resetEToken(
+        address _account,
+        address[] memory _collaterals,
+        uint256[] memory _amounts
+    ) external override returns (uint256[] memory) {
+        require(
+            msg.sender == troveManagerRedemptionsAddress,
+            "CollateralManager: Bad caller"
+        );
+        uint256 collLen = _collaterals.length;
+        uint256[] memory shares = new uint256[](collLen);
+        for (uint256 i = 0; i < collLen; ) {
+            if (_amounts[i] != 0) {
+                shares[i] = IEToken(collateralParams[_collaterals[i]].eToken)
+                    .reset(_account, _amounts[i]);
+            }
+
+            unchecked {
+                i++;
+            }
+        }
+        return shares;
+    }
+
+    function getShares(
         address[] memory _collaterals,
         uint256[] memory _amounts
     ) public view override returns (uint256[] memory) {
         uint256 collLen = _collaterals.length;
         uint256[] memory amounts = new uint256[](collLen);
         for (uint256 i = 0; i < collLen; ) {
-            if (_collaterals[i] != wethAddress) {
-                amounts[i] = adjustIn(_collaterals[i], _amounts[i]);
-            } else {
-                amounts[i] = _amounts[i];
+            if (_amounts[i] != 0) {
+                amounts[i] = IEToken(collateralParams[_collaterals[i]].eToken)
+                    .getShare(_amounts[i]);
             }
             unchecked {
                 i++;
@@ -296,25 +478,16 @@ contract CollateralManager is
         return amounts;
     }
 
-    function adjustIn(
-        address _collateral,
-        uint256 _amount
-    ) public view override returns (uint256) {
-        IAdjust coll_adjust = IAdjust(collateralParams[_collateral].oracle);
-        return coll_adjust.adjustIn(_amount);
-    }
-
-    function adjustOut(
+    function getAmounts(
         address[] memory _collaterals,
-        uint256[] memory _amounts
+        uint256[] memory _shares
     ) public view override returns (uint256[] memory) {
         uint256 collLen = _collaterals.length;
         uint256[] memory amounts = new uint256[](collLen);
         for (uint256 i = 0; i < collLen; ) {
-            if (_collaterals[i] != wethAddress) {
-                amounts[i] = adjustOut(_collaterals[i], _amounts[i]);
-            } else {
-                amounts[i] = _amounts[i];
+            if (_shares[i] != 0) {
+                amounts[i] = IEToken(collateralParams[_collaterals[i]].eToken)
+                    .getAmount(_shares[i]);
             }
             unchecked {
                 i++;
@@ -323,12 +496,123 @@ contract CollateralManager is
         return amounts;
     }
 
-    function adjustOut(
+    function getTroveColls(
+        address _borrower
+    )
+        public
+        view
+        override
+        returns (uint256[] memory, uint256[] memory, address[] memory)
+    {
+        uint256[] memory amounts = new uint256[](collateralsCount);
+        uint256[] memory shares = new uint256[](collateralsCount);
+        for (uint256 i = 0; i < collateralsCount; ) {
+            (amounts[i], shares[i]) = getTroveColl(
+                _borrower,
+                collateralSupport[i]
+            );
+
+            unchecked {
+                i++;
+            }
+        }
+        return (amounts, shares, collateralSupport);
+    }
+
+    function getTroveColl(
+        address _borrower,
+        address _collateral
+    ) public view override returns (uint256, uint256) {
+        uint256 amount = IEToken(collateralParams[_collateral].eToken)
+            .balanceOf(_borrower);
+        uint256 share = IEToken(collateralParams[_collateral].eToken).sharesOf(
+            _borrower
+        );
+
+        return (amount, share);
+    }
+
+    function getCollateralShares(
+        address _borrower
+    ) external view override returns (address[] memory, uint256[] memory) {
+        uint256[] memory shares = new uint256[](collateralsCount);
+        for (uint256 i = 0; i < collateralsCount; ) {
+            shares[i] = IEToken(collateralParams[collateralSupport[i]].eToken)
+                .sharesOf(_borrower);
+            unchecked {
+                i++;
+            }
+        }
+        return (collateralSupport, shares);
+    }
+
+    function getEntireCollValue()
+        external
+        view
+        override
+        returns (address[] memory, uint256[] memory, uint256)
+    {
+        uint256 price = priceFeed.fetchPrice_view();
+        return getEntireCollValue(price);
+    }
+
+    function getEntireCollValue(
+        uint256 _price
+    )
+        public
+        view
+        override
+        returns (address[] memory, uint256[] memory, uint256)
+    {
+        uint256 totalValue;
+        uint256[] memory amounts = new uint256[](collateralsCount);
+        uint256 activeBalance;
+        uint256 defautBalance;
+        for (uint256 i = 0; i < collateralsCount; ) {
+            activeBalance = IEToken(collateralParams[collateralSupport[i]].eToken).totalSupply();
+            // activeBalance = IERC20Upgradeable(collateralSupport[i]).balanceOf(
+            //     address(activePool)
+            // );
+            defautBalance = IERC20Upgradeable(collateralSupport[i]).balanceOf(
+                address(defaultPool)
+            );
+            amounts[i] = activeBalance.add(defautBalance);
+            totalValue = totalValue.add(
+                _calcValue(collateralSupport[i], amounts[i], _price)
+            );
+            unchecked {
+                i++;
+            }
+        }
+        return (collateralSupport, amounts, totalValue);
+    }
+
+    function validAdjustment(
+        address _account,
         address _collateral,
         uint256 _amount
-    ) public view override returns (uint256) {
-        IAdjust coll_adjust = IAdjust(collateralParams[_collateral].oracle);
-        return coll_adjust.adjustOut(_amount);
+    ) external view override returns (bool) {
+        bool active = troveManager.getTroveStatus(_account) == 1;
+        if (!active) {
+            return true;
+        }
+        uint256 price = priceFeed.fetchPrice_view();
+        uint256 totalDebt = getEntireSystemDebt();
+        (, , uint256 totalValue) = getEntireSystemColl(price);
+        bool isRecoveryMode = _checkRecoveryMode(totalValue, totalDebt, CCR);
+        if (!isRecoveryMode) {
+            return false;
+        }
+        (uint256[] memory colls, , ) = getTroveColls(_account);
+        uint256 debt = troveManager.getTroveDebt(_account);
+        (uint256 currValue, ) = getValue(collateralSupport, colls, price);
+        uint256 value = _calcValue(_collateral, _amount, price);
+        uint256 newICR = ERDMath._computeCR(currValue.sub(value), debt);
+        if (newICR < MCR) {
+            return false;
+        }
+        uint256 newTCR = ERDMath._computeCR(totalValue.sub(value), totalDebt);
+        return newTCR >= CCR;
     }
 
     // --- Getters ---
@@ -395,6 +679,12 @@ contract CollateralManager is
         return collateralParams[_collateral].index;
     }
 
+    function getRatio(
+        address _collateral
+    ) external view override returns (uint256) {
+        return collateralParams[_collateral].ratio;
+    }
+
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
@@ -404,10 +694,10 @@ contract CollateralManager is
         );
     }
 
-    function _requireCollNotExist(address _collateral) internal view {
+    function _requireRatioLegal(uint256 _ratio) internal pure {
         require(
-            !getIsSupport(_collateral),
-            "CollateralManager: Collateral already exists"
+            _ratio <= DECIMAL_PRECISION,
+            "CollateralManager: Ratio must be less than 100%"
         );
     }
 
@@ -418,10 +708,17 @@ contract CollateralManager is
         );
     }
 
-    function _requireCollIsPaused(address _collateral) internal view {
+    function _requireCollIsBO() internal view {
         require(
-            getIsSupport(_collateral) && !getIsActive(_collateral),
-            "CollateralManager: Collateral not pause"
+            msg.sender == borrowerOperationsAddress,
+            "CollateralManager: Bad caller"
+        );
+    }
+
+    function _requireCollIsTM() internal view {
+        require(
+            msg.sender == address(troveManager),
+            "CollateralManager: Bad caller"
         );
     }
 
@@ -490,6 +787,14 @@ contract CollateralManager is
 
     function setBootstrapPeriod(uint256 _period) external override onlyOwner {
         BOOTSTRAP_PERIOD = _period;
+    }
+
+    function setFactor(uint256 _factor) external override onlyOwner {
+        troveManager.setFactor(_factor);
+    }
+
+    function getFactor() external view override returns (uint256) {
+        return troveManager.getFactor();
     }
 
     function getCCR() external view override returns (uint256) {

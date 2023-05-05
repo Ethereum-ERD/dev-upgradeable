@@ -13,6 +13,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   let functionCaller
   let borrowerOperations
   let treasury
+  let liquidityIncentive
   let communityIssuance
 
   before(async () => {
@@ -30,6 +31,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     borrowerOperations = coreContracts.borrowerOperations
 
     treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
     communityIssuance = ERDContracts.communityIssuance
 
     await deploymentHelper.connectCoreContracts(coreContracts, ERDContracts)

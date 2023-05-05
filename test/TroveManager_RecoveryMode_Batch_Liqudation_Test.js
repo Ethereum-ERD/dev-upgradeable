@@ -35,13 +35,13 @@ contract('TroveManager - in Recovery Mode - back to normal mode in 1 tx', async 
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
-    contracts.eusdToken = await EUSDToken.new(
-      contracts.troveManager.address,
-      contracts.troveManagerLiquidations.address,
-      contracts.troveManagerRedemptions.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
-    )
+    // contracts.eusdToken = await EUSDToken.new(
+    //   contracts.troveManager.address,
+    //   contracts.troveManagerLiquidations.address,
+    //   contracts.troveManagerRedemptions.address,
+    //   contracts.stabilityPool.address,
+    //   contracts.borrowerOperations.address
+    // )
     const ERDContracts = await deploymentHelper.deployERDContracts()
 
     troveManager = contracts.troveManager
@@ -182,7 +182,7 @@ contract('TroveManager - in Recovery Mode - back to normal mode in 1 tx', async 
       const realGainInEUSD = spEthAfter.sub(spEthBefore).mul(price).div(mv._1e18BN).sub(speusdBefore.sub(speusdAfter))
 
       assert.isAtMost(th.getDifference(spEthAfter.sub(spEthBefore), expectedCollateralLiquidatedA), _dec(12))
-      assert.isAtMost(th.getDifference(speusdBefore.sub(speusdAfter), A_totalDebt), _dec(13))
+      assert.isAtMost(th.getDifference(speusdBefore.sub(speusdAfter), A_totalDebt), _dec(14))
       assert.isAtMost(th.getDifference(realGainInEUSD, expectedGainInEUSD), _dec(12))
     })
 

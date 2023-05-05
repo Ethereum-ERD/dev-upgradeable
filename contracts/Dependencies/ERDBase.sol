@@ -5,6 +5,7 @@ pragma solidity 0.8.18;
 import "./BaseMath.sol";
 import "./ERDMath.sol";
 import "../Interfaces/IActivePool.sol";
+import "../Interfaces/ICollateralManager.sol";
 import "../Interfaces/IDefaultPool.sol";
 import "../Interfaces/IEUSDToken.sol";
 import "../Interfaces/IPriceFeed.sol";
@@ -25,6 +26,7 @@ contract ERDBase is BaseMath, IERDBase {
     uint256 public constant PERCENT_DIVISOR = 200; // dividing by 200 yields 0.5%
 
     IActivePool public activePool;
+    ICollateralManager public collateralManager;
 
     IDefaultPool public defaultPool;
     IEUSDToken public eusdToken;
@@ -66,6 +68,14 @@ contract ERDBase is BaseMath, IERDBase {
         return collGas;
     }
 
+    // function getEntireSystemColl()
+    //     public
+    //     view
+    //     returns (address[] memory, uint256[] memory, uint256)
+    // {
+    //     return collateralManager.getEntireCollValue();
+    // }
+
     function getEntireSystemColl()
         public
         view
@@ -83,6 +93,14 @@ contract ERDBase is BaseMath, IERDBase {
             collaterals,
             ERDMath._addArray(activeColls, liquidatedColls)
         );
+    }
+
+    function getEntireSystemColl(uint256 _price)
+        public
+        view
+        returns (address[] memory, uint256[] memory, uint256)
+    {
+        return collateralManager.getEntireCollValue(_price);
     }
 
     function getEntireSystemDebt()

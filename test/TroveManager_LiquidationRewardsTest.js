@@ -78,7 +78,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
-    await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+    await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
     await priceFeedSTETH.setPrice(dec(1, 18))
   })
 
@@ -2296,6 +2296,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // check EUSD gas compensation
     assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(600, 18))
   })
+
   it("open alice and bob", async () => {
     const {
       collateral: A_coll

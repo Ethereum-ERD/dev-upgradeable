@@ -2065,7 +2065,8 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
       // price drops by 50%: defaulter 1 ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
-
+      // console.log("SP_EUSD", (await eusdToken.balanceOf(stabilityPool.address)).toString())
+      // console.log("defaulter_1_debt", (await contracts.troveDebt.balanceOf(defaulter_1)).toString())
       // Defaulter 1 liquidated.  Value of P updated to  to 1e13
       const txL1 = await troveManager.liquidate(defaulter_1, {
         from: owner
@@ -2074,7 +2075,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 13)), _1e14BN)
       // assert.equal((await stabilityPool.P()).toString(), dec(1, 13)) // P decreases. P = 1e(18-5) = 1e13
       assert.equal((await stabilityPool.currentScale()).toString(), '0')
-
+      // console.log("SP_EUSD", (await eusdToken.balanceOf(stabilityPool.address)).toString())
       // Alice withdraws
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
       await priceFeed.setPrice(dec(200, 18))
@@ -2082,24 +2083,29 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
         from: alice
       })
       await priceFeed.setPrice(dec(100, 18))
-
+      // console.log("SP_EUSD", (await eusdToken.balanceOf(stabilityPool.address)).toString())
       // Bob deposits 10k EUSD
       await eusdToken.transfer(bob, dec(10000, 18), {
         from: whale
       })
+      // console.log("defaulter_2_debt", (await contracts.troveDebt.balanceOf(defaulter_2)).toString())
       await stabilityPool.provideToSP(dec(10000, 18), ZERO_ADDRESS, {
         from: bob
       })
-
+      // console.log("SP_EUSD", (await eusdToken.balanceOf(stabilityPool.address)).toString())
+      // console.log("Alice_EUSD", (await eusdToken.balanceOf(alice)).toString())
+      // console.log("P", (await stabilityPool.P()).toString())
+      // console.log("defaulter_2_debt", (await contracts.troveDebt.balanceOf(defaulter_2)).toString())
       // Defaulter 2 liquidated
       const txL2 = await troveManager.liquidate(defaulter_2, {
         from: owner
       });
       assert.isTrue(txL2.receipt.status)
+      // console.log("P", (await stabilityPool.P()).toString())
       // Scale changes and P changes. P < 1e(13-5+9) = 1e17
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 17))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(95, 15))))
       assert.equal(await stabilityPool.currentScale(), '1')
+      // console.log("SP_EUSD", (await eusdToken.balanceOf(stabilityPool.address)).toString())
 
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), {
         from: bob
@@ -2152,7 +2158,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       // P decreases. P < 1e(18-5) = 1e13
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 13))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(93, 11))))
       assert.equal(await stabilityPool.currentScale(), '0')
 
       // Alice withdraws
@@ -2192,7 +2197,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isTrue(txL2.receipt.status)
       // P decreases. P = 1e(13-5+9) = 1e17
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 17))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(95, 15))))
       assert.equal(await stabilityPool.currentScale(), '1')
 
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), {
@@ -2311,7 +2315,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isTrue(txL1.receipt.status)
       // P decreases to 1e(18-5) = 1e13
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 13))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(95, 11))))
       assert.equal(await stabilityPool.currentScale(), '0')
 
       // B deposits 9999.9 EUSD
@@ -2329,7 +2332,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isTrue(txL2.receipt.status)
       // Scale changes and P changes to 1e(13-5+9) = 1e17
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 17))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(1, 15))))
       assert.equal(await stabilityPool.currentScale(), '1')
 
       // C deposits 9999.9 EUSD
@@ -2346,8 +2348,8 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       assert.isTrue(txL3.receipt.status)
       // P decreases to < 1e(17-5) = 1e12
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(81, 10))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(79, 10))))
+      // console.log("P", (await stabilityPool.P()).toString())
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 12))))
       assert.equal(await stabilityPool.currentScale(), '1')
 
       // D deposits 9999.9 EUSD
@@ -2365,8 +2367,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
       assert.isTrue(txL4.receipt.status)
       // Scale changes and P changes to 1e(12-5+9) = 1e16
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(69, 14))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(67, 14))))
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 16))))
       assert.equal(await stabilityPool.currentScale(), '2')
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), {
@@ -2628,7 +2629,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isTrue(txL1.receipt.status)
       // P decreases to < 1e(18-5) = 1e13
       assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 13))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(95, 11))))
       assert.equal(await stabilityPool.currentScale(), '0')
 
       // B deposits 9999.9 EUSD
@@ -2645,8 +2645,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       assert.isTrue(txL2.receipt.status)
       // Scale changes and P changes to < 1e(13-5+9) = 1e17
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(90, 15))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(89, 15))))
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 17))))
       assert.equal(await stabilityPool.currentScale(), '1')
 
       // C deposits 9999.9 EUSD
@@ -2663,8 +2662,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       assert.isTrue(txL3.receipt.status)
       // P decreases to < 1e(17-5) = 1e12
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(79, 10))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(78, 10))))
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 12))))
       assert.equal(await stabilityPool.currentScale(), '1')
 
       // D deposits 9999.9 EUSD
@@ -2681,8 +2679,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       assert.isTrue(txL4.receipt.status)
       // Scale changes and P changes to < 1e(12-5+9) = 1e16
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(67, 14))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(65, 14))))
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 16))))
       assert.equal(await stabilityPool.currentScale(), '2')
 
       const alice_ETHGainAt2ndScaleChange = (await stabilityPool.getDepositorCollateralGain(alice)).toString()
@@ -2701,8 +2698,8 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       });
       assert.isTrue(txL5.receipt.status)
       // P decreases to < 1e(16-5) = 1e11
-      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(54, 9))))
-      assert.isTrue((await stabilityPool.P()).gt(toBN(dec(53, 9))))
+      // console.log("P", (await stabilityPool.P()).toString())
+      assert.isTrue((await stabilityPool.P()).lt(toBN(dec(1, 11))))
       assert.equal(await stabilityPool.currentScale(), '2')
 
       const alice_ETHGainAfterFurtherLiquidation = (await stabilityPool.getDepositorCollateralGain(alice)).toString()

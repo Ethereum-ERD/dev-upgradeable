@@ -46,6 +46,8 @@ contract('TroveManager', async accounts => {
   let hintHelpers
   let troveManagerRedemptions
   let collateralManager
+  let treasury
+  let liquidityIncentive
 
   let contracts
 
@@ -67,7 +69,8 @@ contract('TroveManager', async accounts => {
       contracts.troveManagerRedemptions.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,
-      ERDContracts.treasury.address
+      ERDContracts.treasury.address,
+      ERDContracts.liquidityIncentive.address
     )
 
     priceFeed = contracts.priceFeedETH
@@ -87,6 +90,7 @@ contract('TroveManager', async accounts => {
     collateralManager = contracts.collateralManager
 
     treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
     communityIssuance = ERDContracts.communityIssuance
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
@@ -149,10 +153,11 @@ contract('TroveManager', async accounts => {
     assert.isFalse(alice_Trove_isInSortedList)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let O_EUSD = await eusdToken.balanceOf(owner)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -213,10 +218,11 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(activePool_EUSDDebt_After, A_totalDebt, _dec(14))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let O_EUSD = await eusdToken.balanceOf(owner)
     let B_EUSD = await eusdToken.balanceOf(bob)
-    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(O_EUSD).add(B_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -384,6 +390,7 @@ contract('TroveManager', async accounts => {
     await troveManager.liquidate(carol)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -391,7 +398,7 @@ contract('TroveManager', async accounts => {
     let E_EUSD = await eusdToken.balanceOf(erin)
     let O_EUSD = await eusdToken.balanceOf(owner)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -536,11 +543,12 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(carol));
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(O_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -657,11 +665,12 @@ contract('TroveManager', async accounts => {
     assert.isTrue(bob_isInSortedList)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -880,6 +889,7 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(TCR_Before, TCR_After, _dec(12))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -891,7 +901,7 @@ contract('TroveManager', async accounts => {
     let D4_EUSD = await eusdToken.balanceOf(defaulter_4)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1130,6 +1140,7 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(expectedTCR_4, TCR_4, _dec(12))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -1141,7 +1152,7 @@ contract('TroveManager', async accounts => {
     let D4_EUSD = await eusdToken.balanceOf(defaulter_4)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(D1_EUSD).add(D2_EUSD).add(D3_EUSD).add(D4_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1214,13 +1225,14 @@ contract('TroveManager', async accounts => {
     assert.equal(dennis_ETHGain_Before, dennis_ETHGain_After)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
     let D_EUSD = await eusdToken.balanceOf(dennis)
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1287,12 +1299,13 @@ contract('TroveManager', async accounts => {
     assert.equal(bob_ETHGain_Before, bob_ETHGain_After)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = B_EUSD.add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1460,13 +1473,14 @@ contract('TroveManager', async accounts => {
     assert.equal((await eusdToken.balanceOf(carol)).toString(), C_eusdAmount)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1584,6 +1598,7 @@ contract('TroveManager', async accounts => {
     assert.equal((await troveManager.getTroveStatus(carol)).toString(), '3')
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -1591,7 +1606,7 @@ contract('TroveManager', async accounts => {
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D1_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D1_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1780,6 +1795,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(A))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
@@ -1787,7 +1803,7 @@ contract('TroveManager', async accounts => {
     let E_EUSD = await eusdToken.balanceOf(E)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -1825,6 +1841,7 @@ contract('TroveManager', async accounts => {
     assert.isTrue(await sortedTroves.contains(E))
 
     treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     A_EUSD = await eusdToken.balanceOf(A)
     B_EUSD = await eusdToken.balanceOf(B)
     C_EUSD = await eusdToken.balanceOf(C)
@@ -1832,7 +1849,7 @@ contract('TroveManager', async accounts => {
     E_EUSD = await eusdToken.balanceOf(E)
     SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     O_EUSD = await eusdToken.balanceOf(owner)
-    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     totalSupply = await eusdToken.totalSupply()
@@ -1844,12 +1861,14 @@ contract('TroveManager', async accounts => {
       from: D
     })
     const treasury_after_D = await eusdToken.balanceOf(treasury.address)
-    assert.isTrue(treasury_after_D.gt(treasuryEUSD))
+    const liquidityIncentive_after_D = await eusdToken.balanceOf(liquidityIncentive.address)
+    assert.isTrue(treasury_after_D.add(liquidityIncentive_after_D).gt(treasuryEUSD.add(liquidityIncentiveEUSD)))
     await borrowerOperations.repayEUSD(dec(1, 18), E, E, {
       from: E
     })
     const treasury_after_E = await eusdToken.balanceOf(treasury.address)
-    assert.isTrue(treasury_after_E.gt(treasury_after_D))
+    const liquidityIncentive_after_E = await eusdToken.balanceOf(liquidityIncentive.address)
+    assert.isTrue(treasury_after_E.add(liquidityIncentive_after_E).gt(treasury_after_D.add(liquidityIncentive_after_D)))
 
     // Check C is the only trove that has pending rewards
     assert.isTrue(await troveManager.hasPendingRewards(C))
@@ -1892,6 +1911,7 @@ contract('TroveManager', async accounts => {
     assert.isTrue((await sortedTroves.getSize()).eq(toBN('2')))
 
     treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     A_EUSD = await eusdToken.balanceOf(A)
     B_EUSD = await eusdToken.balanceOf(B)
     C_EUSD = await eusdToken.balanceOf(C)
@@ -1899,7 +1919,7 @@ contract('TroveManager', async accounts => {
     E_EUSD = await eusdToken.balanceOf(E)
     SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     O_EUSD = await eusdToken.balanceOf(owner)
-    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     totalSupply = await eusdToken.totalSupply()
@@ -2016,6 +2036,7 @@ contract('TroveManager', async accounts => {
     assert.equal((await sortedTroves.getSize()).toString(), '4')
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let W_EUSD = await eusdToken.balanceOf(whale)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
@@ -2027,7 +2048,7 @@ contract('TroveManager', async accounts => {
     let I_EUSD = await eusdToken.balanceOf(ida)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(H_EUSD).add(I_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(H_EUSD).add(I_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -2121,6 +2142,7 @@ contract('TroveManager', async accounts => {
     assert.isTrue(erin_isInSortedList)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -2129,7 +2151,7 @@ contract('TroveManager', async accounts => {
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -2292,6 +2314,7 @@ contract('TroveManager', async accounts => {
     assert.equal((await troveManager.getTroveStatus(carol)).toString(), '3')
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -2299,7 +2322,7 @@ contract('TroveManager', async accounts => {
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -2456,6 +2479,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(flyn))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -2465,7 +2489,7 @@ contract('TroveManager', async accounts => {
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -2534,13 +2558,14 @@ contract('TroveManager', async accounts => {
     assert.equal((await eusdToken.balanceOf(flyn)).toString(), F_balanceBefore)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let D_EUSD = await eusdToken.balanceOf(dennis)
     let E_EUSD = await eusdToken.balanceOf(erin)
     let F_EUSD = await eusdToken.balanceOf(flyn)
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = F_EUSD.add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    let expectedTotalSupply = F_EUSD.add(D_EUSD).add(E_EUSD).add(W_EUSD).add(O_EUSD).add(SP_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -4144,11 +4169,12 @@ contract('TroveManager', async accounts => {
     assert.equal(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(alice)
     const B_EUSD = await eusdToken.balanceOf(bob)
     const C_EUSD = await eusdToken.balanceOf(carol)
     const D_EUSD = await eusdToken.balanceOf(dennis)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4282,12 +4308,13 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(alice)
     const B_EUSD = await eusdToken.balanceOf(bob)
     const C_EUSD = await eusdToken.balanceOf(carol)
     const D_EUSD = await eusdToken.balanceOf(dennis)
     const E_EUSD = await eusdToken.balanceOf(erin)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("3"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4333,13 +4360,14 @@ contract('TroveManager', async accounts => {
     // A's remaining debt would be 29950 + 19950 + 5950 + 50 - 54000 = 1900.
     // Since this is below the min net debt of 100, A should be skipped and untouched by the redemption
     const A_debt = await troveManager.getTroveDebt(A)
-    th.assertIsApproximatelyEqual(A_debt, A_debt_before, _dec(14))
+    th.assertIsApproximatelyEqual(A_debt, A_debt_before, _dec(15))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(A)
     const B_EUSD = await eusdToken.balanceOf(B)
     const C_EUSD = await eusdToken.balanceOf(C)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4485,11 +4513,12 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(dennis_EUSDBalance_After, dennis_EUSDBalance_Before.sub(actualRedemptionAmount))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(alice)
     const B_EUSD = await eusdToken.balanceOf(bob)
     const C_EUSD = await eusdToken.balanceOf(carol)
     const D_EUSD = await eusdToken.balanceOf(dennis)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4553,10 +4582,11 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(bob_Debt_After, bob_Debt_Before, _dec(14))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(alice)
     const B_EUSD = await eusdToken.balanceOf(bob)
     const C_EUSD = await eusdToken.balanceOf(carol)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("1"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4664,12 +4694,13 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(dennis_Debt_After, dennis_Debt_Before, _dec(14))
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(alice)
     const B_EUSD = await eusdToken.balanceOf(bob)
     const C_EUSD = await eusdToken.balanceOf(carol)
     const D_EUSD = await eusdToken.balanceOf(dennis)
     const W_EUSD = await eusdToken.balanceOf(whale)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4871,10 +4902,11 @@ contract('TroveManager', async accounts => {
       }
     })
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(A)
     const B_EUSD = await eusdToken.balanceOf(B)
     const C_EUSD = await eusdToken.balanceOf(C)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
@@ -4939,10 +4971,11 @@ contract('TroveManager', async accounts => {
     })
 
     const treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    const liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     const A_EUSD = await eusdToken.balanceOf(A)
     const B_EUSD = await eusdToken.balanceOf(B)
     const C_EUSD = await eusdToken.balanceOf(C)
-    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD)
+    const expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(toBN(dec(2, 20)).mul(toBN("3"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
     // Check total EUSD supply
     const totalSupply = await eusdToken.totalSupply()
     th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply)
@@ -5077,6 +5110,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await sortedTroves.contains(flyn))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -5086,7 +5120,7 @@ contract('TroveManager', async accounts => {
     let W_EUSD = await eusdToken.balanceOf(whale)
     let SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     let O_EUSD = await eusdToken.balanceOf(owner)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -5143,6 +5177,7 @@ contract('TroveManager', async accounts => {
     assert.equal(dennis_ETHGain_before, dennis_ETHGain_after)
 
     treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     A_EUSD = await eusdToken.balanceOf(alice)
     B_EUSD = await eusdToken.balanceOf(bob)
     C_EUSD = await eusdToken.balanceOf(carol)
@@ -5152,7 +5187,7 @@ contract('TroveManager', async accounts => {
     W_EUSD = await eusdToken.balanceOf(whale)
     SP_EUSD = await eusdToken.balanceOf(stabilityPool.address)
     O_EUSD = await eusdToken.balanceOf(owner)
-    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(SP_EUSD).add(O_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     totalSupply = await eusdToken.totalSupply()
@@ -5274,12 +5309,13 @@ contract('TroveManager', async accounts => {
     th.assertIsApproximatelyEqual(erin_balance_after, 0)
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
     let D_EUSD = await eusdToken.balanceOf(dennis)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -5542,6 +5578,7 @@ contract('TroveManager', async accounts => {
 
     assert.isTrue(redemption_1.receipt.status);
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(alice)
     let B_EUSD = await eusdToken.balanceOf(bob)
     let C_EUSD = await eusdToken.balanceOf(carol)
@@ -5550,7 +5587,7 @@ contract('TroveManager', async accounts => {
     let F_EUSD = await eusdToken.balanceOf(flyn)
     let G_EUSD = await eusdToken.balanceOf(graham)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -5592,6 +5629,7 @@ contract('TroveManager', async accounts => {
     assert.isTrue(redemption_2.receipt.status);
 
     treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     A_EUSD = await eusdToken.balanceOf(alice)
     B_EUSD = await eusdToken.balanceOf(bob)
     C_EUSD = await eusdToken.balanceOf(carol)
@@ -5600,7 +5638,7 @@ contract('TroveManager', async accounts => {
     F_EUSD = await eusdToken.balanceOf(flyn)
     G_EUSD = await eusdToken.balanceOf(graham)
     W_EUSD = await eusdToken.balanceOf(whale)
-    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     totalSupply = await eusdToken.totalSupply()
@@ -5641,6 +5679,7 @@ contract('TroveManager', async accounts => {
     assert.isTrue(redemption_3.receipt.status);
 
     treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     A_EUSD = await eusdToken.balanceOf(alice)
     B_EUSD = await eusdToken.balanceOf(bob)
     C_EUSD = await eusdToken.balanceOf(carol)
@@ -5649,7 +5688,7 @@ contract('TroveManager', async accounts => {
     F_EUSD = await eusdToken.balanceOf(flyn)
     G_EUSD = await eusdToken.balanceOf(graham)
     W_EUSD = await eusdToken.balanceOf(whale)
-    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD)
+    expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(E_EUSD).add(F_EUSD).add(G_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("5"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     totalSupply = await eusdToken.totalSupply()
@@ -5882,11 +5921,12 @@ contract('TroveManager', async accounts => {
     assert.isTrue(baseRate_2.gt(baseRate_1))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -5969,11 +6009,12 @@ contract('TroveManager', async accounts => {
     assert.isTrue(lastFeeOpTime_3.gt(lastFeeOpTime_1))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -6029,11 +6070,12 @@ contract('TroveManager', async accounts => {
     assert.isTrue(baseRate_1.gt(toBN('0')))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -6089,11 +6131,12 @@ contract('TroveManager', async accounts => {
     assert.isTrue(baseRate_1.gt(toBN('0')))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("4"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -6352,12 +6395,13 @@ contract('TroveManager', async accounts => {
     assert.isTrue(await sortedTroves.contains(D))
 
     let treasuryEUSD = await eusdToken.balanceOf(treasury.address)
+    let liquidityIncentiveEUSD = await eusdToken.balanceOf(liquidityIncentive.address)
     let A_EUSD = await eusdToken.balanceOf(A)
     let B_EUSD = await eusdToken.balanceOf(B)
     let C_EUSD = await eusdToken.balanceOf(C)
     let D_EUSD = await eusdToken.balanceOf(D)
     let W_EUSD = await eusdToken.balanceOf(whale)
-    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD)
+    let expectedTotalSupply = A_EUSD.add(B_EUSD).add(C_EUSD).add(D_EUSD).add(W_EUSD).add(EUSD_GAS_COMPENSATION.mul(toBN("2"))).add(treasuryEUSD).add(liquidityIncentiveEUSD)
 
     // Check total EUSD supply
     let totalSupply = await eusdToken.totalSupply()
@@ -7013,6 +7057,7 @@ contract('TroveManager', async accounts => {
     // make sure ICR === 130%
     await priceFeed.setPrice('199233716550913639600');
     const TCR = (await th.getTCR(contracts))
+    // not absolutely equal because of runtime
     assert.equal(TCR.toString(), '1300000000000000000')
 
     assert.isFalse(await th.checkRecoveryMode(contracts))

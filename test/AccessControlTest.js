@@ -34,6 +34,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
   let collateralManager
 
   let treasury
+  let liquidityIncentive
   let communityIssuance
 
   let weth
@@ -66,6 +67,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     steth = contracts.steth
 
     treasury = ERDContracts.treasury
+    liquidityIncentive = ERDContracts.liquidityIncentive
     communityIssuance = ERDContracts.communityIssuance
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
@@ -197,34 +199,6 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       } catch (err) {
         assert.include(err.message, "revert")
         // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-      }
-    })
-
-    // updateTroveColl
-    it("updateTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
-      // Attempt call from alice
-      try {
-        const txAlice = await troveManager.updateTroveColl(bob, [contracts.weth.address], [toBN(dec(1, 18))], {
-          from: alice
-        })
-
-      } catch (err) {
-        assert.include(err.message, "revert")
-        assert.include(err.message, "TroveManager: Caller is not the BorrowerOperations contract")
-      }
-    })
-
-    // updateTroveCollTMR
-    it("updateTroveCollTMR(): reverts when called by an account that is not TroveManagerRedemptions", async () => {
-      // Attempt call from alice
-      try {
-        const txAlice = await troveManager.updateTroveCollTMR(bob, [contracts.weth.address], [toBN(dec(1, 18))], {
-          from: alice
-        })
-
-      } catch (err) {
-        assert.include(err.message, "revert")
-        assert.include(err.message, "TroveManager: Caller is not the TroveManagerLiquidations contract")
       }
     })
 

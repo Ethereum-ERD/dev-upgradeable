@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "../Interfaces/IAdjust.sol";
+import "../Interfaces/IOracle.sol";
 import "../Interfaces/IStETH.sol";
 
 /*
 * PriceFeed placeholder for testnet and development. The price is simply set manually and saved in a state 
 * variable. The contract does not connect to a live Chainlink price feed. 
 */
-contract StETHOracleTestnet is IAdjust {
+contract StETHOracleTestnet is IOracle {
     
     uint256 private _price = 200 * 1e18;
 
@@ -44,13 +44,5 @@ contract StETHOracleTestnet is IAdjust {
     function setPrice(uint256 price) external returns (bool) {
         _price = price;
         return true;
-    }
-
-    function adjustIn(uint _ethAmount) external view override returns (uint) {
-        return stETH.getSharesByPooledEth(_ethAmount);
-    }
-
-    function adjustOut(uint _shareAmount) external view override returns (uint) {
-        return stETH.getPooledEthByShares(_shareAmount);
     }
 }

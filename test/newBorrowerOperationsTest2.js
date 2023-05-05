@@ -48,6 +48,7 @@ contract('BorrowerOperations', async accounts => {
   let defaultPool
   let borrowerOperations
   let treasury
+  let liquidityIncentive
 
   let contracts
 
@@ -97,6 +98,7 @@ contract('BorrowerOperations', async accounts => {
       collateralManager = contracts.collateralManager
 
       treasury = ERDContracts.treasury
+      liquidityIncentive = ERDContracts.liquidityIncentive
       communityIssuance = ERDContracts.communityIssuance
 
       EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()

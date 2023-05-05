@@ -157,8 +157,6 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
 
     ITroveManager public troveManager;
 
-    ICollateralManager public collateralManager;
-
     // Needed to check if there are pending liquidations
     ISortedTroves public sortedTroves;
 
@@ -980,6 +978,10 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
         } else {
             // if scaleDiff >= 2
             compoundedStake = 0;
+        }
+
+        if(compoundedStake > totalEUSDDeposits) {
+            compoundedStake = totalEUSDDeposits;
         }
 
         /*

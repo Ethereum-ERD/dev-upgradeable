@@ -44,6 +44,7 @@ contract('StabilityPool', async accounts => {
   let defaultPool
   let borrowerOperations
   let treasury
+  let liquidityIncentive
   let communityIssuance
   let weth
   let priceFeedETH
@@ -113,11 +114,12 @@ contract('StabilityPool', async accounts => {
       collateralManager = contracts.collateralManager
 
       treasury = ERDContracts.treasury
+      liquidityIncentive = ERDContracts.liquidityIncentive
       communityIssuance = ERDContracts.communityIssuance
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
-      await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address)
+      await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
       await priceFeedSTETH.setPrice(dec(1, 18))
       // Register 3 front ends
       await th.registerFrontEnds(frontEnds, stabilityPool)
@@ -126,72 +128,85 @@ contract('StabilityPool', async accounts => {
         name: "Token A",
         symbol: "T.A",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       let result = await deploymentHelper.deployExtraCollateral(contracts, paramsA)
       tokenA = result.token
       priceFeedA = result.priceFeed
+      eTokenA = result.eToken
 
       const paramsB = {
         name: "Token B",
         symbol: "T.B",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsB)
       tokenB = result.token
       priceFeedB = result.priceFeed
+      eTokenB = result.eToken
 
       const paramsC = {
         name: "Token C",
         symbol: "T.C",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsC)
       tokenC = result.token
       priceFeedC = result.priceFeed
+      eTokenC = result.eToken
 
       const paramsD = {
         name: "Token D",
         symbol: "T.D",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsD)
       tokenD = result.token
       priceFeedD = result.priceFeed
+      eTokenD = result.eToken
 
       const paramsRisky = {
         name: "Risky Token",
         symbol: "T.R",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsRisky)
       tokenRisky = result.token
       priceFeedRisky = result.priceFeed
+      eTokenRisky = result.eToken
 
       const paramsSuperRisky = {
         name: "Super Risky Token",
         symbol: "T.SR",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsSuperRisky)
       tokenSuperRisky = result.token
       priceFeedSuperRisky = result.priceFeed
+      eTokenSuperRisky = result.eToken
 
       const paramsStableCoin = {
         name: "USD Coin",
         symbol: "USDC",
         decimals: 18,
-        price: toBN(dec(1, 18))
+        price: toBN(dec(1, 18)),
+        ratio: toBN(dec(1, 18))
       }
       result = await deploymentHelper.deployExtraCollateral(contracts, paramsStableCoin)
       stableCoin = result.token
       priceFeedStableCoin = result.priceFeed
-
+      eTokenStableCoin = result.eToken
     })
 
     it("MULTICOLLATERAL withdrawFromSP(): partial retrieval - retrieves correct EUSD amount and the entire ETH Gain, and updates deposit", async () => {

@@ -24,6 +24,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
 
     string public constant NAME = "ActivePool";
 
+    uint256 public constant DECIMAL_PRECISION = 1e18;
+
     address public borrowerOperationsAddress;
     address public troveManagerAddress;
     address public troveManagerLiquidationsAddress;
@@ -31,6 +33,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     address public stabilityPoolAddress;
     address public defaultPoolAddress;
     address public treasuryAddress;
+    address public liquidityIncentiveAddress;
     address internal collSurplusPoolAddress;
     IWETH public WETH;
     uint256 internal EUSDDebt;
@@ -48,6 +51,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         address _stabilityPoolAddress,
         address _defaultPoolAddress,
         address _treasuryAddress,
+        address _liquidityIncentiveAddress,
         address _collSurplusPoolAddress,
         address _wethAddress
     ) external onlyOwner {
@@ -58,6 +62,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         _requireIsContract(_stabilityPoolAddress);
         _requireIsContract(_defaultPoolAddress);
         _requireIsContract(_treasuryAddress);
+        _requireIsContract(_liquidityIncentiveAddress);
         _requireIsContract(_collSurplusPoolAddress);
         _requireIsContract(_wethAddress);
 
@@ -68,6 +73,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         stabilityPoolAddress = _stabilityPoolAddress;
         defaultPoolAddress = _defaultPoolAddress;
         treasuryAddress = _treasuryAddress;
+        liquidityIncentiveAddress = _liquidityIncentiveAddress;
         collSurplusPoolAddress = _collSurplusPoolAddress;
         WETH = IWETH(_wethAddress);
 
@@ -82,6 +88,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         emit StabilityPoolAddressChanged(_stabilityPoolAddress);
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
         emit TreasuryAddressChanged(_treasuryAddress);
+        emit LiquidityIncentiveAddressChanged(_liquidityIncentiveAddress);
         emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit WETHAddressChanged(_wethAddress);
     }
@@ -163,6 +170,40 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         }
     }
 
+    function sendCollFees(
+        address[] memory _collaterals,
+        uint256[] memory _amounts
+    ) external override {
+        _requireCallerIsBOorTroveMorSP();
+        uint256 collLen = _collaterals.length;
+        address collateral;
+        uint256 amount;
+        for (uint256 i = 0; i < collLen; ) {
+            collateral = _collaterals[i];
+            amount = _amounts[i];
+            if (amount != 0) {
+                uint256 liquidityIncentiveFee = amount
+                    .mul(ITroveManager(troveManagerAddress).getFactor())
+                    .div(DECIMAL_PRECISION);
+
+                _sendCollateral(
+                    liquidityIncentiveAddress,
+                    collateral,
+                    liquidityIncentiveFee
+                );
+
+                _sendCollateral(
+                    treasuryAddress,
+                    collateral,
+                    amount.sub(liquidityIncentiveFee)
+                );
+            }
+            unchecked {
+                i++;
+            }
+        }
+    }
+
     // Withdraw ETH from WETH and send to user
     function _sendETH(address _to, uint256 _amount) internal {
         address collateral = address(WETH);
@@ -197,6 +238,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         return ((_contractAddress == defaultPoolAddress) ||
             (_contractAddress == stabilityPoolAddress) ||
             (_contractAddress == treasuryAddress) ||
+            (_contractAddress == liquidityIncentiveAddress) ||
             (_contractAddress == collSurplusPoolAddress));
     }
 

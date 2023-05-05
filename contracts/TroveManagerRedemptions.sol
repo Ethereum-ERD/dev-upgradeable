@@ -22,9 +22,6 @@ contract TroveManagerRedemptions is
     IStabilityPool public override stabilityPool;
 
     ITroveManager internal troveManager;
-    ICollateralManager internal collateralManager;
-
-    address treasuryAddress;
 
     ICollSurplusPool collSurplusPool;
 
@@ -98,17 +95,11 @@ contract TroveManagerRedemptions is
         emit CollateralManagerAddressChanged(_collateralManagerAddress);
     }
 
-    function init(
-        address _treasuryAddress,
-        address _troveDebtAddress
-    ) external onlyOwner {
-        _requireIsContract(_treasuryAddress);
+    function init(address _troveDebtAddress) external onlyOwner {
         _requireIsContract(_troveDebtAddress);
 
-        treasuryAddress = _treasuryAddress;
         troveDebt = ITroveDebt(_troveDebtAddress);
 
-        emit TreasuryAddressChanged(_treasuryAddress);
         emit TroveDebtAddressChanged(_troveDebtAddress);
     }
 
@@ -220,18 +211,16 @@ contract TroveManagerRedemptions is
             );
             uint256 EUSDLot = singleRedemption.EUSDLot;
             contractsCache.troveManager.decreaseTroveDebt(borrower, EUSDLot);
-            contractsCache.troveManager.updateTroveCollTMR(
-                borrower,
-                collAssets,
-                collRemainds
-            );
+            uint256[] memory shares = contractsCache
+                .collateralManager
+                .resetEToken(borrower, collAssets, collRemainds);
             contractsCache.troveManager.updateStakeAndTotalStakes(borrower);
 
             emit TroveUpdated(
                 borrower,
                 newDebt,
                 collAssets,
-                collateralManager.adjustIn(collAssets, collRemainds),
+                shares,
                 DataTypes.TroveManagerOperation.redeemCollateral
             );
         }
@@ -502,9 +491,8 @@ contract TroveManagerRedemptions is
             _maxFeePercentage
         );
 
-        // Send the collateral fee to the treasury staking contract
-        contractsCache.activePool.sendCollateral(
-            treasuryAddress,
+        // Send the collateral fee to the treasury/liquidityIncentive contract
+        contractsCache.activePool.sendCollFees(
             getCollateralSupport(),
             totals.collFees
         );
@@ -667,7 +655,8 @@ contract TroveManagerRedemptions is
 
     function _requireAfterBootstrapPeriod() internal view {
         require(
-            block.timestamp >= deploymentStartTime.add(collateralManager.getBootstrapPeriod()),
+            block.timestamp >=
+                deploymentStartTime.add(collateralManager.getBootstrapPeriod()),
             "TroveManagerRedemptions: Redemptions are not allowed during bootstrap phase"
         );
     }

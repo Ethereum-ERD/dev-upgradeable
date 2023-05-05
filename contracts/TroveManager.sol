@@ -7,7 +7,8 @@ import "./Interfaces/ITroveManagerLiquidations.sol";
 import "./Interfaces/ITroveManagerRedemptions.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/ITroveDebt.sol";
-import "./Interfaces/IAdjust.sol";
+import "./Interfaces/IOracle.sol";
+import "./Interfaces/IEToken.sol";
 import "./TroveManagerDataTypes.sol";
 import "./TroveLogic.sol";
 import "./Dependencies/WadRayMath.sol";
@@ -28,7 +29,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
 
     ITroveManagerLiquidations internal troveManagerLiquidations;
     ITroveManagerRedemptions internal troveManagerRedemptions;
-    ICollateralManager internal collateralManager;
 
     ICollSurplusPool collSurplusPool;
 
@@ -98,6 +98,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         troveData.interestRateAddress = _interestRateAddress;
         troveData.troveManagerAddress = address(this);
         troveData.troveDebtAddress = _troveDebtAddress;
+        troveData.factor = DECIMAL_PRECISION / 10;
         emit TroveDebtAddressChanged(_troveDebtAddress);
     }
 
@@ -357,10 +358,10 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
             _requireTroveIsActive(_borrower);
 
             // Compute pending rewards
-            (
-                uint256[] memory pendingCollRewards,
-                uint256[] memory pendingShareRewards
-            ) = _getPendingCollReward(_borrower, collaterals);
+            (uint256[] memory pendingCollRewards, ) = _getPendingCollReward(
+                _borrower,
+                collaterals
+            );
             uint256 pendingEUSDDebtReward = getPendingEUSDDebtReward(_borrower);
 
             // Apply pending rewards to trove's state
@@ -370,21 +371,10 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
                 pendingEUSDDebtReward,
                 troveData.borrowIndex
             );
-            uint256 collLen = collaterals.length;
-            uint256[] memory newShares = new uint256[](collLen);
-            for (uint256 i = 0; i < collLen; ) {
-                uint256 reward = pendingShareRewards[i];
-                if (reward != 0) {
-                    address collateral = collaterals[i];
-                    Troves[_borrower].shares[collateral] = Troves[_borrower]
-                        .shares[collateral]
-                        .add(reward);
-                    newShares[i] = Troves[_borrower].shares[collateral];
-                }
-                unchecked {
-                    i++;
-                }
-            }
+            uint256[] memory newShares = collateralManager.applyRewards(
+                _borrower,
+                pendingCollRewards
+            );
 
             troveData.updateInterestRates();
 
@@ -486,7 +476,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         }
         return (
             pendingCollRewards,
-            collateralManager.adjustIn(_collaterals, pendingCollRewards)
+            collateralManager.getShares(_collaterals, pendingCollRewards)
         );
     }
 
@@ -586,7 +576,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
             getEUSDGasCompensation()
         );
         (
-            uint256[] memory sharesAdjust,
+            uint256[] memory amounts,
             ,
             address[] memory collaterals
         ) = getTroveColls(_borrower);
@@ -597,10 +587,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         );
 
         debt = debt.add(pendingEUSDDebtReward);
-        uint256[] memory colls = ERDMath._addArray(
-            sharesAdjust,
-            pendingCollRewards
-        );
+        uint256[] memory colls = ERDMath._addArray(amounts, pendingCollRewards);
         return (
             debt,
             colls,
@@ -642,13 +629,15 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         address collateral;
         uint256 oldStake;
         uint256 newStake;
-        address[] memory collaterals = getCollateralSupport();
+        (
+            address[] memory collaterals,
+            uint256[] memory shares
+        ) = collateralManager.getCollateralShares(_borrower);
         uint256 collLen = collaterals.length;
         for (uint256 i = 0; i < collLen; ) {
             collateral = collaterals[i];
-            uint256 share = Troves[_borrower].shares[collateral];
             oldStake = Troves[_borrower].stakes[collateral];
-            newStake = _computeNewStake(collateral, share);
+            newStake = _computeNewStake(collateral, shares[i]);
             Troves[_borrower].stakes[collateral] = newStake;
             totalStakes[collateral] = totalStakes[collateral].sub(oldStake).add(
                 newStake
@@ -793,11 +782,14 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         troveDebt.subDebt(_borrower, oldDebt, troveData.borrowIndex);
 
         Troves[_borrower].status = closedStatus;
-        address[] memory collaterals = getCollateralSupport();
+        address[] memory collaterals = collateralManager.clearEToken(
+            _borrower,
+            closedStatus
+        );
+
         uint256 collLend = collaterals.length;
         for (uint256 i = 0; i < collLend; ) {
             address collateral = collaterals[i];
-            Troves[_borrower].shares[collateral] = 0;
             rewardSnapshots[_borrower].collAmounts[collateral] = 0;
             rewardSnapshots[_borrower].EUSDDebt[collateral] = 0;
             unchecked {
@@ -915,9 +907,23 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
     //     troveManagerRedemptions.updateTroves(_borrowers, _lowerHints, _upperHints);
     // }
 
+    function setFactor(uint256 _factor) external override {
+        require(
+            msg.sender == address(collateralManager),
+            "TroveManager: Bad caller"
+        );
+        troveData.factor = _factor;
+    }
+
+    function getFactor() external view override returns (uint256) {
+        return troveData.factor;
+    }
+
     // --- Recovery Mode and TCR functions ---
 
     function getTCR(uint256 _price) external view override returns (uint256) {
+        // (, , uint256 value) = getEntireSystemColl(_price);
+        // return _getTCR(value);
         (
             address[] memory collaterals,
             uint256[] memory colls
@@ -930,11 +936,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         uint256 _price
     ) external view override returns (bool) {
         uint256 debt = getEntireSystemDebt();
-        (
-            address[] memory collaterals,
-            uint256[] memory colls
-        ) = getEntireSystemColl();
-        (uint256 value, ) = _getValue(collaterals, colls, _price);
+        (, , uint256 value) = getEntireSystemColl(_price);
         return _checkRecoveryMode(value, debt, getCCR());
     }
 
@@ -1172,8 +1174,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         address _borrower,
         address _collateral
     ) external view override returns (uint256, uint256) {
-        uint256 share = Troves[_borrower].shares[_collateral];
-        return (collateralManager.adjustOut(_collateral, share), share);
+        return collateralManager.getTroveColl(_borrower, _collateral);
     }
 
     function getTroveColls(
@@ -1184,21 +1185,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         override
         returns (uint256[] memory, uint256[] memory, address[] memory)
     {
-        address[] memory collaterals = getCollateralSupport();
-        uint256 collLen = collaterals.length;
-        uint256[] memory shares = new uint256[](collLen);
-        DataTypes.Trove storage trove = Troves[_borrower];
-        for (uint256 i = 0; i < collLen; ) {
-            shares[i] = trove.shares[collaterals[i]];
-            unchecked {
-                i++;
-            }
-        }
-        return (
-            collateralManager.adjustOut(collaterals, shares),
-            shares,
-            collaterals
-        );
+        return collateralManager.getTroveColls(_borrower);
     }
 
     function getTroveStake(
@@ -1252,40 +1239,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         Troves[_borrower].status = DataTypes.Status(_num);
     }
 
-    function updateTroveColl(
-        address _borrower,
-        address[] memory _collaterals,
-        uint256[] memory _amounts
-    ) external override {
-        _requireCallerIsBorrowerOperations();
-        uint256 collLen = _collaterals.length;
-        address collateral;
-        for (uint256 i = 0; i < collLen; ) {
-            collateral = _collaterals[i];
-            Troves[_borrower].shares[collateral] = _amounts[i];
-            unchecked {
-                i++;
-            }
-        }
-    }
-
-    function updateTroveCollTMR(
-        address _borrower,
-        address[] memory _collaterals,
-        uint256[] memory _amounts
-    ) external override {
-        _requireCallerIsTMR();
-        uint256 collLen = _collaterals.length;
-        address collateral;
-        for (uint256 i = 0; i < collLen; ) {
-            collateral = _collaterals[i];
-            Troves[_borrower].shares[collateral] = _amounts[i];
-            unchecked {
-                i++;
-            }
-        }
-    }
-
     function increaseTroveDebt(
         address _borrower,
         uint256 _debtIncrease
@@ -1317,6 +1270,8 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
     }
 
     function getTotalValue() public view override returns (uint256) {
+        // (, , uint256 totalValue) = getEntireSystemColl();
+        // return totalValue;
         (
             address[] memory collaterals,
             uint256[] memory amounts
@@ -1340,12 +1295,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         returns (address[] memory)
     {
         return collateralManager.getCollateralSupport();
-    }
-
-    function getCollateralParams(
-        address _collateral
-    ) public view override returns (DataTypes.CollateralParams memory) {
-        return collateralManager.getCollateralParams(_collateral);
     }
 
     function getCCR() public view override returns (uint256) {

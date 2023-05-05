@@ -20,7 +20,7 @@ interface IEUSDToken is IERC20Upgradeable, IERC20PermitUpgradeable {
 
     function burn(address _account, uint256 _amount) external;
 
-    function mintToTreasury(uint256 _amount) external;
+    function mintToTreasury(uint256 _amount, uint256 _factor) external;
 
     function sendToPool(
         address _sender,

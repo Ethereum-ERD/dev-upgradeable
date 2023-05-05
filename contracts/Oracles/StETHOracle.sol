@@ -4,11 +4,11 @@ pragma solidity 0.8.18;
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "../Interfaces/IAdjust.sol";
+import "../Interfaces/IOracle.sol";
 import "../Interfaces/IStETH.sol";
 import "../Dependencies/ERDMath.sol";
 
-contract StETHOracle is OwnableUpgradeable, IAdjust {
+contract StETHOracle is OwnableUpgradeable, IOracle {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
 
@@ -338,13 +338,5 @@ contract StETHOracle is OwnableUpgradeable, IAdjust {
     function setPrice(uint _price) external onlyOwner {
         lastGoodPrice = _price;
         emit LastGoodPriceUpdated(_price);
-    }
-
-    function adjustIn(uint _ethAmount) external view override returns (uint) {
-        return stETH.getSharesByPooledEth(_ethAmount);
-    }
-
-    function adjustOut(uint _shareAmount) external view override returns (uint) {
-        return stETH.getPooledEthByShares(_shareAmount);
     }
 }

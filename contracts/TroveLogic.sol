@@ -84,9 +84,7 @@ library TroveLogic {
      * @dev Updates the liquidity cumulative index and the borrow index.
      * @param trove the reserve object
      **/
-    function updateState(
-        DataTypes.TroveData storage trove
-    ) internal {
+    function updateState(DataTypes.TroveData storage trove) internal {
         uint256 scaledDebt = ITroveDebt(trove.troveDebtAddress)
             .scaledTotalSupply();
         uint256 previousBorrowIndex = trove.borrowIndex;
@@ -188,7 +186,8 @@ library TroveLogic {
 
         if (vars.amountToMint != 0) {
             IEUSDToken(trove.eusdTokenAddress).mintToTreasury(
-                vars.amountToMint
+                vars.amountToMint,
+                trove.factor
             );
         }
     }

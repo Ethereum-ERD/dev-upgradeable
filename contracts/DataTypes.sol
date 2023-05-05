@@ -33,6 +33,8 @@ library DataTypes {
     }
 
     struct CollateralParams {
+        uint256 ratio;
+        address eToken;
         address oracle;
         CollStatus status;
         uint256 index;
@@ -40,7 +42,6 @@ library DataTypes {
 
     // Store the necessary data for a trove
     struct Trove {
-        mapping(address => uint256) shares;
         mapping(address => uint256) stakes;
         Status status;
         uint128 arrayIndex;
@@ -64,6 +65,7 @@ library DataTypes {
         address interestRateAddress;
         //address of the EUSD token
         address eusdTokenAddress;
+        uint256 factor;
     }
 
     // Object containing the ETH/wrapperETH and EUSD snapshots for a given active trove
