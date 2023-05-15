@@ -15,6 +15,8 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
 
     mapping(address => uint256) internal shares;
 
+    uint256 private _totalShares;
+
     function initialize(
         string memory name_,
         string memory symbol_
@@ -41,6 +43,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
         shares[_account] = shares[_account].add(share);
+        _totalShares = _totalShares.add(share);
         _mint(_account, _amount);
         return share;
     }
@@ -52,15 +55,18 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
         shares[_account] = shares[_account].sub(share);
+        _totalShares = _totalShares.sub(share);
         _burn(_account, share);
         return share;
     }
 
     function clear(address _account) external override {
         _requireIsCollateralManager();
-        uint256 amount = balanceOf(_account);
+        uint256 amount = super.balanceOf(_account);
+        uint256 share = shares[_account];
         _burn(_account, amount);
         shares[_account] = 0;
+        _totalShares = _totalShares.sub(share);
     }
 
     function reset(
@@ -69,10 +75,12 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) external override returns (uint256) {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
-        uint256 oldAmount = getAmount(shares[_account]);
+        uint256 oldShare = shares[_account];
+        uint256 oldAmount = getAmount(oldShare);
         _burn(_account, oldAmount);
         _mint(_account, _amount);
         shares[_account] = share;
+        _totalShares = _totalShares.sub(oldShare).add(share);
         return share;
     }
 
@@ -83,6 +91,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         uint256 share = getShare(_amount);
         _requireValidAdjustment(_amount);
         shares[msg.sender] = shares[msg.sender].sub(share);
+        _totalShares = _totalShares.sub(share);
         _transfer(msg.sender, _recipient, _amount);
         return true;
     }
@@ -94,8 +103,9 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) public virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
         uint256 share = getShare(_amount);
         _requireValidAdjustment(_amount);
-        super.transferFrom(_sender, _recipient, _amount);
         shares[_sender] = shares[_sender].sub(share);
+        _totalShares = _totalShares.sub(share);
+        super.transferFrom(_sender, _recipient, _amount);
         return true;
     }
 
@@ -111,6 +121,14 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     function getAmount(uint256 _share) public view override returns (uint256) {
         // StETH: return getPooledEthByShares(uint256 _sharesAmount);
         return _share;
+    }
+
+    function balanceOf(address _account) public view virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (uint256) {
+        return getAmount(sharesOf(_account));
+    }
+
+    function totalSupply() public view virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (uint256) {
+        return getAmount(_totalShares);
     }
 
     function _requireIsCollateralManager() internal view {
