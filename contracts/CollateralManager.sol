@@ -600,7 +600,7 @@ contract CollateralManager is
         uint256 totalDebt = getEntireSystemDebt();
         (, , uint256 totalValue) = getEntireSystemColl(price);
         bool isRecoveryMode = _checkRecoveryMode(totalValue, totalDebt, CCR);
-        if (!isRecoveryMode) {
+        if (isRecoveryMode) {
             return false;
         }
         (uint256[] memory colls, , ) = getTroveColls(_account);

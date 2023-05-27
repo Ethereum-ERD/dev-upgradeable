@@ -89,9 +89,9 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         uint256 _amount
     ) public virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
         uint256 share = getShare(_amount);
-        _requireValidAdjustment(_amount);
+        _requireValidAdjustment(msg.sender, _amount);
         shares[msg.sender] = shares[msg.sender].sub(share);
-        _totalShares = _totalShares.sub(share);
+        shares[_recipient] = shares[_recipient].add(share);
         _transfer(msg.sender, _recipient, _amount);
         return true;
     }
@@ -102,9 +102,9 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         uint256 _amount
     ) public virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
         uint256 share = getShare(_amount);
-        _requireValidAdjustment(_amount);
+        _requireValidAdjustment(_sender, _amount);
         shares[_sender] = shares[_sender].sub(share);
-        _totalShares = _totalShares.sub(share);
+        shares[_recipient] = shares[_recipient].add(share);
         super.transferFrom(_sender, _recipient, _amount);
         return true;
     }
@@ -135,10 +135,10 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         require(msg.sender == address(collateralManager), "EToken: Bad caller");
     }
 
-    function _requireValidAdjustment(uint256 _amount) internal view {
+    function _requireValidAdjustment(address _sender, uint256 _amount) internal view {
         require(
             collateralManager.validAdjustment(
-                msg.sender,
+                _sender,
                 tokenAddress,
                 _amount
             ),
