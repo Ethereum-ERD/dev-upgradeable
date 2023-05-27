@@ -240,7 +240,7 @@ contract CollateralManager is
     }
 
     function priceUpdate() external override {
-        if (collateralsCount < 3) {
+        if (collateralsCount < 2) {
             return;
         }
         for (uint256 i = 1; i < collateralsCount; ) {
