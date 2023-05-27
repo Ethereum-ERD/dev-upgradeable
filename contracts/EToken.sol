@@ -56,7 +56,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         uint256 share = getShare(_amount);
         shares[_account] = shares[_account].sub(share);
         _totalShares = _totalShares.sub(share);
-        _burn(_account, share);
+        _burn(_account, _amount);
         return share;
     }
 
