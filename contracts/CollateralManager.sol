@@ -213,6 +213,10 @@ contract CollateralManager is
     }
 
     function _setStatus(address _collateral, uint256 _num) internal {
+        require(
+            getIsSupport(_collateral),
+            "CollateralManager: Collateral not support"
+        );
         collateralParams[_collateral].status = DataTypes.CollStatus(_num);
     }
 
@@ -220,6 +224,7 @@ contract CollateralManager is
         address _collateral,
         address _oracle
     ) public override onlyOwner {
+        _requireCollIsActive(_collateral);
         collateralParams[_collateral].oracle = _oracle;
     }
 
@@ -227,6 +232,7 @@ contract CollateralManager is
         address _collateral,
         address _eTokenAddress
     ) public override onlyOwner {
+        _requireCollIsActive(_collateral);
         collateralParams[_collateral].eToken = _eTokenAddress;
     }
 
