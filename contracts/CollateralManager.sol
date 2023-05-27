@@ -174,8 +174,8 @@ contract CollateralManager is
                 }
             }
         } else {
-            uint256 tmpIndex = newIndex;
-            uint256 gap = oldIndex - newIndex;
+            uint256 tmpIndex = oldIndex;
+            uint256 gap = newIndex - oldIndex;
             for (uint256 i = 0; i < gap; ) {
                 tmpIndex = _down(tmpIndex);
                 unchecked {
@@ -183,7 +183,6 @@ contract CollateralManager is
                 }
             }
         }
-        collateralParams[_collateral].index = _newIndex;
     }
 
     function _up(uint256 _index) internal returns (uint256) {
@@ -199,9 +198,12 @@ contract CollateralManager is
     }
 
     function _swap(uint256 _x, uint256 _y) internal {
-        address collateral = collateralSupport[_x];
-        collateralSupport[_y] = collateralSupport[_x];
-        collateralSupport[_x] = collateral;
+        address collateral_1 = collateralSupport[_x];
+        address collateral_2 = collateralSupport[_y];
+        collateralSupport[_x] = collateral_2;
+        collateralSupport[_y] = collateral_1;
+        collateralParams[collateral_1].index = _y;
+        collateralParams[collateral_2].index = _x;
     }
 
     function pauseCollateral(address _collateral) external override onlyOwner {
