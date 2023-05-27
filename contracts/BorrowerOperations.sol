@@ -329,7 +329,7 @@ contract BorrowerOperations is
                 // }
             }
             if (hasWETH) {
-                _collaterals[index] = _collaterals[index.add(_amount)];
+                _amounts[index] = _amounts[index].add(_amount);
                 return (_collaterals, _amounts);
             } else {
                 return (collaterals, amounts);
