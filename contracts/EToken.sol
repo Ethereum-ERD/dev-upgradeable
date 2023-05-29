@@ -135,7 +135,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         require(msg.sender == address(collateralManager), "EToken: Bad caller");
     }
 
-    function _requireValidAdjustment(address _sender, uint256 _amount) internal view {
+    function _requireValidAdjustment(address _sender, uint256 _amount) internal {
         require(
             collateralManager.validAdjustment(
                 _sender,

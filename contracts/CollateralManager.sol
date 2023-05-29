@@ -247,7 +247,7 @@ contract CollateralManager is
         collateralParams[_collateral].ratio = _ratio;
     }
 
-    function priceUpdate() external override {
+    function priceUpdate() public override {
         if (collateralsCount < 2) {
             return;
         }
@@ -599,12 +599,13 @@ contract CollateralManager is
         address _account,
         address _collateral,
         uint256 _amount
-    ) external view override returns (bool) {
+    ) external override returns (bool) {
         bool active = troveManager.getTroveStatus(_account) == 1;
         if (!active) {
             return true;
         }
-        uint256 price = priceFeed.fetchPrice_view();
+        uint256 price = priceFeed.fetchPrice();
+        priceUpdate();
         uint256 totalDebt = getEntireSystemDebt();
         (, , uint256 totalValue) = getEntireSystemColl(price);
         bool isRecoveryMode = _checkRecoveryMode(totalValue, totalDebt, CCR);

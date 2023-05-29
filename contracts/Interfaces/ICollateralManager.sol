@@ -110,7 +110,7 @@ interface ICollateralManager {
         address _account,
         address _collateral,
         uint256 _amount
-    ) external view returns (bool);
+    ) external returns (bool);
 
     function adjustColls(
         uint256[] memory _initialAmounts,
