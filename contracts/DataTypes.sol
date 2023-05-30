@@ -48,12 +48,8 @@ library DataTypes {
     }
 
     struct TroveData {
-        //the liquidity index. Expressed in ray
-        uint128 liquidityIndex;
         //borrow index. Expressed in ray
         uint128 borrowIndex;
-        //the current supply rate. Expressed in ray
-        uint128 currentLiquidityRate;
         //the current borrow rate. Expressed in ray
         uint128 currentBorrowRate;
         uint40 lastUpdateTimestamp;

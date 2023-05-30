@@ -93,7 +93,6 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         _requireIsContract(_interestRateAddress);
         troveDebt = ITroveDebt(_troveDebtAddress);
         // init trove debt
-        troveData.liquidityIndex = uint128(WadRayMath.ray());
         troveData.borrowIndex = uint128(WadRayMath.ray());
         troveData.interestRateAddress = _interestRateAddress;
         troveData.troveManagerAddress = address(this);

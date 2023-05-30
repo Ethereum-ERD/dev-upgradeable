@@ -6,5 +6,5 @@ interface ITroveInterestRateStrategy {
 
     function getMaxBorrowRate() external view returns (uint256);
 
-    function calculateInterestRates() external view returns (uint256, uint256);
+    function calculateInterestRates() external view returns (uint256);
 }

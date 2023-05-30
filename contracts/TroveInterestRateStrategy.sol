@@ -109,7 +109,6 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
     struct CalcInterestRatesLocalVars {
         uint256 totalDebt;
         uint256 currentBorrowRate;
-        uint256 currentLiquidityRate;
         uint256 utilizationRate;
         uint256 TCR;
     }
@@ -118,7 +117,7 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
      * @dev Calculates the interest rates depending on the trove's state and configurations.
      * @return The liquidity rate, and the variable borrow rate
      **/
-    function calculateInterestRates() public view override returns (uint256, uint256) {
+    function calculateInterestRates() public view override returns (uint256) {
         DataTypes.TroveData memory troveData = troveManager.getTroveData();
 
         uint256 tcr = troveManager.getTCR(priceFeed.fetchPrice_view());
@@ -130,7 +129,6 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
         //updated by the previous TroveLogic.updateState() call
         vars.totalDebt = troveDebt.scaledTotalSupply().rayMul(troveData.borrowIndex);
         vars.currentBorrowRate = 0;
-        vars.currentLiquidityRate = 0;
 
         vars.utilizationRate = vars.totalDebt == 0
             ? 0
@@ -141,16 +139,10 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
             vars.currentBorrowRate = baseBorrowRate;
         } else {
             if (vars.utilizationRate >= optimalUtilizationRate) {
-                // vars.currentBorrowRate = baseBorrowRate.add(
-                //     rateSlope1.rayMul((tcr - OCR).wadDiv(OCR - ccr).wadToRay())
-                // );
                 vars.currentBorrowRate = baseBorrowRate.add(
                     rateSlope1.rayMul((tcr.sub(ccr).wadToRay()).rayDiv(OCR.sub(ccr.wadToRay())))
                 );
             } else {
-                // uint256 remaindUtilizationRateRatio = tcr.wadToRay().rayDiv(
-                //     OCR
-                // ) - WadRayMath.ray();
                 uint256 remaindUtilizationRateRatio = tcr.wadToRay().rayDiv(
                     OCR
                 ) - WadRayMath.ray();
@@ -161,35 +153,7 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
                 
             }
         }
-        
-        uint256 coefficient = vars.utilizationRate >= WadRayMath.ray()
-            ? WadRayMath.ray()
-            : vars.utilizationRate;
-        vars.currentLiquidityRate = _getOverallBorrowRate(
-            vars.totalDebt,
-            vars.currentBorrowRate
-        ).rayMul(coefficient);
 
-        return (vars.currentLiquidityRate, vars.currentBorrowRate);
-    }
-
-    /**
-     * @dev Calculates the overall borrow rate as the weighted average between the total variable debt and total stable debt
-     * @param totalDebt The total borrowed from the trove at a rate
-     * @param currentBorrowRate The current borrow rate of the trove
-     * @return The weighted averaged borrow rate
-     **/
-    function _getOverallBorrowRate(uint256 totalDebt, uint256 currentBorrowRate)
-        internal
-        pure
-        returns (uint256)
-    {
-        if (totalDebt == 0) return 0;
-
-        uint256 weightedRate = totalDebt.wadToRay().rayMul(currentBorrowRate);
-
-        uint256 overallBorrowRate = weightedRate.rayDiv(totalDebt.wadToRay());
-
-        return overallBorrowRate;
+        return vars.currentBorrowRate;
     }
 }
