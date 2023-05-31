@@ -17,7 +17,7 @@ contract BorrowerOperations is
     ReentrancyGuardUpgradeable
 {
     string public constant NAME = "BorrowerOperations";
-    
+
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
 
@@ -170,13 +170,7 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint
     ) external payable override nonReentrant {
-        if (msg.value == 0) {
-            // Function require length nonzero, used to save contract size on revert strings.
-            require(_amounts.length != 0, "BorrowerOps: Length is zero");
-            _requireValidOpenTroveCollateral(_colls, _amounts);
-        } else {
-            _requireActiveCollateral(_colls);
-        }
+        _requireValidOpenTroveCollateral(_colls, _amounts, msg.value);
 
         LocalVariables_openTrove memory vars;
         (vars.collaterals, vars.netColls) = _adjustArray(
@@ -350,12 +344,12 @@ contract BorrowerOperations is
     ) external payable override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
-        if (msg.value == 0) {
-            _requireValidAdjustCollateralAmounts(_collsIn, _amountsIn);
-            _requireNoDuplicateColls(_collsIn);
-        } else {
-            _requireSupportCollateral(_collsIn);
-        }
+        _requireValidAdjustCollateralAmounts(
+            _collsIn,
+            _amountsIn,
+            msg.value,
+            false
+        );
 
         (params.collsIn, params.amountsIn) = _adjustArray(
             _collsIn,
@@ -389,9 +383,10 @@ contract BorrowerOperations is
 
         _requireValidAdjustCollateralAmounts(
             params.collsOut,
-            params.amountsOut
+            params.amountsOut,
+            0,
+            true
         );
-        _requireNoDuplicateColls(params.collsOut);
         params.sharesOut = collateralManager.getShares(
             params.collsOut,
             params.amountsOut
@@ -446,13 +441,16 @@ contract BorrowerOperations is
         );
         AdjustTrove_Params memory params;
         params.borrower = _borrower;
-        params.collsIn = _collsIn;
-        params.amountsIn = _amountsIn;
+        (params.collsIn, params.amountsIn) = _removeZero(_collsIn, _amountsIn);
         params.upperHint = _upperHint;
         params.lowerHint = _lowerHint;
 
-        _requireValidAdjustCollateralAmounts(params.collsIn, params.amountsIn);
-        _requireNoDuplicateColls(params.collsIn);
+        _requireValidAdjustCollateralAmounts(
+            params.collsIn,
+            params.amountsIn,
+            0,
+            false
+        );
         params.sharesIn = collateralManager.getShares(
             params.collsIn,
             params.amountsIn
@@ -474,17 +472,19 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint
     ) external payable override nonReentrant {
-        if (msg.value == 0) {
-            _requireValidAdjustCollateralAmounts(_collsIn, _amountsIn);
-            _requireValidAdjustCollateralAmounts(_collsOut, _amountsOut);
-            _requireNoOverlapColls(_collsIn, _collsOut);
-            _requireNoDuplicateColls(_collsIn);
-            _requireNoDuplicateColls(_collsOut);
-        } else {
-            _requireSupportCollateral(_collsIn);
-            _requireSupportCollateral(_collsOut);
-            _requireNoWETHColls(_collsOut);
-        }
+        _requireNoOverlapColls(_collsIn, _collsOut);
+        _requireValidAdjustCollateralAmounts(
+            _collsIn,
+            _amountsIn,
+            msg.value,
+            false
+        );
+        _requireValidAdjustCollateralAmounts(
+            _collsOut,
+            _amountsOut,
+            msg.value,
+            true
+        );
 
         (
             address[] memory adjustCollsIn,
@@ -605,14 +605,11 @@ contract BorrowerOperations is
 
         vars.debt = contractsCache.troveManager.getTroveDebt(params.borrower);
 
-        (vars.newValue, vars.newDebt) = _getNewTroveAmounts(
-            vars.currValue,
-            vars.debt,
-            vars.valueIn,
-            vars.valueOut,
-            vars.netDebtChange,
-            params.isDebtIncrease
-        );
+        // Compute the new collateral & debt, considering the change in coll and debt. Assumes 0 pending rewards.
+        vars.newValue = vars.currValue.add(vars.valueIn).sub(vars.valueOut);
+        vars.newDebt = params.isDebtIncrease
+            ? vars.debt.add(vars.netDebtChange)
+            : vars.debt.sub(vars.netDebtChange);
 
         // Get the collChange based on whether or not collateral was sent in the transaction
         vars.isCollIncrease = vars.newValue > vars.currValue;
@@ -639,7 +636,11 @@ contract BorrowerOperations is
                     vars.netDebtChange
                 )
             );
-            _requireValidEUSDRepayment(vars.debt, vars.netDebtChange);
+            // _requireValidEUSDRepayment(vars.debt, vars.netDebtChange);
+            require(
+                vars.netDebtChange <= vars.debt.sub(EUSD_GAS_COMPENSATION()),
+                "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
+            );
             _requireSufficientEUSDBalance(
                 contractsCache.eusdToken,
                 params.borrower,
@@ -719,7 +720,7 @@ contract BorrowerOperations is
             0
         );
         uint256 debt = troveManagerCached.getTroveDebt(msg.sender);
-        
+
         uint256 gas = EUSD_GAS_COMPENSATION();
         _requireSufficientEUSDBalance(
             eusdTokenCached,
@@ -832,7 +833,7 @@ contract BorrowerOperations is
 
         // Send fee to treasury contract
         _eusdToken.mintToTreasury(EUSDFee, _troveManager.getFactor());
-        
+
         return EUSDFee;
     }
 
@@ -899,6 +900,30 @@ contract BorrowerOperations is
         _eusdToken.burn(_account, _EUSD);
     }
 
+    function _removeZero(
+        address[] memory _colls,
+        uint256[] memory _amounts
+    ) internal pure returns (address[] memory, uint256[] memory) {
+        uint256 collLen = _colls.length;
+        uint256 count;
+        for (uint256 i = 0; i < collLen; i++) {
+            if (_amounts[i] != 0) {
+                count = count + 1;
+            }
+        }
+        address[] memory colls = new address[](count);
+        uint256[] memory amounts = new uint256[](count);
+        uint256 index;
+        for (uint256 i = 0; i < collLen; i++) {
+            if (_amounts[i] != 0) {
+                colls[index] = _colls[i];
+                amounts[index] = _amounts[i];
+                index = index + 1;
+            }
+        }
+        return (colls, amounts);
+    }
+
     // --- 'Require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
@@ -907,10 +932,19 @@ contract BorrowerOperations is
 
     function _requireValidOpenTroveCollateral(
         address[] memory _colls,
-        uint256[] memory _amounts
+        uint256[] memory _amounts,
+        uint256 _ethAmount
     ) internal view {
         uint256 collsLen = _colls.length;
         _requireLengthsEqual(collsLen, _amounts.length);
+        if (_ethAmount == 0) {
+            require(collsLen != 0, "BorrowerOps: Length is zero");
+        } else {
+            require(
+                collateralManager.getIsActive(address(WETH)),
+                "BorrowerOps: ETH does not active or is paused"
+            );
+        }
         for (uint256 i; i < collsLen; i++) {
             require(
                 collateralManager.getIsActive(_colls[i]),
@@ -920,38 +954,30 @@ contract BorrowerOperations is
         }
     }
 
-    function _requireActiveCollateral(address[] memory _colls) internal view {
-        uint256 collsLen = _colls.length;
-        for (uint256 i = 0; i < collsLen; i++) {
-            require(
-                collateralManager.getIsActive(_colls[i]),
-                "BorrowerOps: Collateral does not active or is paused"
-            );
-        }
-    }
-
     function _requireValidAdjustCollateralAmounts(
         address[] memory _colls,
-        uint256[] memory _amounts
+        uint256[] memory _amounts,
+        uint256 _ethAmount,
+        bool _isWitdrawal
     ) internal view {
         uint256 collsLen = _colls.length;
         _requireLengthsEqual(collsLen, _amounts.length);
+        _requireNoDuplicateColls(_colls);
+        if (_ethAmount != 0) {
+            require(
+                collateralManager.getIsSupport(address(WETH)),
+                "BorrowerOps: ETH does not support"
+            );
+            if (_isWitdrawal) {
+                _requireNoWETHColls(_colls);
+            }
+        }
         for (uint256 i; i < collsLen; ++i) {
             require(
                 collateralManager.getIsSupport(_colls[i]),
                 "BorrowerOps: Collateral does not support"
             );
             require(_amounts[i] != 0, "BorrowerOps: Collateral amount is 0");
-        }
-    }
-
-    function _requireSupportCollateral(address[] memory _colls) internal view {
-        uint256 collsLen = _colls.length;
-        for (uint256 i = 0; i < collsLen; i++) {
-            require(
-                collateralManager.getIsSupport(_colls[i]),
-                "BorrowerOps: Collateral does not support"
-            );
         }
     }
 
@@ -1008,14 +1034,6 @@ contract BorrowerOperations is
         require(status == 1, "BorrowerOps: Trove does not exist or is closed");
     }
 
-    function _requireTroveisNotActive(
-        ITroveManager _troveManager,
-        address _borrower
-    ) internal view {
-        uint256 status = _troveManager.getTroveStatus(_borrower);
-        require(status != 1, "BorrowerOps: Trove is active");
-    }
-
     function _requireValidAdjustmentInCurrentMode(
         bool _isRecoveryMode,
         uint256[] memory _collWithdrawals,
@@ -1042,7 +1060,11 @@ contract BorrowerOperations is
             );
             if (_isDebtIncrease) {
                 _requireICRisAboveCCR(_vars.newICR);
-                _requireNewICRisAboveOldICR(_vars.newICR, _vars.oldICR);
+                // _requireNewICRisAboveOldICR(_vars.newICR, _vars.oldICR);
+                require(
+                    _vars.newICR >= _vars.oldICR,
+                    "BorrowerOps: Cannot decrease your Trove's ICR in Recovery Mode"
+                );
             }
         } else {
             // if Normal Mode
@@ -1070,16 +1092,6 @@ contract BorrowerOperations is
         );
     }
 
-    function _requireNewICRisAboveOldICR(
-        uint256 _newICR,
-        uint256 _oldICR
-    ) internal pure {
-        require(
-            _newICR >= _oldICR,
-            "BorrowerOps: Cannot decrease your Trove's ICR in Recovery Mode"
-        );
-    }
-
     function _requireNewTCRisAboveCCR(uint256 _newTCR) internal view {
         require(
             _newTCR >= CCR(),
@@ -1089,18 +1101,8 @@ contract BorrowerOperations is
 
     function _requireAtLeastMinNetDebt(uint256 _netDebt) internal view {
         require(
-            _netDebt >= MIN_NET_DEBT(),
+            _netDebt >= collateralManager.getMinNetDebt(),
             "BorrowerOps: Trove's net debt must be greater than minimum"
-        );
-    }
-
-    function _requireValidEUSDRepayment(
-        uint256 _currentDebt,
-        uint256 _debtRepayment
-    ) internal view {
-        require(
-            _debtRepayment <= _currentDebt.sub(EUSD_GAS_COMPENSATION()),
-            "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
         );
     }
 
@@ -1141,22 +1143,6 @@ contract BorrowerOperations is
         require(length1 == length2, "BorrowerOps: Length mismatch");
     }
 
-    // Compute the new collateral & debt, considering the change in coll and debt. Assumes 0 pending rewards.
-
-    function _getNewTroveAmounts(
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _valueIn,
-        uint256 _valueOut,
-        uint256 _debtChange,
-        bool _isDebtIncrease
-    ) internal pure returns (uint256 newValue, uint256 newDebt) {
-        newValue = _coll.add(_valueIn).sub(_valueOut);
-        newDebt = _isDebtIncrease
-            ? _debt.add(_debtChange)
-            : _debt.sub(_debtChange);
-    }
-
     function _getNewTCRFromTroveChange(
         uint256 _debtChange,
         bool _isDebtIncrease,
@@ -1177,10 +1163,6 @@ contract BorrowerOperations is
         uint256 _debt
     ) external view override returns (uint256) {
         return _getCompositeDebt(_debt, EUSD_GAS_COMPENSATION());
-    }
-
-    function MIN_NET_DEBT() public view returns (uint256) {
-        return collateralManager.getMinNetDebt();
     }
 
     function CCR() internal view returns (uint256) {
