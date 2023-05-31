@@ -680,14 +680,11 @@ contract TroveManagerRedemptions is
         require(
             lowerHintsLen == _upperHints.length &&
                 lowerHintsLen == _borrowers.length,
-            "TM: Length mismatch"
+            "TMR: Length mismatch"
         );
         uint256 price = priceFeed.fetchPrice_view();
         for (uint256 i = 0; i < lowerHintsLen; i++) {
             _updateTrove(_borrowers[i], _lowerHints[i], _upperHints[i], price);
-            // unchecked {
-            //     i++;
-            // }
         }
     }
 
@@ -698,6 +695,6 @@ contract TroveManagerRedemptions is
         uint256 _price
     ) internal {
         uint256 _ICR = troveManager.getCurrentICR(_borrower, _price);
-        sortedTroves.reInsert(_borrower, _ICR, _lowerHint, _upperHint);
+        sortedTroves.reInsert(_borrower, _ICR, _upperHint, _lowerHint);
     }
 }

@@ -15,7 +15,11 @@ import "./TroveLogic.sol";
 import "./Dependencies/WadRayMath.sol";
 import "./DataTypes.sol";
 
-contract TroveManager is TroveManagerDataTypes, ITroveManager, ReentrancyGuardUpgradeable {
+contract TroveManager is
+    TroveManagerDataTypes,
+    ITroveManager,
+    ReentrancyGuardUpgradeable
+{
     string public constant NAME = "TroveManager";
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
@@ -342,7 +346,9 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager, ReentrancyGuardUp
         return (newColls, rewardAssets, currentEUSDDebt);
     }
 
-    function applyPendingRewards(address _borrower) external override nonReentrant {
+    function applyPendingRewards(
+        address _borrower
+    ) external override nonReentrant {
         _requireCallerIsBOorTMR();
         return _applyPendingRewards(activePool, defaultPool, _borrower);
     }
@@ -1142,7 +1148,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager, ReentrancyGuardUp
     function _requireCallerIsTMR() internal view {
         require(
             msg.sender == address(troveManagerRedemptions),
-            "TroveManager: Caller is not the TroveManagerLiquidations contract"
+            "TroveManager: Caller is not the TroveManagerRedemptions contract"
         );
     }
 

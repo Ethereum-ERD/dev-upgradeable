@@ -577,7 +577,9 @@ contract CollateralManager is
         uint256 activeBalance;
         uint256 defautBalance;
         for (uint256 i = 0; i < collateralsCount; ) {
-            activeBalance = IEToken(collateralParams[collateralSupport[i]].eToken).totalSupply();
+            activeBalance = IEToken(
+                collateralParams[collateralSupport[i]].eToken
+            ).totalSupply();
             // activeBalance = IERC20Upgradeable(collateralSupport[i]).balanceOf(
             //     address(activePool)
             // );
@@ -713,7 +715,7 @@ contract CollateralManager is
     function _requireCollIsActive(address _collateral) internal view {
         require(
             getIsActive(_collateral),
-            "CollateralManager: Collateral not pause"
+            "CollateralManager: Collateral not active"
         );
     }
 
