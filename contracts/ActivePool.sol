@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -21,6 +21,7 @@ import "./Interfaces/IWETH.sol";
 contract ActivePool is OwnableUpgradeable, IActivePool {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     string public constant NAME = "ActivePool";
 
@@ -230,7 +231,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         address _collateral,
         uint256 _amount
     ) internal {
-        IERC20Upgradeable(_collateral).transfer(_to, _amount);
+        IERC20Upgradeable(_collateral).safeTransfer(_to, _amount);
         emit ActivePoolCollBalanceUpdated(
             _collateral,
             IERC20Upgradeable(_collateral).balanceOf(address(this))

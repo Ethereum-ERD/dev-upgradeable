@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -156,6 +157,7 @@ contract StabilityPool is
     using ERDSafeMath128 for uint128;
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     string public constant NAME = "StabilityPool";
 
@@ -1038,7 +1040,10 @@ contract StabilityPool is
             amount = _amounts[i];
             if (amount != 0) {
                 if (collateral != address(WETH)) {
-                    IERC20Upgradeable(collateral).transfer(msg.sender, amount);
+                    IERC20Upgradeable(collateral).safeTransfer(
+                        msg.sender,
+                        amount
+                    );
                 } else {
                     hasETH = true;
                     ETHAmount = amount;

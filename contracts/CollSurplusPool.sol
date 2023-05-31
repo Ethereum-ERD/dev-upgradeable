@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Interfaces/ICollSurplusPool.sol";
@@ -12,6 +13,7 @@ import "./Dependencies/ERDMath.sol";
 contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     string public constant NAME = "CollSurplusPool";
 
@@ -155,7 +157,10 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
             if (amount != 0) {
                 info.balance[collateral] = 0;
                 if (collateral != wethAddress) {
-                    IERC20Upgradeable(collateral).transfer(_account, amount);
+                    IERC20Upgradeable(collateral).safeTransfer(
+                        _account,
+                        amount
+                    );
                 } else {
                     hasETH = true;
                     ETHAmount = amount;
