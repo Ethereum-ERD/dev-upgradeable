@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Dependencies/ERDMath.sol";
 import "./Interfaces/IEUSDToken.sol";
@@ -141,9 +142,14 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         _burn(_account, _amount);
     }
 
-    function mintToTreasury(uint256 _amount, uint256 _factor) external override {
+    function mintToTreasury(
+        uint256 _amount,
+        uint256 _factor
+    ) external override {
         _requireCallerIsTroveMorBO();
-        uint256 incentiveFee = _amount.mul(_factor).div(ERDMath.DECIMAL_PRECISION);
+        uint256 incentiveFee = _amount.mul(_factor).div(
+            ERDMath.DECIMAL_PRECISION
+        );
         _mint(liquidityIncentiveAddress, incentiveFee);
         _mint(treasuryAddress, _amount.sub(incentiveFee));
     }
@@ -228,7 +234,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
                 )
             )
         );
-        address recoveredAddress = ecrecover(digest, v, r, s);
+        address recoveredAddress = ECDSAUpgradeable.recover(digest, v, r, s);
         require(recoveredAddress == owner, "EUSD: invalid signature");
         _approve(owner, spender, amount);
     }
@@ -288,7 +294,8 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
 
     function _requireCallerIsTroveMorBO() internal view {
         require(
-            msg.sender == troveManagerAddress || msg.sender == borrowerOperationsAddress,
+            msg.sender == troveManagerAddress ||
+                msg.sender == borrowerOperationsAddress,
             "EUSD: Caller is not TroveManager or BO"
         );
     }
