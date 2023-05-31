@@ -136,9 +136,10 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
 
     function _getNetEUSDAmount(uint _ETH, address[] memory _colls, uint[] memory _amounts) internal returns (uint) {
         uint price = priceFeed.fetchPrice();
+        collateralManager.priceUpdate();
         uint ICR = troveManager.getCurrentICR(address(this), price);
         (uint value, ) = collateralManager.getValue(_colls, _amounts, price);
-        uint collateralValue = value.add(_ETH.mul(price));
+        uint collateralValue = value.mul(ERDMath.DECIMAL_PRECISION).add(_ETH.mul(price));
 
         uint EUSDAmount = collateralValue.div(ICR);
         uint borrowingRate = troveManager.getBorrowingRateWithDecay();
@@ -153,4 +154,10 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
             "BorrowerWrappersScript: caller must have an active trove"
         );
     }
+
+    // --- Fallback function ---
+
+    receive() external payable {}
+
+    fallback() external payable {}
 }

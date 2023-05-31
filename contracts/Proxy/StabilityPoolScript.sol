@@ -19,4 +19,10 @@ contract StabilityPoolScript {
     function withdrawFromSP(uint256 _amount) external {
         stabilityPool.withdrawFromSP(_amount);
     }
+
+    // --- Fallback function ---
+
+    receive() external payable {}
+
+    fallback() external payable {}
 }
