@@ -504,6 +504,20 @@ contract CollateralManager is
         return amounts;
     }
 
+    function getShare(
+        address _collateral,
+        uint256 _amount
+    ) external view override returns (uint256) {
+        return IEToken(collateralParams[_collateral].eToken).getShare(_amount);
+    }
+
+    function getAmount(
+        address _collateral,
+        uint256 _share
+    ) external view override returns (uint256) {
+        return IEToken(collateralParams[_collateral].eToken).getAmount(_share);
+    }
+
     function getTroveColls(
         address _borrower
     )

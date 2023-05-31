@@ -5,6 +5,7 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IWETH.sol";
@@ -24,6 +25,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     address public activePoolAddress;
     address public wethAddress;
 
+    ICollateralManager public collateralManager;
+
     // Collateral surplus claimable by trove owners
     // mapping (address => uint[]) internal balances;
     struct Info {
@@ -39,6 +42,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
 
     function setAddresses(
         address _borrowerOperationsAddress,
+        address _collateralManagerAddress,
         address _troveManagerAddress,
         address _troveManagerLiquidationsAddress,
         address _troveManagerRedemptionsAddress,
@@ -51,6 +55,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         _requireIsContract(_troveManagerRedemptionsAddress);
         _requireIsContract(_activePoolAddress);
         _requireIsContract(_wethAddress);
+
+        collateralManager = ICollateralManager(_collateralManagerAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
@@ -117,17 +123,19 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     ) external override {
         _requireCallerIsTMLorTMR();
 
-        address[] memory collaterals = ITroveManager(troveManagerAddress)
-            .getCollateralSupport();
-
+        address[] memory collaterals = collateralManager.getCollateralSupport();
+        uint256[] memory shares = collateralManager.getShares(
+            collaterals,
+            _amount
+        );
         uint256 length = collaterals.length;
         for (uint256 i = 0; i < length; ) {
             address collateral = collaterals[i];
-            uint256 amount = _amount[i];
-            if (amount != 0) {
+            uint256 share = shares[i];
+            if (share != 0) {
                 Info storage info = balances[_account];
                 info.hasBalance = true;
-                info.balance[collateral] = info.balance[collateral].add(amount);
+                info.balance[collateral] = info.balance[collateral].add(share);
             }
             unchecked {
                 i++;
@@ -139,31 +147,34 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
 
     function claimColl(address _account) external override {
         _requireCallerIsBorrowerOperations();
-        address[] memory collaterals = ITroveManager(troveManagerAddress)
-            .getCollateralSupport();
+        address[] memory collaterals = collateralManager.getCollateralSupport();
         uint256 length = collaterals.length;
         Info storage info = balances[_account];
         bool flag = info.hasBalance;
         require(flag, "CollSurplusPool: No collateral available to claim");
         info.hasBalance = false;
         uint256[] memory claimableColls = new uint256[](length);
+        uint256[] memory shares = new uint256[](length);
         emit CollBalanceUpdated(_account, false);
         bool hasETH;
         uint256 ETHAmount;
         for (uint256 i = 0; i < length; ) {
             address collateral = collaterals[i];
-            uint256 amount = info.balance[collateral];
-            claimableColls[i] = amount;
-            if (amount != 0) {
+            shares[i] = info.balance[collateral];
+            claimableColls[i] = collateralManager.getAmount(
+                collateral,
+                shares[i]
+            );
+            if (claimableColls[i] != 0) {
                 info.balance[collateral] = 0;
                 if (collateral != wethAddress) {
                     IERC20Upgradeable(collateral).safeTransfer(
                         _account,
-                        amount
+                        claimableColls[i]
                     );
                 } else {
                     hasETH = true;
-                    ETHAmount = amount;
+                    ETHAmount = claimableColls[i];
                 }
             }
             unchecked {
@@ -175,7 +186,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
             (bool success, ) = _account.call{value: ETHAmount}("");
             require(success, "CollSurplusPool: sending ETH failed");
         }
-        emit CollateralSent(_account, claimableColls);
+        emit CollateralSent(_account, shares, claimableColls);
     }
 
     // --- 'require' functions ---

@@ -67,7 +67,7 @@ library DataTypes {
     // Object containing the ETH/wrapperETH and EUSD snapshots for a given active trove
     struct RewardSnapshot {
         mapping(address => uint256) EUSDDebt;
-        mapping(address => uint256) collAmounts;
+        mapping(address => uint256) collShares;
     }
 
     struct ContractsCache {

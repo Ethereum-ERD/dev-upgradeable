@@ -81,6 +81,16 @@ interface ICollateralManager {
         uint256[] memory _shares
     ) external view returns (uint256[] memory);
 
+    function getShare(
+        address _collateral,
+        uint256 _amount
+    ) external view returns (uint256);
+
+    function getAmount(
+        address _collateral,
+        uint256 _share
+    ) external view returns (uint256);
+
     function getTroveColls(
         address _borrower
     )

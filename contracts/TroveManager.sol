@@ -416,7 +416,7 @@ contract TroveManager is
         uint256 collLen = collaterals.length;
         for (uint256 i = 0; i < collLen; ) {
             address collateral = collaterals[i];
-            rewardSnapshots[_borrower].collAmounts[collateral] = L_Coll[
+            rewardSnapshots[_borrower].collShares[collateral] = L_Coll[
                 collateral
             ];
             rewardSnapshots[_borrower].EUSDDebt[collateral] = L_EUSDDebt[
@@ -456,9 +456,10 @@ contract TroveManager is
     ) internal view returns (uint256[] memory, uint256[] memory) {
         uint256 collLen = _collaterals.length;
         uint256[] memory pendingCollRewards = new uint256[](collLen);
+        uint256[] memory pendingShareRewards = new uint256[](collLen);
         for (uint256 i = 0; i < collLen; ) {
             address collateral = _collaterals[i];
-            uint256 snapshotCollReward = rewardSnapshots[_borrower].collAmounts[
+            uint256 snapshotCollReward = rewardSnapshots[_borrower].collShares[
                 collateral
             ];
             uint256 rewardPerUnitStaked = L_Coll[collateral].sub(
@@ -475,15 +476,16 @@ contract TroveManager is
             uint256 collReward = stake.mul(rewardPerUnitStaked).div(
                 DECIMAL_PRECISION
             );
-            pendingCollRewards[i] = collReward;
+            pendingCollRewards[i] = collateralManager.getAmount(
+                _collaterals[i],
+                collReward
+            );
+            pendingShareRewards[i] = collReward;
             unchecked {
                 i++;
             }
         }
-        return (
-            pendingCollRewards,
-            collateralManager.getShares(_collaterals, pendingCollRewards)
-        );
+        return (pendingCollRewards, pendingShareRewards);
     }
 
     // Get the borrower's pending accumulated EUSD reward, earned by their stake
@@ -548,7 +550,7 @@ contract TroveManager is
         for (uint256 i = 0; i < collLen; ) {
             address collateral = collaterals[i];
             if (
-                rewardSnapshots[_borrower].collAmounts[collateral] <
+                rewardSnapshots[_borrower].collShares[collateral] <
                 L_Coll[collateral]
             ) {
                 return (true, collaterals);
@@ -704,10 +706,13 @@ contract TroveManager is
          */
         uint256 collLen = _collaterals.length;
         for (uint256 i = 0; i < collLen; ) {
-            uint256 amount = _colls[i];
+            uint256 share = collateralManager.getShare(
+                _collaterals[i],
+                _colls[i]
+            );
             address collateral = _collaterals[i];
             uint256 stake = totalStakes[collateral];
-            uint256 collNumerator = amount.mul(DECIMAL_PRECISION).add(
+            uint256 collNumerator = share.mul(DECIMAL_PRECISION).add(
                 lastCollError_Redistribution[collateral]
             );
             uint256 EUSDDebtNumerator = _proratedDebtForCollaterals[i]
@@ -796,7 +801,7 @@ contract TroveManager is
         uint256 collLend = collaterals.length;
         for (uint256 i = 0; i < collLend; ) {
             address collateral = collaterals[i];
-            rewardSnapshots[_borrower].collAmounts[collateral] = 0;
+            rewardSnapshots[_borrower].collShares[collateral] = 0;
             rewardSnapshots[_borrower].EUSDDebt[collateral] = 0;
             unchecked {
                 i++;
@@ -1228,7 +1233,7 @@ contract TroveManager is
         address _borrower,
         address _collateral
     ) external view override returns (uint256) {
-        return rewardSnapshots[_borrower].collAmounts[_collateral];
+        return rewardSnapshots[_borrower].collShares[_collateral];
     }
 
     function getRewardSnapshotEUSD(

@@ -623,9 +623,13 @@ contract StabilityPool is
         }
 
         address collateral;
+        uint256[] memory shares = collateralManager.getShares(
+            _collaterals,
+            _collToAdd
+        );
         for (uint256 i = 0; i < collateralsLen; ) {
             collateral = _collaterals[i];
-            collNumerators[i] = _collToAdd[i].mul(DECIMAL_PRECISION).add(
+            collNumerators[i] = shares[i].mul(DECIMAL_PRECISION).add(
                 lastCollError_Offset[collateral]
             );
 
@@ -778,9 +782,9 @@ contract StabilityPool is
     {
         collaterals = collateralManager.getCollateralSupport();
         uint256 collLen = collaterals.length;
-        gains = new uint256[](collLen);
+        uint256[] memory shares = new uint256[](collLen);
         for (uint256 i = 0; i < collLen; ) {
-            gains[i] = _getCollateralGainFromSnapshots(
+            shares[i] = _getCollateralGainFromSnapshots(
                 initialDeposit,
                 snapshots,
                 collaterals[i]
@@ -789,6 +793,7 @@ contract StabilityPool is
                 i++;
             }
         }
+        gains = collateralManager.getAmounts(collaterals, shares);
     }
 
     function _getCollateralGainFromSnapshots(

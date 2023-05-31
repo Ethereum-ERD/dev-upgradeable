@@ -8,12 +8,17 @@ interface ICollSurplusPool is IPool {
     // --- Events ---
 
     event CollBalanceUpdated(address indexed _account, bool _hasBalance);
-    event CollBalanceUpdated(address _collateral, uint256 _amount);
+    event CollateralSent(
+        address indexed _account,
+        uint256[] _shares,
+        uint[] _amounts
+    );
 
     // --- Contract setters ---
 
     function setAddresses(
         address _borrowerOperationsAddress,
+        address _collateralManagerAddress,
         address _troveManagerAddress,
         address _troveManagerLiquidationsAddress,
         address _troveManagerRedemptionsAddress,
@@ -21,13 +26,15 @@ interface ICollSurplusPool is IPool {
         address _wethAddress
     ) external;
 
-    function getCollateral(address _account, address _collateral)
-        external
-        view
-        returns (uint256);
+    function getCollateral(
+        address _account,
+        address _collateral
+    ) external view returns (uint256);
 
-    function accountSurplus(address _account, uint256[] memory _amount)
-        external;
+    function accountSurplus(
+        address _account,
+        uint256[] memory _amount
+    ) external;
 
     function claimColl(address _account) external;
 }
