@@ -154,10 +154,4 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
             "DefaultPool: Caller is not the TroveManager"
         );
     }
-
-    // --- Fallback function ---
-
-    receive() external payable {}
-
-    fallback() external payable {}
 }
