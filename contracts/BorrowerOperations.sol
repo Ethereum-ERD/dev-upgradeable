@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/IBorrowerOperations.sol";
@@ -12,7 +13,8 @@ import "./Dependencies/ERDBase.sol";
 contract BorrowerOperations is
     ERDBase,
     OwnableUpgradeable,
-    IBorrowerOperations
+    IBorrowerOperations,
+    ReentrancyGuardUpgradeable
 {
     string public constant NAME = "BorrowerOperations";
     
@@ -167,7 +169,7 @@ contract BorrowerOperations is
         uint256 _EUSDAmount,
         address _upperHint,
         address _lowerHint
-    ) external payable override {
+    ) external payable override nonReentrant {
         if (msg.value == 0) {
             // Function require length nonzero, used to save contract size on revert strings.
             require(_amounts.length != 0, "BorrowerOps: Length is zero");
@@ -345,7 +347,7 @@ contract BorrowerOperations is
         uint256[] memory _amountsIn,
         address _upperHint,
         address _lowerHint
-    ) external payable override {
+    ) external payable override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
         if (msg.value == 0) {
@@ -377,7 +379,7 @@ contract BorrowerOperations is
         uint256[] memory _amountsOut,
         address _upperHint,
         address _lowerHint
-    ) external override {
+    ) external override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
         params.collsOut = _collsOut;
@@ -404,7 +406,7 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint,
         uint256 _maxFeePercentage
-    ) external override {
+    ) external override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
         params.EUSDChange = _EUSDAmount;
@@ -420,7 +422,7 @@ contract BorrowerOperations is
         uint256 _EUSDAmount,
         address _upperHint,
         address _lowerHint
-    ) external override {
+    ) external override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
         params.EUSDChange = _EUSDAmount;
@@ -437,7 +439,7 @@ contract BorrowerOperations is
         uint256[] memory _amountsIn,
         address _upperHint,
         address _lowerHint
-    ) external override {
+    ) external override nonReentrant {
         require(
             msg.sender == stabilityPoolAddress,
             "BorrowerOps: Caller is not Stability Pool"
@@ -471,7 +473,7 @@ contract BorrowerOperations is
         bool _isDebtIncrease,
         address _upperHint,
         address _lowerHint
-    ) external payable override {
+    ) external payable override nonReentrant {
         if (msg.value == 0) {
             _requireValidAdjustCollateralAmounts(_collsIn, _amountsIn);
             _requireValidAdjustCollateralAmounts(_collsOut, _amountsOut);
@@ -688,7 +690,7 @@ contract BorrowerOperations is
         );
     }
 
-    function closeTrove() external override {
+    function closeTrove() external override nonReentrant {
         ITroveManager troveManagerCached = troveManager;
         ICollateralManager collateralManagerCached = collateralManager;
         IActivePool activePoolCached = activePool;
@@ -756,7 +758,7 @@ contract BorrowerOperations is
     /**
      * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
      */
-    function claimCollateral() external override {
+    function claimCollateral() external override nonReentrant {
         // send collateral from CollSurplus Pool to owner
         collSurplusPool.claimColl(msg.sender);
     }

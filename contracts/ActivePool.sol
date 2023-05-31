@@ -150,6 +150,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         address collateral;
         uint256 amount;
         bool flag = _notNeedsToSwitchWETH(_account);
+        bool hasETH;
+        uint256 ETHAmount;
         for (uint256 i = 0; i < collLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
@@ -157,15 +159,19 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
                 if (collateral != address(WETH)) {
                     _sendCollateral(_account, collateral, amount);
                 } else {
-                    if (flag) {
-                        _sendCollateral(_account, collateral, amount);
-                    } else {
-                        _sendETH(_account, amount);
-                    }
+                    hasETH = true;
+                    ETHAmount = amount;
                 }
             }
             unchecked {
                 i++;
+            }
+        }
+        if (hasETH) {
+            if (flag) {
+                _sendCollateral(_account, address(WETH), ETHAmount);
+            } else {
+                _sendETH(_account, ETHAmount);
             }
         }
     }

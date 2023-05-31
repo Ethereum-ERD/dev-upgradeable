@@ -146,6 +146,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         info.hasBalance = false;
         uint256[] memory claimableColls = new uint256[](length);
         emit CollBalanceUpdated(_account, false);
+        bool hasETH;
+        uint256 ETHAmount;
         for (uint256 i = 0; i < length; ) {
             address collateral = collaterals[i];
             uint256 amount = info.balance[collateral];
@@ -155,14 +157,18 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
                 if (collateral != wethAddress) {
                     IERC20Upgradeable(collateral).transfer(_account, amount);
                 } else {
-                    IWETH(wethAddress).withdraw(amount);
-                    (bool success, ) = _account.call{value: amount}("");
-                    require(success, "CollSurplusPool: sending ETH failed");
+                    hasETH = true;
+                    ETHAmount = amount;
                 }
             }
             unchecked {
                 i++;
             }
+        }
+        if (hasETH) {
+            IWETH(wethAddress).withdraw(ETHAmount);
+            (bool success, ) = _account.call{value: ETHAmount}("");
+            require(success, "CollSurplusPool: sending ETH failed");
         }
         emit CollateralSent(_account, claimableColls);
     }

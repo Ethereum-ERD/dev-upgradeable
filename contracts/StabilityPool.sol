@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -146,7 +147,12 @@ import "./Dependencies/ERDSafeMath128.sol";
  * The product P (and snapshot P_t) is re-used, as the ratio P/P_t tracks a deposit's depletion due to liquidations.
  *
  */
-contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
+contract StabilityPool is
+    ERDBase,
+    OwnableUpgradeable,
+    IStabilityPool,
+    ReentrancyGuardUpgradeable
+{
     using ERDSafeMath128 for uint128;
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
@@ -320,7 +326,7 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
     function provideToSP(
         uint256 _amount,
         address _frontEndTag
-    ) external override {
+    ) external override nonReentrant {
         _requireFrontEndIsRegisteredOrZero(_frontEndTag);
         _requireFrontEndNotRegistered(msg.sender);
         _requireNonZeroAmount(_amount);
@@ -370,7 +376,7 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
      *
      * If _amount > userDeposit, the user withdraws all of their compounded deposit.
      */
-    function withdrawFromSP(uint256 _amount) external override {
+    function withdrawFromSP(uint256 _amount) external override nonReentrant {
         if (_amount != 0) {
             _requireNoUnderCollateralizedTroves();
         }
@@ -419,7 +425,7 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
     function withdrawCollateralGainToTrove(
         address _upperHint,
         address _lowerHint
-    ) external override {
+    ) external override nonReentrant {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
         _requireUserHasTrove(msg.sender);
@@ -980,7 +986,7 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
             compoundedStake = 0;
         }
 
-        if(compoundedStake > totalEUSDDeposits) {
+        if (compoundedStake > totalEUSDDeposits) {
             compoundedStake = totalEUSDDeposits;
         }
 
@@ -1025,6 +1031,8 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
 
         uint256 amount;
         address collateral;
+        bool hasETH;
+        uint256 ETHAmount;
         for (uint256 i = 0; i < collateralLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
@@ -1032,9 +1040,8 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
                 if (collateral != address(WETH)) {
                     IERC20Upgradeable(collateral).transfer(msg.sender, amount);
                 } else {
-                    WETH.withdraw(amount);
-                    (bool success, ) = msg.sender.call{value: amount}("");
-                    require(success, "StabilityPool: sending ETH failed");
+                    hasETH = true;
+                    ETHAmount = amount;
                 }
                 emit StabilityPoolCollBalanceUpdated(
                     collateral,
@@ -1045,6 +1052,16 @@ contract StabilityPool is ERDBase, OwnableUpgradeable, IStabilityPool {
             unchecked {
                 i++;
             }
+        }
+        if (hasETH) {
+            WETH.withdraw(ETHAmount);
+            (bool success, ) = msg.sender.call{value: ETHAmount}("");
+            require(success, "StabilityPool: sending ETH failed");
+            emit StabilityPoolCollBalanceUpdated(
+                address(WETH),
+                IERC20Upgradeable(address(WETH)).balanceOf(address(this))
+            );
+            emit CollateralSent(msg.sender, address(WETH), ETHAmount);
         }
     }
 

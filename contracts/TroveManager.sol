@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveManagerLiquidations.sol";
@@ -14,7 +15,7 @@ import "./TroveLogic.sol";
 import "./Dependencies/WadRayMath.sol";
 import "./DataTypes.sol";
 
-contract TroveManager is TroveManagerDataTypes, ITroveManager {
+contract TroveManager is TroveManagerDataTypes, ITroveManager, ReentrancyGuardUpgradeable {
     string public constant NAME = "TroveManager";
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
@@ -185,7 +186,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
     // --- Trove Liquidation functions ---
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
-    function liquidate(address _borrower) external override {
+    function liquidate(address _borrower) external override nonReentrant {
         _requireTroveIsActive(_borrower);
 
         address[] memory borrowers = new address[](1);
@@ -197,7 +198,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
      * Liquidate a sequence of troves. Closes a maximum number of n under-collateralized Troves,
      * starting from the one with the lowest collateral ratio in the system, and moving upwards
      */
-    function liquidateTroves(uint256 _n) external override {
+    function liquidateTroves(uint256 _n) external override nonReentrant {
         troveManagerLiquidations.liquidateTroves(_n, msg.sender);
     }
 
@@ -206,7 +207,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
      */
     function batchLiquidateTroves(
         address[] memory _troveArray
-    ) public override {
+    ) public override nonReentrant {
         troveManagerLiquidations.batchLiquidateTroves(_troveArray, msg.sender);
     }
 
@@ -218,7 +219,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         IDefaultPool _defaultPool,
         uint256 _EUSD,
         uint256[] memory _collAmounts
-    ) external override {
+    ) external override nonReentrant {
         _requireCallerIsTML();
         _movePendingTroveRewardsToActivePool(
             _activePool,
@@ -274,7 +275,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         uint256 _partialRedemptionHintICR,
         uint256 _maxIterations,
         uint256 _maxFeePercentage
-    ) external override {
+    ) external override nonReentrant {
         troveManagerRedemptions.redeemCollateral(
             _EUSDAmount,
             _firstRedemptionHint,
@@ -341,7 +342,7 @@ contract TroveManager is TroveManagerDataTypes, ITroveManager {
         return (newColls, rewardAssets, currentEUSDDebt);
     }
 
-    function applyPendingRewards(address _borrower) external override {
+    function applyPendingRewards(address _borrower) external override nonReentrant {
         _requireCallerIsBOorTMR();
         return _applyPendingRewards(activePool, defaultPool, _borrower);
     }
