@@ -1274,6 +1274,7 @@ contract StabilityPool is
 
     function _requireNoUnderCollateralizedTroves() internal {
         uint256 price = priceFeed.fetchPrice();
+        collateralManager.priceUpdate();
         address lowestTrove = sortedTroves.getLast();
         uint256 ICR = troveManager.getCurrentICR(lowestTrove, price);
         require(

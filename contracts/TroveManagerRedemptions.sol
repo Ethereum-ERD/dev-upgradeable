@@ -682,7 +682,8 @@ contract TroveManagerRedemptions is
                 lowerHintsLen == _borrowers.length,
             "TMR: Length mismatch"
         );
-        uint256 price = priceFeed.fetchPrice_view();
+        uint256 price = priceFeed.fetchPrice();
+        collateralManager.priceUpdate();
         for (uint256 i = 0; i < lowerHintsLen; i++) {
             _updateTrove(_borrowers[i], _lowerHints[i], _upperHints[i], price);
         }
