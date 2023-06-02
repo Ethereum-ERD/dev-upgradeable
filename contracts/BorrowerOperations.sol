@@ -794,7 +794,19 @@ contract BorrowerOperations is
         if (_coll == address(WETH)) {
             if (_from != stabilityPoolAddress) {
                 WETH.deposit{value: msg.value}();
-                WETH.transferFrom(address(this), address(activePool), _amount);
+                WETH.transferFrom(
+                    address(this),
+                    address(activePool),
+                    msg.value
+                );
+                if (_amount > msg.value) {
+                    SafeERC20Upgradeable.safeTransferFrom(
+                        IERC20Upgradeable(address(WETH)),
+                        _from,
+                        address(activePool),
+                        _amount.sub(msg.value)
+                    );
+                }
             } else {
                 SafeERC20Upgradeable.safeTransferFrom(
                     IERC20Upgradeable(_coll),
