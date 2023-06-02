@@ -36,6 +36,8 @@ contract BorrowerOperations is
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
 
+    bool internal paused;
+
     /* --- Variable container structs  ---
 
     Used to hold, return and assign variables inside a function, in order to avoid the error:
@@ -170,6 +172,7 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint
     ) external payable override nonReentrant {
+        _requireNotPaused();
         _requireValidOpenTroveCollateral(_colls, _amounts, msg.value);
 
         LocalVariables_openTrove memory vars;
@@ -178,8 +181,6 @@ contract BorrowerOperations is
             _amounts,
             msg.value
         );
-
-        _requireNoDuplicateColls(vars.collaterals);
 
         _activePoolAddColl(msg.sender, vars.collaterals, vars.netColls);
 
@@ -342,13 +343,14 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint
     ) external payable override nonReentrant {
+        _requireNotPaused();
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
         _requireValidAdjustCollateralAmounts(
             _collsIn,
             _amountsIn,
             msg.value,
-            false
+            true
         );
 
         (params.collsIn, params.amountsIn) = _adjustArray(
@@ -385,7 +387,7 @@ contract BorrowerOperations is
             params.collsOut,
             params.amountsOut,
             0,
-            true
+            false
         );
         params.sharesOut = collateralManager.getShares(
             params.collsOut,
@@ -449,7 +451,7 @@ contract BorrowerOperations is
             params.collsIn,
             params.amountsIn,
             0,
-            false
+            true
         );
         params.sharesIn = collateralManager.getShares(
             params.collsIn,
@@ -477,13 +479,13 @@ contract BorrowerOperations is
             _collsIn,
             _amountsIn,
             msg.value,
-            false
+            true
         );
         _requireValidAdjustCollateralAmounts(
             _collsOut,
             _amountsOut,
             msg.value,
-            true
+            false
         );
 
         (
@@ -526,6 +528,7 @@ contract BorrowerOperations is
      * If both are positive, it will revert.
      */
     function _adjustTrove(AdjustTrove_Params memory params) internal {
+        _requireNotPaused();
         ContractsCache memory contractsCache = ContractsCache(
             troveManager,
             collateralManager,
@@ -692,6 +695,7 @@ contract BorrowerOperations is
     }
 
     function closeTrove() external override nonReentrant {
+        _requireNotPaused();
         ITroveManager troveManagerCached = troveManager;
         ICollateralManager collateralManagerCached = collateralManager;
         IActivePool activePoolCached = activePool;
@@ -760,8 +764,18 @@ contract BorrowerOperations is
      * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
      */
     function claimCollateral() external override nonReentrant {
+        _requireNotPaused();
         // send collateral from CollSurplus Pool to owner
         collSurplusPool.claimColl(msg.sender);
+    }
+
+    function setPause(bool val) external override onlyOwner {
+        paused = val;
+        if (paused) {
+            emit Paused();
+        } else {
+            emit Unpaused();
+        }
     }
 
     // --- Helper functions ---
@@ -779,9 +793,6 @@ contract BorrowerOperations is
             collAddress = _colls[i];
             amount = _amounts[i];
             _singleTransferCollateralIntoActivePool(_from, collAddress, amount);
-            // unchecked {
-            //     i++;
-            // }
         }
     }
 
@@ -942,6 +953,10 @@ contract BorrowerOperations is
         require(_contract.isContract(), "BorrowerOps: Contract check error");
     }
 
+    function _requireNotPaused() internal view {
+        require(!paused, "BorrowerOps: Protocol is paused");
+    }
+
     function _requireValidOpenTroveCollateral(
         address[] memory _colls,
         uint256[] memory _amounts,
@@ -949,6 +964,7 @@ contract BorrowerOperations is
     ) internal view {
         uint256 collsLen = _colls.length;
         _requireLengthsEqual(collsLen, _amounts.length);
+        _requireNoDuplicateColls(_colls);
         if (_ethAmount == 0) {
             require(collsLen != 0, "BorrowerOps: Length is zero");
         } else {
@@ -970,24 +986,25 @@ contract BorrowerOperations is
         address[] memory _colls,
         uint256[] memory _amounts,
         uint256 _ethAmount,
-        bool _isWitdrawal
+        bool add
     ) internal view {
         uint256 collsLen = _colls.length;
         _requireLengthsEqual(collsLen, _amounts.length);
         _requireNoDuplicateColls(_colls);
         if (_ethAmount != 0) {
             require(
-                collateralManager.getIsSupport(address(WETH)),
-                "BorrowerOps: ETH does not support"
+                collateralManager.getIsActive(address(WETH)),
+                "BorrowerOps: ETH does not active"
             );
-            if (_isWitdrawal) {
+            if (!add) {
                 _requireNoWETHColls(_colls);
             }
         }
         for (uint256 i; i < collsLen; ++i) {
             require(
-                collateralManager.getIsSupport(_colls[i]),
-                "BorrowerOps: Collateral does not support"
+                (add && collateralManager.getIsActive(_colls[i])) ||
+                    (!add && collateralManager.getIsSupport(_colls[i])),
+                "BorrowerOps: Collateral does not support or active"
             );
             require(_amounts[i] != 0, "BorrowerOps: Collateral amount is 0");
         }

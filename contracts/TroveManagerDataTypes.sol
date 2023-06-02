@@ -19,8 +19,12 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
-    event TroveManagerLiquidationsAddressChanged(address _troveManagerLiquidationsAddress);
-    event TroveManagerRedemptionsAddressChanged(address _troveManagerRedemptionsAddress);
+    event TroveManagerLiquidationsAddressChanged(
+        address _troveManagerLiquidationsAddress
+    );
+    event TroveManagerRedemptionsAddressChanged(
+        address _troveManagerRedemptionsAddress
+    );
     event CollateralManagerAddressChanged(address _collateralManagerAddress);
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
@@ -74,4 +78,7 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
     );
     event TroveSnapshotsUpdated(uint256 _unix);
     event TroveIndexUpdated(address _borrower, uint256 _newIndex);
+
+    event Paused();
+    event Unpaused();
 }

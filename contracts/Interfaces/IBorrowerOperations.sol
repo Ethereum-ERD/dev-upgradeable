@@ -49,6 +49,9 @@ interface IBorrowerOperations {
     );
     event EUSDBorrowingFeePaid(address indexed _borrower, uint256 _EUSDFee);
 
+    event Paused();
+    event Unpaused();
+
     // --- Functions ---
 
     function setAddresses(
@@ -121,6 +124,8 @@ interface IBorrowerOperations {
     ) external payable;
 
     function closeTrove() external;
+
+    function setPause(bool val) external;
 
     function claimCollateral() external;
 

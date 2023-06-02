@@ -87,6 +87,13 @@ contract TroveManager is
     mapping(address => uint256) public lastCollError_Redistribution;
     mapping(address => uint256) public lastEUSDDebtError_Redistribution;
 
+    bool internal paused;
+
+    modifier whenNotPaused() {
+        require(!paused, "BorrowerOps: Protocol is paused");
+        _;
+    }
+
     // --- Dependency setter ---
 
     function initialize(
@@ -190,7 +197,9 @@ contract TroveManager is
     // --- Trove Liquidation functions ---
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
-    function liquidate(address _borrower) external override nonReentrant {
+    function liquidate(
+        address _borrower
+    ) external override whenNotPaused nonReentrant {
         _requireTroveIsActive(_borrower);
 
         address[] memory borrowers = new address[](1);
@@ -202,7 +211,9 @@ contract TroveManager is
      * Liquidate a sequence of troves. Closes a maximum number of n under-collateralized Troves,
      * starting from the one with the lowest collateral ratio in the system, and moving upwards
      */
-    function liquidateTroves(uint256 _n) external override nonReentrant {
+    function liquidateTroves(
+        uint256 _n
+    ) external override whenNotPaused nonReentrant {
         troveManagerLiquidations.liquidateTroves(_n, msg.sender);
     }
 
@@ -211,7 +222,7 @@ contract TroveManager is
      */
     function batchLiquidateTroves(
         address[] memory _troveArray
-    ) public override nonReentrant {
+    ) public override whenNotPaused nonReentrant {
         troveManagerLiquidations.batchLiquidateTroves(_troveArray, msg.sender);
     }
 
@@ -223,7 +234,7 @@ contract TroveManager is
         IDefaultPool _defaultPool,
         uint256 _EUSD,
         uint256[] memory _collAmounts
-    ) external override nonReentrant {
+    ) external override {
         _requireCallerIsTML();
         _movePendingTroveRewardsToActivePool(
             _activePool,
@@ -279,7 +290,7 @@ contract TroveManager is
         uint256 _partialRedemptionHintICR,
         uint256 _maxIterations,
         uint256 _maxFeePercentage
-    ) external override nonReentrant {
+    ) external override whenNotPaused nonReentrant {
         troveManagerRedemptions.redeemCollateral(
             _EUSDAmount,
             _firstRedemptionHint,
@@ -290,6 +301,15 @@ contract TroveManager is
             _maxFeePercentage,
             msg.sender
         );
+    }
+
+    function setPause(bool val) external override onlyOwner {
+        paused = val;
+        if (paused) {
+            emit Paused();
+        } else {
+            emit Unpaused();
+        }
     }
 
     // --- Helper functions ---
@@ -346,9 +366,7 @@ contract TroveManager is
         return (newColls, rewardAssets, currentEUSDDebt);
     }
 
-    function applyPendingRewards(
-        address _borrower
-    ) external override nonReentrant {
+    function applyPendingRewards(address _borrower) external override {
         _requireCallerIsBOorTMR();
         return _applyPendingRewards(activePool, defaultPool, _borrower);
     }

@@ -64,6 +64,8 @@ interface ITroveManager is IERDBase {
         uint256 _maxFee
     ) external;
 
+    function setPause(bool val) external;
+
     function updateStakeAndTotalStakes(address _borrower) external;
 
     function updateTroveRewardSnapshots(address _borrower) external;

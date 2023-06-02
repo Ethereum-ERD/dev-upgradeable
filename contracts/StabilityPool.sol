@@ -226,6 +226,13 @@ contract StabilityPool is
     mapping(address => uint256) public lastCollError_Offset;
     uint256 public lastEUSDLossError_Offset;
 
+    bool internal paused;
+
+    modifier whenNotPaused() {
+        require(!paused, "BorrowerOps: Protocol is paused");
+        _;
+    }
+
     // --- Contract setters ---
     function initialize() public initializer {
         __Ownable_init();
@@ -328,7 +335,7 @@ contract StabilityPool is
     function provideToSP(
         uint256 _amount,
         address _frontEndTag
-    ) external override nonReentrant {
+    ) external override whenNotPaused nonReentrant {
         _requireFrontEndIsRegisteredOrZero(_frontEndTag);
         _requireFrontEndNotRegistered(msg.sender);
         _requireNonZeroAmount(_amount);
@@ -378,7 +385,9 @@ contract StabilityPool is
      *
      * If _amount > userDeposit, the user withdraws all of their compounded deposit.
      */
-    function withdrawFromSP(uint256 _amount) external override nonReentrant {
+    function withdrawFromSP(
+        uint256 _amount
+    ) external override whenNotPaused nonReentrant {
         if (_amount != 0) {
             _requireNoUnderCollateralizedTroves();
         }
@@ -427,7 +436,7 @@ contract StabilityPool is
     function withdrawCollateralGainToTrove(
         address _upperHint,
         address _lowerHint
-    ) external override nonReentrant {
+    ) external override whenNotPaused nonReentrant {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
         _requireUserHasTrove(msg.sender);
@@ -545,7 +554,7 @@ contract StabilityPool is
         uint256 _debtToOffset,
         address[] memory _collaterals,
         uint256[] memory _collToAdd
-    ) external override {
+    ) external override whenNotPaused nonReentrant {
         _requireCallerIsTroveML();
         uint256 totalEUSD = totalEUSDDeposits; // cached to save an SLOAD
         if (totalEUSD == 0 || _debtToOffset == 0) {
@@ -571,6 +580,15 @@ contract StabilityPool is
         ); // updates S and P
 
         _moveOffsetCollAndDebt(_collaterals, _collToAdd, _debtToOffset);
+    }
+
+    function setPause(bool val) external override onlyOwner {
+        paused = val;
+        if (paused) {
+            emit Paused();
+        } else {
+            emit Unpaused();
+        }
     }
 
     // --- Offset helper functions ---

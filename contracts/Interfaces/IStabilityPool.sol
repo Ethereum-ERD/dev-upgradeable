@@ -83,6 +83,9 @@ interface IStabilityPool is IPool {
     event GainPaidToDepositor(address indexed _depositor, uint256 _GAIN);
     event GainPaidToFrontEnd(address indexed _frontEnd, uint256 _GAIN);
 
+    event Paused();
+    event Unpaused();
+
     // --- Functions ---
 
     /*
@@ -172,6 +175,8 @@ interface IStabilityPool is IPool {
         address[] memory _collaterals,
         uint256[] memory _collToAdd
     ) external;
+
+    function setPause(bool val) external;
 
     /*
      * Returns the total amount of collateral held by the pool, accounted in an internal variable instead of `balance`,
