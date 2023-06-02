@@ -58,7 +58,8 @@ contract CollateralManager is
 
     function initialize() public initializer {
         __Ownable_init();
-        BOOTSTRAP_PERIOD = 14 days;
+        // BOOTSTRAP_PERIOD = 14 days;
+        BOOTSTRAP_PERIOD = 0;
         MCR = 1100000000000000000; // 110%
         CCR = 1300000000000000000; // 130%
         EUSD_GAS_COMPENSATION = 200e18;
@@ -621,7 +622,7 @@ contract CollateralManager is
             return true;
         }
         uint256 price = priceFeed.fetchPrice();
-        priceUpdate();
+        IOracle(collateralParams[_collateral].oracle).fetchPrice();
         uint256 totalDebt = getEntireSystemDebt();
         (, , uint256 totalValue) = getEntireSystemColl(price);
         bool isRecoveryMode = _checkRecoveryMode(totalValue, totalDebt, CCR);
