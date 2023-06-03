@@ -121,13 +121,11 @@ contract TroveManagerLiquidations is
         emit CollateralManagerAddressChanged(_collateralManagerAddress);
     }
 
-    function init(
-        address _troveDebtAddress
-    ) external onlyOwner {
+    function init(address _troveDebtAddress) external onlyOwner {
         _requireIsContract(_troveDebtAddress);
-        
+
         troveDebt = ITroveDebt(_troveDebtAddress);
-        
+
         emit TroveDebtAddressChanged(_troveDebtAddress);
     }
 
@@ -843,6 +841,7 @@ contract TroveManagerLiquidations is
         address[] memory _troveArray,
         address _liquidator
     ) public override {
+        _requireCallerisTroveManager();
         require(
             _troveArray.length != 0,
             "TroveManagerLiquidations: Calldata address array must not be empty"
