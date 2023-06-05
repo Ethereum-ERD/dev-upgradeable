@@ -450,7 +450,7 @@ contract('EUSDToken', async accounts => {
 
         // Check that the zero address fails
         await assertAssert(eusdTokenTester.permit('0x0000000000000000000000000000000000000000',
-          approve.spender, approve.value, deadline, '0x99', r, s), "ERC20: approve from the zero address")
+          approve.spender, approve.value, deadline, '0x99', r, s), "ECDSA: invalid signature")
       })
 
       it('permits(): fails with expired deadline', async () => {

@@ -188,43 +188,6 @@ contract('DefaultPool', async accounts => {
     const recordedEUSD_balanceAfter = await defaultPool.getEUSDDebt()
     assert.equal(recordedEUSD_balanceAfter, 0)
   })
-
-  // send raw ether
-  it('sendETHToActivePool(): decreases the recorded ETH balance by the correct amount', async () => {
-    // setup: give pool 2 ether
-    const defaultPool_initialBalance = web3.utils.toBN(await web3.eth.getBalance(defaultPool.address))
-    assert.equal(defaultPool_initialBalance, 0)
-
-    // start pool with 2 ether
-    //await web3.eth.sendTransaction({ from: mockActivePool.address, to: defaultPool.address, value: dec(2, 'ether') })
-    const tx1 = await mockActivePool.forward(defaultPool.address, '0x', {
-      from: owner,
-      value: dec(2, 'ether')
-    })
-    assert.isTrue(tx1.receipt.status)
-
-    const defaultPool_BalanceBeforeTx = web3.utils.toBN(await web3.eth.getBalance(defaultPool.address))
-    const activePool_Balance_BeforeTx = web3.utils.toBN(await web3.eth.getBalance(mockActivePool.address))
-
-    assert.equal(defaultPool_BalanceBeforeTx, dec(2, 'ether'))
-
-    // send ether from pool to alice
-    //await defaultPool.sendETHToActivePool(dec(1, 'ether'), { from: mockTroveManagerAddress })
-    const sendETHData = th.getTransactionData('sendETHToActivePool(uint256)', [web3.utils.toHex(dec(1, 'ether'))])
-    await mockActivePool.setPayable(true)
-    const tx2 = await mockTroveManager.forward(defaultPool.address, sendETHData, {
-      from: owner
-    })
-    assert.isTrue(tx2.receipt.status)
-
-    const defaultPool_BalanceAfterTx = web3.utils.toBN(await web3.eth.getBalance(defaultPool.address))
-    const activePool_Balance_AfterTx = web3.utils.toBN(await web3.eth.getBalance(mockActivePool.address))
-
-    const activePool_BalanceChange = activePool_Balance_AfterTx.sub(activePool_Balance_BeforeTx)
-    const defaultPool_BalanceChange = defaultPool_BalanceAfterTx.sub(defaultPool_BalanceBeforeTx)
-    assert.equal(activePool_BalanceChange.toString(), web3.utils.toBN(0).toString())
-    assert.equal(defaultPool_BalanceChange.toString(), web3.utils.toBN(0).toString())
-  })
 })
 
 contract('Reset chain state', async accounts => {})

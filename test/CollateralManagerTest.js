@@ -120,7 +120,7 @@ contract('newBorrowerOperations', async accounts => {
             }
 
             EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
-            MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
+            MIN_NET_DEBT = await collateralManager.getMinNetDebt()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             await priceFeedSTETH.setPrice(dec(1, 18))
@@ -226,9 +226,11 @@ contract('newBorrowerOperations', async accounts => {
             */
             let validCollateral = await collateralManager.getCollateralSupport();
             let a_wethToMint = toBN(dec(400, 17));
-            let a_amounts = [a_wethToMint];
+            // let a_amounts = [a_wethToMint];
 
-            await openTrove({
+            let {
+                collateral: a_amounts
+            } = await openTrove({
                 ICR: toBN(dec(2, 18)),
                 extraParams: {
                     from: alice,
@@ -268,20 +270,26 @@ contract('newBorrowerOperations', async accounts => {
             let d_colls = [contracts.weth];
             let d_amounts = [d_wethToMint];
 
-            await openTrove({
-                ICR: toBN(dec(2, 18)),
-                extraParams: {
-                    from: dennis,
-                    value: d_wethToMint
-                }
-            })
+            await assertRevert(
+                openTrove({
+                    ICR: toBN(dec(2, 18)),
+                    extraParams: {
+                        from: dennis,
+                        value: d_wethToMint
+                    }
+                }),
+                "BorrowerOps: ETH does not active or is paused"
+            )
 
             const addedColl1 = toBN(dec(1, 'ether'))
 
-            await borrowerOperations.addColl([], [], alice, alice, {
-                from: alice,
-                value: addedColl1
-            })
+            await assertRevert(
+                borrowerOperations.addColl([], [], alice, alice, {
+                    from: alice,
+                    value: addedColl1
+                }),
+                "BorrowerOps: ETH does not active"
+            )
 
             await borrowerOperations.withdrawColl([contracts.weth.address], [addedColl1], carol, carol, {
                 from: carol
@@ -337,7 +345,7 @@ contract('newBorrowerOperations', async accounts => {
             assert.isAtMost(th.getDifference(alice_ETH, A_ETHAfterL1), Number(dec(150, 20)))
 
             const entireSystemETH = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address))
-            assert.isTrue(entireSystemETH.eq(a_amounts[0].add(addedColl1).add(th.applyLiquidationFee(c_amounts[1]))))
+            assert.isTrue(entireSystemETH.eq(a_amounts.add(th.applyLiquidationFee(c_amounts[1]))))
 
             aliceCTS = (await contracts.troveManager.getCurrentTroveAmounts(alice))
 
