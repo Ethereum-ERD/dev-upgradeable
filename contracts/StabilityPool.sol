@@ -18,6 +18,7 @@ import "./Interfaces/ICommunityIssuance.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/ERDBase.sol";
 import "./Dependencies/ERDSafeMath128.sol";
+import "./Errors.sol";
 
 /*
  * The Stability Pool holds EUSD tokens deposited by Stability Pool depositors.
@@ -229,7 +230,7 @@ contract StabilityPool is
     bool internal paused;
 
     modifier whenNotPaused() {
-        require(!paused, "BorrowerOps: Protocol is paused");
+        require(!paused, Errors.PROTOCOL_PAUSED);
         _;
     }
 
@@ -676,7 +677,7 @@ contract StabilityPool is
 
         require(
             _EUSDLossPerUnitStaked <= DECIMAL_PRECISION,
-            "SP: EUSDLoss < 1"
+            Errors.SP_USDE_LOSS_LT_1
         );
         /*
          * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool EUSD in the liquidation.
@@ -736,7 +737,7 @@ contract StabilityPool is
             newP = currentP.mul(newProductFactor).div(DECIMAL_PRECISION);
         }
 
-        require(newP != 0, "StabilityPool: P = 0");
+        require(newP != 0, Errors.SP_EQ_ZERO);
         P = newP;
 
         emit P_Updated(newP);
@@ -1049,10 +1050,7 @@ contract StabilityPool is
         uint256[] memory _amounts
     ) internal {
         uint256 collateralLen = _collaterals.length;
-        require(
-            collateralLen == _amounts.length,
-            "StabilityPool: Length mismatch"
-        );
+        require(collateralLen == _amounts.length, Errors.LENGTH_MISMATCH);
 
         uint256 amount;
         address collateral;
@@ -1084,7 +1082,7 @@ contract StabilityPool is
         if (hasETH) {
             WETH.withdraw(ETHAmount);
             (bool success, ) = msg.sender.call{value: ETHAmount}("");
-            require(success, "StabilityPool: sending ETH failed");
+            require(success, Errors.SEND_ETH_FAILED);
             emit StabilityPoolCollBalanceUpdated(
                 address(WETH),
                 IERC20Upgradeable(address(WETH)).balanceOf(address(this))
@@ -1248,27 +1246,21 @@ contract StabilityPool is
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "TroveManager: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(
-            msg.sender == address(activePool),
-            "StabilityPool: Caller is not ActivePool"
-        );
+        require(msg.sender == address(activePool), Errors.CALLER_NOT_AP);
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(
-            msg.sender == address(troveManager),
-            "StabilityPool: Caller is not TroveManager"
-        );
+        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
     }
 
     function _requireCallerIsTroveML() internal view {
         require(
             msg.sender == troveManagerLiquidationsAddress,
-            "StabilityPool: Caller is not TroveManagerLiquidations"
+            Errors.CALLER_NOT_TML
         );
     }
 
@@ -1279,33 +1271,27 @@ contract StabilityPool is
         uint256 ICR = troveManager.getCurrentICR(lowestTrove, price);
         require(
             ICR >= collateralManager.getMCR(),
-            "StabilityPool: Cannot withdraw while there are troves with ICR < MCR"
+            Errors.SP_CANNOT_WITHDRAW_WITH_ICR_LT_MCR
         );
     }
 
     function _requireUserHasDeposit(uint256 _initialDeposit) internal pure {
-        require(
-            _initialDeposit > 0,
-            "StabilityPool: User must have a non-zero deposit"
-        );
+        require(_initialDeposit > 0, Errors.SP_ZERO_DEPOSIT);
     }
 
     function _requireUserHasNoDeposit(address _address) internal view {
         uint256 initialDeposit = deposits[_address].initialValue;
-        require(
-            initialDeposit == 0,
-            "StabilityPool: User must have no deposit"
-        );
+        require(initialDeposit == 0, Errors.SP_MUST_NO_DEPOSIT);
     }
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
-        require(_amount > 0, "StabilityPool: Amount must be non-zero");
+        require(_amount > 0, Errors.SP_AMOUNT_ZERO);
     }
 
     function _requireUserHasTrove(address _depositor) internal view {
         require(
             troveManager.getTroveStatus(_depositor) == 1,
-            "StabilityPool: caller must have an active trove to withdraw collater Gain to"
+            Errors.SP_CALLER_NO_ACTIVE_TROVE
         );
     }
 
@@ -1313,16 +1299,13 @@ contract StabilityPool is
         (, uint256[] memory collateralGains) = getDepositorCollateralGain(
             _depositor
         );
-        require(
-            ERDMath._arrayIsNonzero(collateralGains),
-            "StabilityPool: caller must have non-zero Collateral Gain"
-        );
+        require(ERDMath._arrayIsNonzero(collateralGains), Errors.SP_ZERO_GAIN);
     }
 
     function _requireFrontEndNotRegistered(address _address) internal view {
         require(
             !frontEnds[_address].registered,
-            "StabilityPool: must not already be a registered front end"
+            Errors.SP_ALREADY_REGISTERED_FRONT_END
         );
     }
 
@@ -1331,14 +1314,14 @@ contract StabilityPool is
     ) internal view {
         require(
             frontEnds[_address].registered || _address == address(0),
-            "StabilityPool: Tag must be a registered front end, or the zero address"
+            Errors.SP_MUST_REGISTERED_OR_ZERO_ADDRESS
         );
     }
 
     function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
         require(
             _kickbackRate <= DECIMAL_PRECISION,
-            "StabilityPool: Kickback rate must be in range [0,1]"
+            Errors.SP_KICKBACK_RATE_NOT_IN_RANGE
         );
     }
 

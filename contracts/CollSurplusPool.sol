@@ -10,6 +10,7 @@ import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/ERDMath.sol";
+import "./Errors.sol";
 
 contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     using SafeMathUpgradeable for uint256;
@@ -151,7 +152,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         uint256 length = collaterals.length;
         Info storage info = balances[_account];
         bool flag = info.hasBalance;
-        require(flag, "CollSurplusPool: No collateral available to claim");
+        require(flag, Errors.CSP_CANNOT_CLAIM);
         info.hasBalance = false;
         uint256[] memory claimableColls = new uint256[](length);
         uint256[] memory shares = new uint256[](length);
@@ -184,7 +185,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         if (hasETH) {
             IWETH(wethAddress).withdraw(ETHAmount);
             (bool success, ) = _account.call{value: ETHAmount}("");
-            require(success, "CollSurplusPool: sending ETH failed");
+            require(success, Errors.SEND_ETH_FAILED);
         }
         emit CollateralSent(_account, shares, claimableColls);
     }
@@ -192,32 +193,23 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(
-            _contract.isContract(),
-            "CollSurplusPool: Contract check error"
-        );
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress,
-            "CollSurplusPool: Caller is not Borrower Operations"
-        );
+        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
     }
 
     function _requireCallerIsTMLorTMR() internal view {
         require(
             msg.sender == troveManagerLiquidationsAddress ||
                 msg.sender == troveManagerRedemptionsAddress,
-            "CollSurplusPool: Caller is not TML nor TMR"
+            Errors.CALLER_NOT_TML_TMR
         );
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(
-            msg.sender == activePoolAddress,
-            "CollSurplusPool: Caller is not Active Pool"
-        );
+        require(msg.sender == activePoolAddress, Errors.CALLER_NOT_AP);
     }
 
     // --- Fallback function ---

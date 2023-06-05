@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./DataTypes.sol";
+import "./Errors.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveDebt.sol";
 import "./Interfaces/ITroveInterestRateStrategy.sol";
@@ -75,7 +76,7 @@ library TroveLogic {
     function updateInterestRates(DataTypes.TroveData storage trove) internal {
         uint256 newRate = ITroveInterestRateStrategy(trove.interestRateAddress)
             .calculateInterestRates();
-        require(newRate <= type(uint128).max, "Errors.RL_BORROW_RATE_OVERFLOW");
+        require(newRate <= type(uint128).max, Errors.TM_BORROW_RATE_OVERFLOW);
 
         trove.currentBorrowRate = uint128(newRate);
 
@@ -150,7 +151,7 @@ library TroveLogic {
             newBorrowIndex = cumulatedBorrowInterest.rayMul(borrowIndex);
             require(
                 newBorrowIndex <= type(uint128).max,
-                "Errors.RL_BORROW_INDEX_OVERFLOW"
+                Errors.TM_BORROW_INDEX_OVERFLOW
             );
             trove.borrowIndex = uint128(newBorrowIndex);
         }

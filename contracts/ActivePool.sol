@@ -10,6 +10,7 @@ import "./Interfaces/IActivePool.sol";
 import "./Interfaces/IDefaultPool.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IWETH.sol";
+import "./Errors.sol";
 
 /*
  * The Active Pool holds the ETH & wrapper ETH collateral and EUSD debt (but not EUSD tokens) for all active troves.
@@ -217,7 +218,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 amount = _amount;
         WETH.withdraw(amount);
         (bool success, ) = _to.call{value: amount}("");
-        require(success, "ActivePool: sending ETH failed");
+        require(success, Errors.SEND_ETH_FAILED);
         emit ActivePoolCollBalanceUpdated(
             collateral,
             IERC20Upgradeable(collateral).balanceOf(address(this))
@@ -266,7 +267,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "ActivePool: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsBOorTroveMorSP() internal view {
@@ -276,7 +277,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
                 msg.sender == stabilityPoolAddress ||
                 msg.sender == troveManagerRedemptionsAddress ||
                 msg.sender == troveManagerLiquidationsAddress,
-            "ActivePool: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool nor TMR nor TML"
+            Errors.CALLER_NOT_BO_TM_SP_TMR_TML
         );
     }
 
@@ -284,7 +285,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         require(
             msg.sender == borrowerOperationsAddress ||
                 msg.sender == troveManagerAddress,
-            "ActivePool: Caller is neither BorrowerOperations nor TroveManager"
+            Errors.CALLER_NOT_BO_TM
         );
     }
 

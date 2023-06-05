@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/ERDBase.sol";
+import "./Errors.sol";
 
 contract BorrowerOperations is
     ERDBase,
@@ -205,7 +206,7 @@ contract BorrowerOperations is
 
         require(
             contractsCache.troveManager.getTroveStatus(msg.sender) != 1,
-            "BorrowerOps: Trove is active"
+            Errors.BO_TROVE_ACTIVE
         );
 
         bool isRecoveryMode = contractsCache.troveManager.checkRecoveryMode(
@@ -437,10 +438,7 @@ contract BorrowerOperations is
         address _upperHint,
         address _lowerHint
     ) external override nonReentrant {
-        require(
-            msg.sender == stabilityPoolAddress,
-            "BorrowerOps: Caller is not Stability Pool"
-        );
+        require(msg.sender == stabilityPoolAddress, Errors.CALLER_NOT_SP);
         AdjustTrove_Params memory params;
         params.borrower = _borrower;
         (params.collsIn, params.amountsIn) = _removeZero(_collsIn, _amountsIn);
@@ -547,10 +545,7 @@ contract BorrowerOperations is
                 params.maxFeePercentage,
                 isRecoveryMode
             );
-            require(
-                params.EUSDChange > 0,
-                "BorrowerOps: Debt increase requires non-zero debtChange"
-            );
+            require(params.EUSDChange > 0, Errors.BO_DEBT_INCREASE_ZERO);
         }
         _requireNonZeroAdjustment(
             params.amountsIn,
@@ -642,7 +637,7 @@ contract BorrowerOperations is
             // _requireValidEUSDRepayment(vars.debt, vars.netDebtChange);
             require(
                 vars.netDebtChange <= vars.debt.sub(EUSD_GAS_COMPENSATION()),
-                "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
+                Errors.BO_REPAID_AMOUNT_LARGER_DEBT
             );
             _requireSufficientEUSDBalance(
                 contractsCache.eusdToken,
@@ -706,7 +701,7 @@ contract BorrowerOperations is
         collateralManagerCached.priceUpdate();
         require(
             !troveManager.checkRecoveryMode(price),
-            "BorrowerOps: Operation not permitted during Recovery Mode"
+            Errors.BO_NOT_PERMIT_IN_RECOVERY_MODE
         );
 
         troveManagerCached.applyPendingRewards(msg.sender);
@@ -950,11 +945,11 @@ contract BorrowerOperations is
     // --- 'Require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "BorrowerOps: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireNotPaused() internal view {
-        require(!paused, "BorrowerOps: Protocol is paused");
+        require(!paused, Errors.PROTOCOL_PAUSED);
     }
 
     function _requireValidOpenTroveCollateral(
@@ -966,19 +961,19 @@ contract BorrowerOperations is
         _requireLengthsEqual(collsLen, _amounts.length);
         _requireNoDuplicateColls(_colls);
         if (_ethAmount == 0) {
-            require(collsLen != 0, "BorrowerOps: Length is zero");
+            require(collsLen != 0, Errors.BO_LENGTH_IS_ZERO);
         } else {
             require(
                 collateralManager.getIsActive(address(WETH)),
-                "BorrowerOps: ETH does not active or is paused"
+                Errors.BO_ETH_NOT_ACTIVE_OR_PAUSED
             );
         }
         for (uint256 i; i < collsLen; i++) {
             require(
                 collateralManager.getIsActive(_colls[i]),
-                "BorrowerOps: Collateral does not active or is paused"
+                Errors.BO_COLL_NOT_ACTIVE_PAUSED
             );
-            require(_amounts[i] != 0, "BorrowerOps: Collateral amount is 0");
+            require(_amounts[i] != 0, Errors.BO_COLL_AMOUNT_IS_ZERO);
         }
     }
 
@@ -994,7 +989,7 @@ contract BorrowerOperations is
         if (_ethAmount != 0) {
             require(
                 collateralManager.getIsActive(address(WETH)),
-                "BorrowerOps: ETH does not active"
+                Errors.BO_ETH_NOT_ACTIVE
             );
             if (!add) {
                 _requireNoWETHColls(_colls);
@@ -1004,9 +999,9 @@ contract BorrowerOperations is
             require(
                 (add && collateralManager.getIsActive(_colls[i])) ||
                     (!add && collateralManager.getIsSupport(_colls[i])),
-                "BorrowerOps: Collateral does not support or active"
+                Errors.BO_COLL_NOT_ACTIVE_OR_NOT_SUPPORT
             );
-            require(_amounts[i] != 0, "BorrowerOps: Collateral amount is 0");
+            require(_amounts[i] != 0, Errors.BO_COLL_AMOUNT_IS_ZERO);
         }
     }
 
@@ -1018,7 +1013,7 @@ contract BorrowerOperations is
         uint256 colls2Len = _colls2.length;
         for (uint256 i; i < colls1Len; ++i) {
             for (uint256 j; j < colls2Len; j++) {
-                require(_colls1[i] != _colls2[j], "BorrowerOps: Overlap Colls");
+                require(_colls1[i] != _colls2[j], Errors.BO_OVERLAP_COLL);
             }
         }
     }
@@ -1028,7 +1023,7 @@ contract BorrowerOperations is
         for (uint256 i; i < collsLen; ++i) {
             require(
                 _colls[i] != address(WETH),
-                "BorrowerOps: Cannot withdraw and add Coll"
+                Errors.BO_CANNOT_WITHDRAW_AND_ADD_COLL
             );
         }
     }
@@ -1037,7 +1032,7 @@ contract BorrowerOperations is
         uint256 collsLen = _colls.length;
         for (uint256 i; i < collsLen; ++i) {
             for (uint256 j = i.add(1); j < collsLen; j++) {
-                require(_colls[i] != _colls[j], "BorrowerOps: Duplicate Colls");
+                require(_colls[i] != _colls[j], Errors.BO_DUPLICATE_COLL);
             }
         }
     }
@@ -1051,7 +1046,7 @@ contract BorrowerOperations is
             ERDMath._arrayIsNonzero(_amountsIn) ||
                 ERDMath._arrayIsNonzero(_amountsOut) ||
                 _EUSDChange != 0,
-            "BorrowerOps: There must be either a collateral change or a debt change"
+            Errors.BO_MUST_CHANGE_FOR_COLL_OR_DEBT
         );
     }
 
@@ -1060,7 +1055,7 @@ contract BorrowerOperations is
         address _borrower
     ) internal view {
         uint256 status = _troveManager.getTroveStatus(_borrower);
-        require(status == 1, "BorrowerOps: Trove does not exist or is closed");
+        require(status == 1, Errors.BO_TROVE_NOT_EXIST_OR_CLOSED);
     }
 
     function _requireValidAdjustmentInCurrentMode(
@@ -1085,14 +1080,14 @@ contract BorrowerOperations is
         if (_isRecoveryMode) {
             require(
                 !ERDMath._arrayIsNonzero(_collWithdrawals),
-                "BorrowerOps: Collateral withdrawal not permitted Recovery Mode"
+                Errors.BO_CANNOT_WITHDRAWAL_COLL_IN_RM
             );
             if (_isDebtIncrease) {
                 _requireICRisAboveCCR(_vars.newICR);
                 // _requireNewICRisAboveOldICR(_vars.newICR, _vars.oldICR);
                 require(
                     _vars.newICR >= _vars.oldICR,
-                    "BorrowerOps: Cannot decrease your Trove's ICR in Recovery Mode"
+                    Errors.BO_CANNOT_DECREASE_ICR_IN_RM
                 );
             }
         } else {
@@ -1110,28 +1105,22 @@ contract BorrowerOperations is
     function _requireICRisAboveMCR(uint256 _newICR) internal view {
         require(
             _newICR >= collateralManager.getMCR(),
-            "BorrowerOps: An operation that would result in ICR < MCR is not permitted"
+            Errors.BO_NOT_PERMIT_FOR_ICR_LT_MCR
         );
     }
 
     function _requireICRisAboveCCR(uint256 _newICR) internal view {
-        require(
-            _newICR >= CCR(),
-            "BorrowerOps: Operation must leave trove with ICR >= CCR"
-        );
+        require(_newICR >= CCR(), Errors.BO_TROVE_ICR_MUST_GT_CCR);
     }
 
     function _requireNewTCRisAboveCCR(uint256 _newTCR) internal view {
-        require(
-            _newTCR >= CCR(),
-            "BorrowerOps: An operation that would result in TCR < CCR is not permitted"
-        );
+        require(_newTCR >= CCR(), Errors.BO_NOT_PERMIT_FOR_TCR_LT_CCR);
     }
 
     function _requireAtLeastMinNetDebt(uint256 _netDebt) internal view {
         require(
             _netDebt >= collateralManager.getMinNetDebt(),
-            "BorrowerOps: Trove's net debt must be greater than minimum"
+            Errors.BO_TROVE_DEBT_MUST_GT_MIN
         );
     }
 
@@ -1142,7 +1131,7 @@ contract BorrowerOperations is
     ) internal view {
         require(
             _eusdToken.balanceOf(_borrower) >= _debtRepayment,
-            "BorrowerOps: Caller doesnt have enough EUSD to make repayment"
+            Errors.BO_USDE_INSUFFICIENT
         );
     }
 
@@ -1153,13 +1142,13 @@ contract BorrowerOperations is
         if (_isRecoveryMode) {
             require(
                 _maxFeePercentage <= DECIMAL_PRECISION,
-                "Max fee percentage must less than or equal to 100%"
+                Errors.BO_MAX_FEE_EXCEED_100
             );
         } else {
             require(
                 _maxFeePercentage >= collateralManager.getBorrowingFeeFloor() &&
                     _maxFeePercentage <= DECIMAL_PRECISION,
-                "Max fee percentage must be between 0.75% and 100%"
+                Errors.BO_MAX_FEE_NOT_IN_RANGE
             );
         }
     }
@@ -1169,7 +1158,7 @@ contract BorrowerOperations is
         uint256 length1,
         uint256 length2
     ) internal pure {
-        require(length1 == length2, "BorrowerOps: Length mismatch");
+        require(length1 == length2, Errors.LENGTH_MISMATCH);
     }
 
     function _getNewTCRFromTroveChange(

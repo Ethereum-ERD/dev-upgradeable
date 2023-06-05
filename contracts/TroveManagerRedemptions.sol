@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Interfaces/ITroveManagerRedemptions.sol";
 import "./TroveManagerDataTypes.sol";
 import "./DataTypes.sol";
+import "./Errors.sol";
 
 contract TroveManagerRedemptions is
     TroveManagerDataTypes,
@@ -465,7 +466,7 @@ contract TroveManagerRedemptions is
         }
         require(
             ERDMath._arrayIsNonzero(totals.totalCollDrawns),
-            "TroveManagerRedemtions: Unable to redeem any amount"
+            Errors.TMR_CANNOT_REDEEM
         );
 
         (uint256 totalCollDrawnValue, ) = contractsCache
@@ -580,10 +581,7 @@ contract TroveManagerRedemptions is
         uint256 redemptionFee = _redemptionRate.mul(_collDrawnValue).div(
             DECIMAL_PRECISION
         );
-        require(
-            redemptionFee < _collDrawnValue,
-            "TroveManagerRedemptions: Fee would eat up all returned collateral"
-        );
+        require(redemptionFee < _collDrawnValue, Errors.TM_FEE_TOO_HIGH);
         uint256 length = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](length);
         for (uint256 i = 0; i < length; ) {
@@ -592,10 +590,7 @@ contract TroveManagerRedemptions is
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
                     DECIMAL_PRECISION
                 );
-                require(
-                    redemptionFees[i] < collDrawn,
-                    "TroveManagerRedemptions: Fee would eat up all returned collateral"
-                );
+                require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
             }
             unchecked {
                 i++;
@@ -615,17 +610,11 @@ contract TroveManagerRedemptions is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(
-            _contract.isContract(),
-            "TroveManagerRedemptions: Contract check error"
-        );
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerisTroveManager() internal view {
-        require(
-            msg.sender == address(troveManager),
-            "TroveManagerLiquidations: Caller not TM"
-        );
+        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
     }
 
     function _requireEUSDBalanceCoversRedemption(
@@ -635,21 +624,18 @@ contract TroveManagerRedemptions is
     ) internal view {
         require(
             _eusdToken.balanceOf(_redeemer) >= _amount,
-            "TroveManagerRedemptions: Requested redemption amount must be <= user's EUSD token balance"
+            Errors.TMR_REDEMPTION_AMOUNT_EXCEED_BALANCE
         );
     }
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(
-            _amount > 0,
-            "TroveManagerRedemptions: Amount must be greater than zero"
-        );
+        require(_amount > 0, Errors.TMR_AMOUNT_MUST_GT_ZERO);
     }
 
     function _requireTCRoverMCR(uint256 _price) internal view {
         require(
             troveManager.getTCR(_price) >= MCR(),
-            "TroveManagerRedemptions: Cannot redeem when TCR < MCR"
+            Errors.TMR_CANNOT_REDEEM_WHEN_TCR_LT_MCR
         );
     }
 
@@ -657,7 +643,7 @@ contract TroveManagerRedemptions is
         require(
             block.timestamp >=
                 deploymentStartTime.add(collateralManager.getBootstrapPeriod()),
-            "TroveManagerRedemptions: Redemptions are not allowed during bootstrap phase"
+            Errors.TMR_REDEMPTION_NOT_ALLOWED
         );
     }
 
@@ -667,7 +653,7 @@ contract TroveManagerRedemptions is
         require(
             _maxFeePercentage >= collateralManager.getBorrowingFeeFloor() &&
                 _maxFeePercentage <= DECIMAL_PRECISION,
-            "Max fee percentage must be between 0.75% and 100%"
+            Errors.BO_MAX_FEE_NOT_IN_RANGE
         );
     }
 
@@ -680,7 +666,7 @@ contract TroveManagerRedemptions is
         require(
             lowerHintsLen == _upperHints.length &&
                 lowerHintsLen == _borrowers.length,
-            "TMR: Length mismatch"
+            Errors.LENGTH_MISMATCH
         );
         uint256 price = priceFeed.fetchPrice();
         collateralManager.priceUpdate();

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./TroveManagerDataTypes.sol";
 import "./DataTypes.sol";
+import "./Errors.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/IPriceFeed.sol";
@@ -58,8 +59,7 @@ contract CollateralManager is
 
     function initialize() public initializer {
         __Ownable_init();
-        // BOOTSTRAP_PERIOD = 14 days;
-        BOOTSTRAP_PERIOD = 0;
+        BOOTSTRAP_PERIOD = 14 days;
         MCR = 1100000000000000000; // 110%
         CCR = 1300000000000000000; // 130%
         EUSD_GAS_COMPENSATION = 200e18;
@@ -114,10 +114,7 @@ contract CollateralManager is
         address _eTokenAddress,
         uint256 _ratio
     ) external override onlyOwner {
-        require(
-            !getIsSupport(_collateral),
-            "CollateralManager: Collateral already exists"
-        );
+        require(!getIsSupport(_collateral), Errors.CM_COLL_EXISTS);
         _requireRatioLegal(_ratio);
 
         collateralParams[_collateral] = DataTypes.CollateralParams(
@@ -135,12 +132,9 @@ contract CollateralManager is
         address collAddress = _collateral;
         require(
             getIsSupport(collAddress) && !getIsActive(collAddress),
-            "CollateralManager: Collateral not pause"
+            Errors.CM_COLL_MUST_PAUSED
         );
-        require(
-            collateralsCount > 1,
-            "CollateralManager: Need at least one collateral support"
-        );
+        require(collateralsCount > 1, Errors.CM_COLL_LT_ONE);
         uint256 index = getIndex(collAddress);
         address collateral;
         for (uint256 i = index; i < collateralsCount - 1; ) {
@@ -216,10 +210,7 @@ contract CollateralManager is
     }
 
     function _setStatus(address _collateral, uint256 _num) internal {
-        require(
-            getIsSupport(_collateral),
-            "CollateralManager: Collateral not support"
-        );
+        require(getIsSupport(_collateral), Errors.CM_COLL_NOT_SUPPORT);
         collateralParams[_collateral].status = DataTypes.CollStatus(_num);
     }
 
@@ -284,7 +275,7 @@ contract CollateralManager is
         returns (uint256 totalValue, uint256[] memory values)
     {
         uint256 collLen = _collaterals.length;
-        require(collLen == _amounts.length, "Length mismatch");
+        require(collLen == _amounts.length, Errors.LENGTH_MISMATCH);
         values = new uint256[](collLen);
         for (uint256 i = 0; i < collLen; ) {
             if (_amounts[i] != 0) {
@@ -452,7 +443,7 @@ contract CollateralManager is
     ) external override returns (uint256[] memory) {
         require(
             msg.sender == troveManagerRedemptionsAddress,
-            "CollateralManager: Bad caller"
+            Errors.CALLER_NOT_TMR
         );
         uint256 collLen = _collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
@@ -698,10 +689,7 @@ contract CollateralManager is
     function getIndex(
         address _collateral
     ) public view override returns (uint256) {
-        require(
-            getIsSupport(_collateral),
-            "CollateralManager: Collateral not support"
-        );
+        require(getIsSupport(_collateral), Errors.CM_COLL_NOT_SUPPORT);
         return collateralParams[_collateral].index;
     }
 
@@ -714,38 +702,23 @@ contract CollateralManager is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(
-            _contract.isContract(),
-            "CollateralManager: Contract check error"
-        );
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireRatioLegal(uint256 _ratio) internal pure {
-        require(
-            _ratio <= DECIMAL_PRECISION,
-            "CollateralManager: Ratio must be less than 100%"
-        );
+        require(_ratio <= DECIMAL_PRECISION, Errors.CM_RATIO_MUST_LT_100);
     }
 
     function _requireCollIsActive(address _collateral) internal view {
-        require(
-            getIsActive(_collateral),
-            "CollateralManager: Collateral not active"
-        );
+        require(getIsActive(_collateral), Errors.CM_COLL_NOT_ACTIVE);
     }
 
     function _requireCollIsBO() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress,
-            "CollateralManager: Bad caller"
-        );
+        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
     }
 
     function _requireCollIsTM() internal view {
-        require(
-            msg.sender == address(troveManager),
-            "CollateralManager: Bad caller"
-        );
+        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
     }
 
     function adjustColls(

@@ -90,7 +90,7 @@ contract TroveManager is
     bool internal paused;
 
     modifier whenNotPaused() {
-        require(!paused, "BorrowerOps: Protocol is paused");
+        require(!paused, Errors.PROTOCOL_PAUSED);
         _;
     }
 
@@ -803,7 +803,7 @@ contract TroveManager is
         uint256 TroveOwnersArrayLength = TroveOwners.length;
         require(
             TroveOwnersArrayLength > 1 && sortedTroves.getSize() > 1,
-            "TroveManager: Only one trove in the system"
+            Errors.TM_ONLY_ONE_TROVE_IN_SYSTEM
         );
         uint256 oldDebt = troveDebt.balanceOf(_borrower);
 
@@ -928,19 +928,8 @@ contract TroveManager is
         TroveOwners.pop();
     }
 
-    // function updateTroves(
-    //     address[] calldata _borrowers,
-    //     address[] calldata _lowerHints,
-    //     address[] calldata _upperHints
-    // ) external {
-    //     troveManagerRedemptions.updateTroves(_borrowers, _lowerHints, _upperHints);
-    // }
-
     function setFactor(uint256 _factor) external override {
-        require(
-            msg.sender == address(collateralManager),
-            "TroveManager: Bad caller"
-        );
+        require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
         troveData.factor = _factor;
     }
 
@@ -974,7 +963,7 @@ contract TroveManager is
     function updateBaseRate(uint256 newBaseRate) external override {
         _requireCallerIsTMR();
         //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
-        require(newBaseRate != 0, "TM: newBaseRate must be > 0");
+        require(newBaseRate != 0, Errors.TM_BASERATE_MUST_GT_ZERO);
         baseRate = newBaseRate;
         emit BaseRateUpdated(newBaseRate);
         _updateLastFeeOpTime();
@@ -1023,10 +1012,7 @@ contract TroveManager is
         uint256 redemptionFee = _redemptionRate.mul(_collDrawn).div(
             DECIMAL_PRECISION
         );
-        require(
-            redemptionFee < _collDrawn,
-            "TroveManager: Fee would eat up all returned collateral"
-        );
+        require(redemptionFee < _collDrawn, Errors.TM_FEE_TOO_HIGH);
         uint256 collsLen = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](collsLen);
         for (uint256 i = 0; i < collsLen; ) {
@@ -1035,10 +1021,7 @@ contract TroveManager is
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
                     DECIMAL_PRECISION
                 );
-                require(
-                    redemptionFees[i] < collDrawn,
-                    "TroveManager: Fee would eat up all returned collateral"
-                );
+                require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
             }
             unchecked {
                 i++;
@@ -1134,14 +1117,11 @@ contract TroveManager is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "TroveManager: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress,
-            "TroveManager: Caller is not the BorrowerOperations contract"
-        );
+        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
     }
 
     function _requireCallerIsBOorTMLorTMR() internal view {
@@ -1149,7 +1129,7 @@ contract TroveManager is
             msg.sender == borrowerOperationsAddress ||
                 msg.sender == address(troveManagerLiquidations) ||
                 msg.sender == address(troveManagerRedemptions),
-            "ActivePool: Caller is neither BorrowerOperations nor TroveManagerLiquidations/TroveManagerRedemptions"
+            Errors.CALLER_NOT_BO_TML_TMR
         );
     }
 
@@ -1157,28 +1137,28 @@ contract TroveManager is
         require(
             msg.sender == borrowerOperationsAddress ||
                 msg.sender == address(troveManagerRedemptions),
-            "ActivePool: Caller is neither BorrowerOperations nor TroveManagerLiquidations/TroveManagerRedemptions"
+            Errors.CALLER_NOT_BO_TMR
         );
     }
 
     function _requireCallerIsTML() internal view {
         require(
             msg.sender == address(troveManagerLiquidations),
-            "TroveManager: Caller is not the TroveManagerLiquidations contract"
+            Errors.CALLER_NOT_TML
         );
     }
 
     function _requireCallerIsTMR() internal view {
         require(
             msg.sender == address(troveManagerRedemptions),
-            "TroveManager: Caller is not the TroveManagerRedemptions contract"
+            Errors.CALLER_NOT_TMR
         );
     }
 
     function _requireTroveIsActive(address _borrower) internal view {
         require(
             Troves[_borrower].status == DataTypes.Status.active,
-            "TroveManager: Trove does not exist or is closed"
+            Errors.TM_TROVE_NOT_EXIST_OR_CLOSED
         );
     }
 

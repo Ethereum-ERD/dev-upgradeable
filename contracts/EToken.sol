@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/IEToken.sol";
+import "./Errors.sol";
 
 contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     using SafeMathUpgradeable for uint256;
@@ -87,7 +88,12 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     function transfer(
         address _recipient,
         uint256 _amount
-    ) public virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
+    )
+        public
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (bool)
+    {
         uint256 share = getShare(_amount);
         _requireValidAdjustment(msg.sender, _amount);
         shares[msg.sender] = shares[msg.sender].sub(share);
@@ -100,7 +106,12 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         address _sender,
         address _recipient,
         uint256 _amount
-    ) public virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (bool) {
+    )
+        public
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (bool)
+    {
         uint256 share = getShare(_amount);
         _requireValidAdjustment(_sender, _amount);
         shares[_sender] = shares[_sender].sub(share);
@@ -123,26 +134,39 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         return _share;
     }
 
-    function balanceOf(address _account) public view virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (uint256) {
+    function balanceOf(
+        address _account
+    )
+        public
+        view
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (uint256)
+    {
         return getAmount(sharesOf(_account));
     }
 
-    function totalSupply() public view virtual override(IERC20Upgradeable, ERC20Upgradeable) returns (uint256) {
+    function totalSupply()
+        public
+        view
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (uint256)
+    {
         return getAmount(_totalShares);
     }
 
     function _requireIsCollateralManager() internal view {
-        require(msg.sender == address(collateralManager), "EToken: Bad caller");
+        require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
     }
 
-    function _requireValidAdjustment(address _sender, uint256 _amount) internal {
+    function _requireValidAdjustment(
+        address _sender,
+        uint256 _amount
+    ) internal {
         require(
-            collateralManager.validAdjustment(
-                _sender,
-                tokenAddress,
-                _amount
-            ),
-            "EToken: Invalid adjustment"
+            collateralManager.validAdjustment(_sender, tokenAddress, _amount),
+            Errors.ET_INVALID_ADJUSTMENT
         );
     }
 }

@@ -10,6 +10,7 @@ import "./Interfaces/IDefaultPool.sol";
 import "./Interfaces/IActivePool.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Dependencies/ERDMath.sol";
+import "./Errors.sol";
 
 /*
  * The Default Pool holds the collateral and EUSD debt (but not EUSD tokens) from liquidations that have been redistributed
@@ -138,20 +139,14 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "DefaultPool: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(
-            msg.sender == activePoolAddress,
-            "DefaultPool: Caller is not the ActivePool"
-        );
+        require(msg.sender == activePoolAddress, Errors.CALLER_NOT_AP);
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(
-            msg.sender == troveManagerAddress,
-            "DefaultPool: Caller is not the TroveManager"
-        );
+        require(msg.sender == troveManagerAddress, Errors.CALLER_NOT_TM);
     }
 }

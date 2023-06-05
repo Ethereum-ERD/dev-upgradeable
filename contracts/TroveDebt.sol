@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "./Interfaces/ITroveDebt.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Dependencies/WadRayMath.sol";
+import "./Errors.sol";
 
 contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
     using SafeMathUpgradeable for uint256;
@@ -22,10 +23,7 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
      * @dev Only troveManager can call functions marked by this modifier
      **/
     modifier onlyTroveManager() {
-        require(
-            _msgSender() == address(troveManager),
-            "Errors.CT_CALLER_MUST_BE_LENDING_POOL"
-        );
+        require(_msgSender() == address(troveManager), Errors.CALLER_NOT_TM);
         _;
     }
 
@@ -54,7 +52,7 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
     ) external override onlyTroveManager returns (bool) {
         uint256 previousBalance = _balances[user];
         uint256 amountScaled = amount.rayDiv(index);
-        require(amountScaled != 0, "Errors.CT_INVALID_MINT_AMOUNT");
+        require(amountScaled != 0, Errors.TD_AMOUNT_ZERO);
 
         uint256 oldTotalSupply = _totalSupply;
         _totalSupply = oldTotalSupply.add(amountScaled);
@@ -71,7 +69,7 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
         uint256 index
     ) external override onlyTroveManager {
         uint256 amountScaled = amount.rayDiv(index);
-        require(amountScaled != 0, "Errors.CT_INVALID_BURN_AMOUNT");
+        require(amountScaled != 0, Errors.TD_AMOUNT_ZERO);
 
         uint256 oldTotalSupply = _totalSupply;
         _totalSupply = oldTotalSupply.sub(amountScaled);

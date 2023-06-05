@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBorrowerOperations.sol";
+import "./Errors.sol";
 
 /*
  * A sorted doubly linked list with nodes sorted in descending order.
@@ -80,7 +81,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         address _troveManagerRedemptionsAddress,
         address _borrowerOperationsAddress
     ) external override onlyOwner {
-        require(_size > 0, "SortedTroves: Size can't be zero");
+        require(_size > 0, Errors.ST_SIZE_ZERO);
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_troveManagerRedemptionsAddress);
         _requireIsContract(_borrowerOperationsAddress);
@@ -123,13 +124,13 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         address _nextId
     ) internal {
         // List must not be full
-        require(!isFull(), "SortedTroves: List is full");
+        require(!isFull(), Errors.ST_LIST_FULL);
         // List must not already contain node
-        require(!contains(_id), "SortedTroves: List already contains the node");
+        require(!contains(_id), Errors.ST_LIST_CONTAINS_NODE);
         // Node id must not be null
-        require(_id != address(0), "SortedTroves: Id cannot be zero");
+        require(_id != address(0), Errors.ST_ID_ZERO);
         // NICR must be non-zero
-        require(_ICR > 0, "SortedTroves: ICR must be positive");
+        require(_ICR > 0, Errors.ST_ICR_NEGATIVE);
 
         address prevId = _prevId;
         address nextId = _nextId;
@@ -180,7 +181,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
      */
     function _remove(address _id) internal {
         // List must contain the node
-        require(contains(_id), "SortedTroves: List does not contain the id");
+        require(contains(_id), Errors.ST_LIST_NOT_CONTAIN_NODE);
 
         if (data.size > 1) {
             // List contains more than a single node
@@ -235,9 +236,9 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     ) external override {
         _requireCallerIsBOorTMR();
         // List must contain the node
-        require(contains(_id), "SortedTroves: List does not contain the id");
+        require(contains(_id), Errors.ST_LIST_NOT_CONTAIN_NODE);
         // NICR must be non-zero
-        require(_newICR > 0, "SortedTroves: ICR must be positive");
+        require(_newICR > 0, Errors.ST_ICR_NEGATIVE);
 
         // Remove node from the list
         _remove(_id);
@@ -464,28 +465,22 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "SortedTroves: Contract check error");
+        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(
-            msg.sender == address(troveManager),
-            "SortedTroves: Caller is not the TroveManager"
-        );
+        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress,
-            "SortedTroves: Caller is not the BorrowerOperations"
-        );
+        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
     }
 
     function _requireCallerIsBOorTMR() internal view {
         require(
             msg.sender == borrowerOperationsAddress ||
                 msg.sender == troveManagerRedemptionsAddress,
-            "SortedTroves: Caller is neither BO nor TroveM/TML"
+            Errors.CALLER_NOT_BO_TMR
         );
     }
 }
