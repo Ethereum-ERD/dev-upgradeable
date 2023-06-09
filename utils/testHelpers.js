@@ -241,8 +241,8 @@ class TestHelper {
   }
 
   static isZeroArray(colls) {
-    for(let i = 0; i < colls.length; i++) {
-      if(colls[i] != 0){
+    for (let i = 0; i < colls.length; i++) {
+      if (colls[i] != 0) {
         return false
       }
     }
@@ -860,7 +860,7 @@ class TestHelper {
     if (!oracle) oracle = contracts.priceFeedETH
     const account = extraParams.from
     const MIN_DEBT = (
-      await this.getNetBorrowingAmount(contracts, await contracts.borrowerOperations.MIN_NET_DEBT())
+      await this.getNetBorrowingAmount(contracts, await contracts.collateralManager.getMinNetDebt())
     ).add(this.toBN(1)) // add 1 to avoid rounding issues for tests where trove was opening at 130%, and you can’t open the first trove under TCR 130%
     const eusdAmount = MIN_DEBT.add(extraEUSDAmount)
 
@@ -967,7 +967,7 @@ class TestHelper {
     const account = extraParams.from
 
     const MIN_DEBT = (
-      await this.getNetBorrowingAmount(contracts, await contracts.borrowerOperations.MIN_NET_DEBT())
+      await this.getNetBorrowingAmount(contracts, await contracts.collateralManager.getMinNetDebt())
     ).add(this.toBN(1)) // add 1 to avoid rounding issues for tests where trove was opening at 130%, and you can’t open the first trove under TCR 130%
     const eusdAmount = MIN_DEBT.add(extraEUSDAmount)
 
@@ -1135,7 +1135,7 @@ class TestHelper {
     const collsAddress = []
     const collsParamAddress = []
     const MIN_DEBT = (
-      await this.getNetBorrowingAmount(contracts, await contracts.borrowerOperations.MIN_NET_DEBT())
+      await this.getNetBorrowingAmount(contracts, await contracts.collateralManager.getMinNetDebt())
     ).add(this.toBN(1)) // add 1 to avoid rounding issues for tests where trove was opening at 130%, and you can’t open the first trove under TCR 130%
     eusdAmount = MIN_DEBT.add(extraEUSDAmount)
 
@@ -1288,7 +1288,7 @@ class TestHelper {
     let eusdAmount
     const collsAddress = []
     const MIN_DEBT = (
-      await this.getNetBorrowingAmount(contracts, await contracts.borrowerOperations.MIN_NET_DEBT())
+      await this.getNetBorrowingAmount(contracts, await contracts.collateralManager.getMinNetDebt())
     )
     if (includeOne) MIN_DEBT.add(this.toBN(1)) // add 1 to avoid rounding issues for tests where trove was opening at 150%, and you can’t open the first trove under TCR 150%
     if (EUSDAmount.gt(MIN_DEBT)) eusdAmount = EUSDAmount
@@ -1349,7 +1349,9 @@ class TestHelper {
         ICR: ICR,
         colls: tokens,
         amounts: [amounts1, amounts2, amounts3, amounts1, amounts2, amounts3, amounts1, amounts2, amounts3, amounts1, amounts2, amounts3],
-        extraParams: { from: accounts[i] }
+        extraParams: {
+          from: accounts[i]
+        }
       })
       for (let j = 0; j < tokens.length; j++) {
         await tokens[j].approve(contracts.borrowerOperations.address, this.toBN(this.dec(1, 30)), extraParams);
@@ -1437,7 +1439,9 @@ class TestHelper {
         ICR: ICR,
         colls: [tokens[index1], tokens[index2], tokens[index3]],
         amounts: [amounts1, amounts2, amounts3],
-        extraParams: { from: accounts[i] }
+        extraParams: {
+          from: accounts[i]
+        }
       })
       // Reapprove tokens to borrowerOperations
       await tokens[index1].approve(contracts.borrowerOperations.address, this.toBN(this.dec(1, 30)), extraParams);
@@ -1859,44 +1863,44 @@ class TestHelper {
     return this.getGasMetrics(gasCostList)
   }
 
-  static async performRedemptionTx(redeemer, price, contracts, EUSDAmount, maxFee = this._100pct, maxIterations = 0) {
-    var finalEUSDAmount = this.toBN(0)
-    finalEUSDAmount = await this.estimateEUSDEligible(contracts, EUSDAmount)
-    // TODO Ensure max fee is not greater than the amount of EUSD fee calculated
-    const redemptionhint = await contracts.hintHelpers.getRedemptionHints(finalEUSDAmount, price, 0)
-    const firstRedemptionHint = redemptionhint[0]
-    const partialRedemptionNewICR = redemptionhint[1]
-    const {
-      hintAddress: approxPartialRedemptionHint,
-      latestRandomSeed
-    } = await contracts.hintHelpers.getApproxHint(partialRedemptionNewICR, 50, this.latestRandomSeed, price)
-    this.latestRandomSeed = latestRandomSeed
-    const exactPartialRedemptionHint = (await contracts.sortedTroves.findInsertPosition(partialRedemptionNewICR,
-      approxPartialRedemptionHint,
-      approxPartialRedemptionHint))
+  // static async performRedemptionTx(redeemer, price, contracts, EUSDAmount, maxFee = this._100pct, maxIterations = 0) {
+  //   var finalEUSDAmount = this.toBN(0)
+  //   finalEUSDAmount = await this.estimateEUSDEligible(contracts, EUSDAmount)
+  //   // TODO Ensure max fee is not greater than the amount of EUSD fee calculated
+  //   const redemptionhint = await contracts.hintHelpers.getRedemptionHints(finalEUSDAmount, price, 0)
+  //   const firstRedemptionHint = redemptionhint[0]
+  //   const partialRedemptionNewICR = redemptionhint[1]
+  //   const {
+  //     hintAddress: approxPartialRedemptionHint,
+  //     latestRandomSeed
+  //   } = await contracts.hintHelpers.getApproxHint(partialRedemptionNewICR, 50, this.latestRandomSeed, price)
+  //   this.latestRandomSeed = latestRandomSeed
+  //   const exactPartialRedemptionHint = (await contracts.sortedTroves.findInsertPosition(partialRedemptionNewICR,
+  //     approxPartialRedemptionHint,
+  //     approxPartialRedemptionHint))
 
-    finalEUSDAmount = this.toBN(finalEUSDAmount);
-    const totalEUSD_ToPullIn = this.toBN(1000000).mul(finalEUSDAmount);
-    // console.log("TO Pull IN", totalEUSD_ToPullIn.toString());
+  //   finalEUSDAmount = this.toBN(finalEUSDAmount);
+  //   const totalEUSD_ToPullIn = this.toBN(1000000).mul(finalEUSDAmount);
+  //   // console.log("TO Pull IN", totalEUSD_ToPullIn.toString());
 
-    await contracts.eusdToken.approve(contracts.troveManagerRedemptions.address, totalEUSD_ToPullIn, {
-      from: redeemer
-    });
+  //   await contracts.eusdToken.approve(contracts.troveManagerRedemptions.address, totalEUSD_ToPullIn, {
+  //     from: redeemer
+  //   });
 
-    const tx = await contracts.troveManager.redeemCollateral(finalEUSDAmount,
-      finalEUSDFeeAmount,
-      firstRedemptionHint,
-      exactPartialRedemptionHint[0],
-      exactPartialRedemptionHint[1],
-      partialRedemptionNewICR,
-      maxIterations,
-      maxFee, {
-        from: redeemer,
-        gasPrice: 50000
-      },
-    )
-    return tx
-  }
+  //   const tx = await contracts.troveManager.redeemCollateral(finalEUSDAmount,
+  //     finalEUSDFeeAmount,
+  //     firstRedemptionHint,
+  //     exactPartialRedemptionHint[0],
+  //     exactPartialRedemptionHint[1],
+  //     partialRedemptionNewICR,
+  //     maxIterations,
+  //     maxFee, {
+  //       from: redeemer,
+  //       gasPrice: 50000
+  //     },
+  //   )
+  //   return tx
+  // }
 
   static async performRedemptionWithMaxFeeAmount(redeemer, contracts, EUSDAmount, maxFee = this._100pct, maxIterations = 0) {
 
@@ -1931,8 +1935,7 @@ class TestHelper {
       exactPartialRedemptionHint[1],
       partialRedemptionNewICR,
       maxIterations,
-      maxFee,
-      {
+      maxFee, {
         from: redeemer,
         gasPrice: 50000
       },
@@ -2422,8 +2425,7 @@ class TestHelper {
       exactPartialRedemptionHint[1],
       partialRedemptionNewICR,
       maxIterations,
-      maxFee,
-      {
+      maxFee, {
         from: redeemer,
         gasPrice: gasPrice_toUse
       },
@@ -2641,20 +2643,20 @@ class TestHelper {
     const closedDebt = await contracts.defaultPool.getEUSDDebt()
     const gasEUSD = await contracts.eusdToken.balanceOf(contracts.gasPool.address)
     const debt = this.toBN(activeDebt).add(this.toBN(closedDebt)).add(this.toBN(gasEUSD))
-    
+
     var value
     var newDebt
-    if(isCollIncrease) {
+    if (isCollIncrease) {
       value = this.toBN(totalValue).add(this.toBN(collChange))
     } else {
       value = this.toBN(totalValue).sub(this.toBN(collChange))
     }
-    if(isDebtChange) {
+    if (isDebtChange) {
       newDebt = this.toBN(debt).add(this.toBN(debtChange))
     } else {
       newDebt = this.toBN(debt).sub(this.toBN(debtChange))
     }
-    
+
     if (newDebt > this.toBN(0)) {
       return value.mul(this.toBN(this.dec(1, 18))).div(newDebt)
     } else {

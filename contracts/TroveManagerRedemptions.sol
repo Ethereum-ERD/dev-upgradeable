@@ -274,9 +274,9 @@ contract TroveManagerRedemptions is
                         remaindColls[i] = coll.sub(offset);
                         EUSDLot = 0;
                     }
-                    if (i == 0) {
-                        break;
-                    }
+                }
+                if (i == 0) {
+                    break;
                 }
             }
         }
