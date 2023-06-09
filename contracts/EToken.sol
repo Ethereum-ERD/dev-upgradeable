@@ -77,7 +77,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
         uint256 oldShare = shares[_account];
-        uint256 oldAmount = getAmount(oldShare);
+        uint256 oldAmount = super.balanceOf(_account);
         _burn(_account, oldAmount);
         _mint(_account, _amount);
         shares[_account] = share;
