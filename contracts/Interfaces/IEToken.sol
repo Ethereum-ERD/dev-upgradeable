@@ -24,4 +24,6 @@ interface IEToken is IERC20Upgradeable {
     function getShare(uint256 _amount) external view returns (uint256);
 
     function getAmount(uint256 _share) external view returns (uint256);
+
+    function totalShareSupply() external view returns (uint256);
 }

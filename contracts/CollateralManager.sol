@@ -64,11 +64,11 @@ contract CollateralManager is
         CCR = 1300000000000000000; // 130%
         EUSD_GAS_COMPENSATION = 200e18;
         MIN_NET_DEBT = 1800e18;
-        BORROWING_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 75; // 0.75%
+        BORROWING_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 25; // 0.25%
 
-        REDEMPTION_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 75; // 0.75%
-        RECOVERY_FEE = (DECIMAL_PRECISION / 10000) * 25; // 0.25%
-        MAX_BORROWING_FEE = (DECIMAL_PRECISION / 100) * 5; // 5%
+        REDEMPTION_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 25; // 0.25%
+        RECOVERY_FEE = DECIMAL_PRECISION / 1000; // 0.1%
+        MAX_BORROWING_FEE = (DECIMAL_PRECISION / 1000) * 25; // 2.5%
     }
 
     function setAddresses(
@@ -421,7 +421,7 @@ contract CollateralManager is
         address _account,
         DataTypes.Status closedStatus
     ) external override returns (address[] memory) {
-        _requireCollIsTM();
+        _requireCollIsBOOrTM();
         if (closedStatus == DataTypes.Status.closedByOwner) {
             return collateralSupport;
         }
@@ -719,6 +719,14 @@ contract CollateralManager is
 
     function _requireCollIsTM() internal view {
         require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
+    }
+
+    function _requireCollIsBOOrTM() internal view {
+        require(
+            msg.sender == borrowerOperationsAddress ||
+                msg.sender == address(troveManager),
+            Errors.CALLER_NOT_BO_TM
+        );
     }
 
     function adjustColls(

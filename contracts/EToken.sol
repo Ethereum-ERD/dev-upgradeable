@@ -14,10 +14,6 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ICollateralManager internal collateralManager;
     address public tokenAddress;
 
-    mapping(address => uint256) internal shares;
-
-    uint256 private _totalShares;
-
     function initialize(
         string memory name_,
         string memory symbol_
@@ -43,9 +39,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) external override returns (uint256) {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
-        shares[_account] = shares[_account].add(share);
-        _totalShares = _totalShares.add(share);
-        _mint(_account, _amount);
+        _mint(_account, share);
         return share;
     }
 
@@ -55,19 +49,14 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) external override returns (uint256) {
         _requireIsCollateralManager();
         uint256 share = getShare(_amount);
-        shares[_account] = shares[_account].sub(share);
-        _totalShares = _totalShares.sub(share);
-        _burn(_account, _amount);
+        _burn(_account, share);
         return share;
     }
 
     function clear(address _account) external override {
         _requireIsCollateralManager();
-        uint256 amount = super.balanceOf(_account);
-        uint256 share = shares[_account];
-        _burn(_account, amount);
-        shares[_account] = 0;
-        _totalShares = _totalShares.sub(share);
+        uint256 share = super.balanceOf(_account);
+        _burn(_account, share);
     }
 
     function reset(
@@ -75,14 +64,14 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         uint256 _amount
     ) external override returns (uint256) {
         _requireIsCollateralManager();
-        uint256 share = getShare(_amount);
-        uint256 oldShare = shares[_account];
-        uint256 oldAmount = super.balanceOf(_account);
-        _burn(_account, oldAmount);
-        _mint(_account, _amount);
-        shares[_account] = share;
-        _totalShares = _totalShares.sub(oldShare).add(share);
-        return share;
+        uint256 oldShare = super.balanceOf(_account);
+        uint256 newShare = getShare(_amount);
+        if (oldShare > newShare) {
+            _burn(_account, oldShare.sub(newShare));
+        } else {
+            _mint(_account, newShare.sub(oldShare));
+        }
+        return newShare;
     }
 
     function transfer(
@@ -96,9 +85,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     {
         uint256 share = getShare(_amount);
         _requireValidAdjustment(msg.sender, _amount);
-        shares[msg.sender] = shares[msg.sender].sub(share);
-        shares[_recipient] = shares[_recipient].add(share);
-        _transfer(msg.sender, _recipient, _amount);
+        _transfer(msg.sender, _recipient, share);
         return true;
     }
 
@@ -112,16 +99,14 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         override(IERC20Upgradeable, ERC20Upgradeable)
         returns (bool)
     {
-        uint256 share = getShare(_amount);
+        uint256 share = getAmount(_amount);
         _requireValidAdjustment(_sender, _amount);
-        shares[_sender] = shares[_sender].sub(share);
-        shares[_recipient] = shares[_recipient].add(share);
-        super.transferFrom(_sender, _recipient, _amount);
+        super.transferFrom(_sender, _recipient, share);
         return true;
     }
 
     function sharesOf(address _account) public view override returns (uint256) {
-        return shares[_account];
+        return super.balanceOf(_account);
     }
 
     function getShare(uint256 _amount) public view override returns (uint256) {
@@ -153,7 +138,11 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         override(IERC20Upgradeable, ERC20Upgradeable)
         returns (uint256)
     {
-        return getAmount(_totalShares);
+        return getAmount(totalShareSupply());
+    }
+
+    function totalShareSupply() public view override returns (uint256) {
+        return super.totalSupply();
     }
 
     function _requireIsCollateralManager() internal view {

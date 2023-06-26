@@ -1254,7 +1254,9 @@ contract TroveManager is
     ) external override returns (uint256) {
         _requireCallerIsBorrowerOperations();
         troveData.updateState();
-        troveDebt.addDebt(_borrower, _debtIncrease, troveData.borrowIndex);
+        if (_debtIncrease > 0) {
+            troveDebt.addDebt(_borrower, _debtIncrease, troveData.borrowIndex);
+        }
         troveData.updateInterestRates();
         return troveDebt.balanceOf(_borrower);
     }
@@ -1265,7 +1267,9 @@ contract TroveManager is
     ) external override returns (uint256) {
         _requireCallerIsBOorTMR();
         troveData.updateState();
-        troveDebt.subDebt(_borrower, _debtDecrease, troveData.borrowIndex);
+        if (_debtDecrease > 0) {
+            troveDebt.subDebt(_borrower, _debtDecrease, troveData.borrowIndex);
+        }
         troveData.updateInterestRates();
         return troveDebt.balanceOf(_borrower);
     }

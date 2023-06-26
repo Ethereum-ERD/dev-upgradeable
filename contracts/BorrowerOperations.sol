@@ -712,12 +712,7 @@ contract BorrowerOperations is
             address[] memory collaterals
         ) = collateralManagerCached.getTroveColls(msg.sender);
 
-        collateralManagerCached.burnEToken(
-            collaterals,
-            collAmounts,
-            msg.sender,
-            0
-        );
+        collateralManager.clearEToken(msg.sender, DataTypes.Status.active);
         uint256 debt = troveManagerCached.getTroveDebt(msg.sender);
 
         uint256 gas = EUSD_GAS_COMPENSATION();
@@ -862,12 +857,10 @@ contract BorrowerOperations is
         uint256 _debtChange,
         bool _isDebtIncrease
     ) internal {
-        if (_debtChange > 0) {
-            if (_isDebtIncrease) {
-                _troveManager.increaseTroveDebt(_borrower, _debtChange);
-            } else {
-                _troveManager.decreaseTroveDebt(_borrower, _debtChange);
-            }
+        if (_isDebtIncrease) {
+            _troveManager.increaseTroveDebt(_borrower, _debtChange);
+        } else {
+            _troveManager.decreaseTroveDebt(_borrower, _debtChange);
         }
     }
 
