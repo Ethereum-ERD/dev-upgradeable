@@ -592,6 +592,29 @@ contract StabilityPool is
         }
     }
 
+    function authorizeBorrowerOperations(
+        address _collateral
+    ) external onlyOwner {
+        require(
+            collateralManager.getIsActive(_collateral),
+            Errors.CM_COLL_NOT_ACTIVE
+        );
+        IERC20Upgradeable(_collateral).approve(
+            address(borrowerOperations),
+            type(uint256).max
+        );
+    }
+
+    function unauthorizeBorrowerOperations(
+        address _collateral
+    ) external onlyOwner {
+        require(
+            collateralManager.getIsSupport(_collateral),
+            Errors.CM_COLL_NOT_SUPPORT
+        );
+        IERC20Upgradeable(_collateral).approve(address(borrowerOperations), 0);
+    }
+
     // --- Offset helper functions ---
 
     function _computeRewardsPerUnitStaked(
