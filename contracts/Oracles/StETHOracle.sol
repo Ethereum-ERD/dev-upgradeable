@@ -334,9 +334,4 @@ contract StETHOracle is OwnableUpgradeable, IOracle {
     function _requireIsContract(address _contract) internal view {
         require(_contract.isContract(), "PriceFeed: Contract check error");
     }
-
-    function setPrice(uint _price) external onlyOwner {
-        lastGoodPrice = _price;
-        emit LastGoodPriceUpdated(_price);
-    }
 }
