@@ -60,8 +60,8 @@ contract CollateralManager is
     function initialize() public initializer {
         __Ownable_init();
         BOOTSTRAP_PERIOD = 14 days;
-        MCR = 1100000000000000000; // 110%
-        CCR = 1300000000000000000; // 130%
+        MCR = 11e17; // 110%
+        CCR = 13e17; // 130%
         EUSD_GAS_COMPENSATION = 200e18;
         MIN_NET_DEBT = 1800e18;
         BORROWING_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 25; // 0.25%
