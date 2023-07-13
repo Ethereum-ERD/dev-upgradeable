@@ -761,6 +761,7 @@ contract CollateralManager is
     }
 
     function setGasCompensation(uint256 _gas) external override onlyOwner {
+        assert(_gas <= MIN_NET_DEBT);
         EUSD_GAS_COMPENSATION = _gas;
     }
 
