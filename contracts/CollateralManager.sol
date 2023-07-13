@@ -126,6 +126,7 @@ contract CollateralManager is
         );
         collateralSupport.push(_collateral);
         collateralsCount = collateralsCount.add(1);
+        assert(collateralsCount < 16);
     }
 
     function removeCollateral(address _collateral) external override onlyOwner {
