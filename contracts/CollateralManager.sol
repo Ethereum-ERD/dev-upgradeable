@@ -86,6 +86,7 @@ contract CollateralManager is
         _requireIsContract(_priceFeedAddress);
         _requireIsContract(_wethAddress);
         _requireIsContract(_troveManagerAddress);
+        _requireIsContract(_troveManagerRedemptionsAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         activePool = IActivePool(_activePoolAddress);
