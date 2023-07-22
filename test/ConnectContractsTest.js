@@ -4,7 +4,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   const [owner] = accounts;
 
   let priceFeed
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let activePool
@@ -21,7 +21,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = coreContracts.priceFeedTestnet
-    eusdToken = coreContracts.eusdToken
+    usdeToken = coreContracts.usdeToken
     sortedTroves = coreContracts.sortedTroves
     troveManager = coreContracts.troveManager
     activePool = coreContracts.activePool
@@ -37,12 +37,12 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     await deploymentHelper.connectCoreContracts(coreContracts, ERDContracts)
   })
 
-  it('Sets the correct EUSDToken address in TroveManager', async () => {
-    const eusdTokenAddress = eusdToken.address
+  it('Sets the correct USDEToken address in TroveManager', async () => {
+    const usdeTokenAddress = usdeToken.address
 
-    const recordedClvTokenAddress = await troveManager.eusdToken()
+    const recordedClvTokenAddress = await troveManager.usdeToken()
 
-    assert.equal(eusdTokenAddress, recordedClvTokenAddress)
+    assert.equal(usdeTokenAddress, recordedClvTokenAddress)
   })
 
   it('Sets the correct SortedTroves address in TroveManager', async () => {
@@ -138,12 +138,12 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress)
   })
 
-  it('Sets the correct EUSDToken address in StabilityPool', async () => {
-    const eusdTokenAddress = eusdToken.address
+  it('Sets the correct USDEToken address in StabilityPool', async () => {
+    const usdeTokenAddress = usdeToken.address
 
-    const recordedClvTokenAddress = await stabilityPool.eusdToken()
+    const recordedClvTokenAddress = await stabilityPool.usdeToken()
 
-    assert.equal(eusdTokenAddress, recordedClvTokenAddress)
+    assert.equal(usdeTokenAddress, recordedClvTokenAddress)
   })
 
   it('Sets the correct TroveManager address in StabilityPool', async () => {

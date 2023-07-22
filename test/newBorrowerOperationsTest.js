@@ -5,7 +5,7 @@ const testHelpers = require("../utils/testHelpers.js")
 const NonPayable = artifacts.require('NonPayable.sol')
 const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const EUSDTokenTester = artifacts.require("./EUSDTokenTester")
+const USDETokenTester = artifacts.require("./USDETokenTester")
 
 const th = testHelpers.TestHelper
 
@@ -18,10 +18,10 @@ const ZERO_ADDRESS = th.ZERO_ADDRESS
 const assertRevert = th.assertRevert
 const STETH_ADDRESS = ZERO_ADDRESS;
 
-/* NOTE: Some of the borrowing tests do not test for specific EUSD fee values. They only test that the
+/* NOTE: Some of the borrowing tests do not test for specific USDE fee values. They only test that the
  * fees are non-zero when they should occur, and that they decay over time.
  *
- * Specific EUSD fee values will depend on the final fee schedule used, and the final choice for
+ * Specific USDE fee values will depend on the final fee schedule used, and the final choice for
  *  the parameter MINUTE_DECAY_FACTOR in the TroveManager, which is still TBD based on economic
  * modelling.
  * 
@@ -40,7 +40,7 @@ contract('newBorrowerOperations', async accounts => {
 
     let priceFeedSTETH
     let priceFeedETH
-    let eusdToken
+    let usdeToken
     let sortedTroves
     let troveManager
     let activePool
@@ -52,7 +52,7 @@ contract('newBorrowerOperations', async accounts => {
 
     let contracts
 
-    const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+    const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
     const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee)
     const getActualDebtFromComposite = async (compositeDebt) => th.getActualDebtFromComposite(compositeDebt, contracts)
     const openTrove = async (params) => th.openTrove(contracts, params)
@@ -60,7 +60,7 @@ contract('newBorrowerOperations', async accounts => {
     const getTroveEntireDebt = async (trove) => th.getTroveEntireDebt(contracts, trove)
     const getTroveStake = async (trove) => th.getTroveStake(contracts, trove)
 
-    let EUSD_GAS_COMPENSATION
+    let USDE_GAS_COMPENSATION
     let MIN_NET_DEBT
     let BORROWING_FEE_FLOOR
 
@@ -77,7 +77,7 @@ contract('newBorrowerOperations', async accounts => {
             contracts.troveManager = await TroveManagerTester.new()
             contracts.collateralManager = await CollateralManagerTester.new()
             const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-            contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
+            contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
             await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
@@ -88,7 +88,7 @@ contract('newBorrowerOperations', async accounts => {
 
             priceFeedSTETH = contracts.priceFeedSTETH
             priceFeedETH = contracts.priceFeedETH
-            eusdToken = contracts.eusdToken
+            usdeToken = contracts.usdeToken
             sortedTroves = contracts.sortedTroves
             troveManager = contracts.troveManager
             activePool = contracts.activePool
@@ -102,7 +102,7 @@ contract('newBorrowerOperations', async accounts => {
             liquidityIncentive = ERDContracts.liquidityIncentive
             communityIssuance = ERDContracts.communityIssuance
 
-            EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
+            USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
             MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
@@ -125,7 +125,7 @@ contract('newBorrowerOperations', async accounts => {
                 ICR: toBN(dec(2, 18)),
                 colls: _colls,
                 amounts: _amounts,
-                extraEUSDAmount: toBN(dec(2000, 18)),
+                extraUSDEAmount: toBN(dec(2000, 18)),
                 extraParams: {
                     from: alice
                 }
@@ -145,8 +145,8 @@ contract('newBorrowerOperations', async accounts => {
             const activePoolSTETH = await contracts.steth.balanceOf(activePool.address)
             console.log("steth activepool has:", (activePoolSTETH.div(toBN(10 ** 18))).toNumber());
 
-            const aliceEUSD = await eusdToken.balanceOf(alice)
-            console.log("eusd MINTED:", (aliceEUSD.div(toBN(10 ** 18))).toNumber());
+            const aliceUSDE = await usdeToken.balanceOf(alice)
+            console.log("usde MINTED:", (aliceUSDE.div(toBN(10 ** 18))).toNumber());
 
             const aliceSTETH = await contracts.steth.balanceOf(alice)
             console.log("steth alice has:", (aliceSTETH.div(toBN(10 ** 18))).toNumber());
@@ -188,12 +188,12 @@ contract('newBorrowerOperations', async accounts => {
 
             const troveDebt3 = await troveManager.getTroveDebt(alice)
             console.log("Trove debt3: " + troveDebt3)
-            const mintedEUSDb = await contracts.eusdToken.balanceOf(alice)
-            console.log(th.toNormalBase(mintedEUSDb))
+            const mintedUSDEb = await contracts.usdeToken.balanceOf(alice)
+            console.log(th.toNormalBase(mintedUSDEb))
 
-            const result = await th.mintAndApproveEUSDToken(contracts, alice, borrowerOperations.address, amountToMint)
-            const mintedEUSD = await contracts.eusdToken.balanceOf(alice)
-            console.log(th.toNormalBase(mintedEUSD))
+            const result = await th.mintAndApproveUSDEToken(contracts, alice, borrowerOperations.address, amountToMint)
+            const mintedUSDE = await contracts.usdeToken.balanceOf(alice)
+            console.log(th.toNormalBase(mintedUSDE))
             console.log("result " + result)
             
             // const amountToMint = toBN(dec(1000, 18));
@@ -204,7 +204,7 @@ contract('newBorrowerOperations', async accounts => {
                 ICR: toBN(dec(2, 18)),
                 colls: collsBob,
                 amounts: amountsBob,
-                extraEUSDAmount: toBN(dec(2000, 18)),
+                extraUSDEAmount: toBN(dec(2000, 18)),
                 extraParams: {
                     from: bob
                 }
@@ -222,8 +222,8 @@ contract('newBorrowerOperations', async accounts => {
             const activePoolSTETH2 = await contracts.steth.balanceOf(activePool.address)
             console.log("steth activepool has:", (activePoolSTETH2.div(toBN(10 ** 18))).toNumber());
 
-            const aliceEUSD2 = await eusdToken.balanceOf(alice)
-            console.log("eusd MINTED:", (aliceEUSD2.div(toBN(10 ** 18))).toNumber());
+            const aliceUSDE2 = await usdeToken.balanceOf(alice)
+            console.log("usde MINTED:", (aliceUSDE2.div(toBN(10 ** 18))).toNumber());
 
             const aliceSTETH2 = await contracts.steth.balanceOf(alice)
             console.log("steth alice has:", (aliceSTETH2.div(toBN(10 ** 18))).toNumber());

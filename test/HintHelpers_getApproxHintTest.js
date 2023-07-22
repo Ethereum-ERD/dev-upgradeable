@@ -12,7 +12,7 @@ let latestRandomSeed = 31337
 
 const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const EUSDToken = artifacts.require("EUSDToken")
+const USDEToken = artifacts.require("USDEToken")
 
 contract('HintHelpers', async accounts => {
 
@@ -31,19 +31,19 @@ contract('HintHelpers', async accounts => {
 
   const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee)
 
-  /* Open a Trove for each account. EUSD debt is 200 EUSD each, with collateral beginning at
+  /* Open a Trove for each account. USDE debt is 200 USDE each, with collateral beginning at
   1.5 ether, and rising by 0.01 ether per Trove.  Hence, the ICR of account (i + 1) is always 1% greater than the ICR of account i. 
  */
 
-  // Open Troves in parallel, then withdraw EUSD in parallel
+  // Open Troves in parallel, then withdraw USDE in parallel
   const makeTrovesInParallel = async (accounts, n) => {
     activeAccounts = accounts.slice(0, n)
     // console.log(`number of accounts used is: ${activeAccounts.length}`)
     // console.time("makeTrovesInParallel")
     const openTrovepromises = activeAccounts.map((account, index) => openTrove(account, index))
     await Promise.all(openTrovepromises)
-    const withdrawEUSDpromises = activeAccounts.map(account => withdrawEUSDfromTrove(account))
-    await Promise.all(withdrawEUSDpromises)
+    const withdrawUSDEpromises = activeAccounts.map(account => withdrawUSDEfromTrove(account))
+    await Promise.all(withdrawUSDEpromises)
     // console.timeEnd("makeTrovesInParallel")
   }
 
@@ -56,13 +56,13 @@ contract('HintHelpers', async accounts => {
     })
   }
 
-  const withdrawEUSDfromTrove = async (account) => {
-    await borrowerOperations.withdrawEUSD('100000000000000000000', account, account, th._100pct, {
+  const withdrawUSDEfromTrove = async (account) => {
+    await borrowerOperations.withdrawUSDE('100000000000000000000', account, account, th._100pct, {
       from: account
     })
   }
 
-  // Sequentially add coll and withdraw EUSD, 1 account at a time
+  // Sequentially add coll and withdraw USDE, 1 account at a time
   const makeTrovesInSequence = async (accounts, n) => {
     activeAccounts = accounts.slice(0, n)
     // console.log(`number of accounts used is: ${activeAccounts.length}`)
@@ -73,7 +73,7 @@ contract('HintHelpers', async accounts => {
     for (const account of activeAccounts) {
       const ICR_BN = toBN(ICR.toString().concat('0'.repeat(16)))
       await th.openTrove(contracts, {
-        extraEUSDAmount: toBN(dec(10000, 18)),
+        extraUSDEAmount: toBN(dec(10000, 18)),
         ICR: ICR_BN,
         extraParams: {
           from: account
@@ -89,7 +89,7 @@ contract('HintHelpers', async accounts => {
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
-    contracts.eusdToken = await EUSDToken.new(
+    contracts.usdeToken = await USDEToken.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,

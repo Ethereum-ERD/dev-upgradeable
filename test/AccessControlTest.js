@@ -22,7 +22,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
   let contracts
 
   let priceFeed
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let nameRegistry
@@ -47,13 +47,13 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
-    contracts = await deploymentHelper.deployEUSDToken(contracts)
+    contracts = await deploymentHelper.deployUSDEToken(contracts)
 
     const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeedETH = contracts.priceFeedETH
     priceFeedSTETH = contracts.priceFeedSTETH
-    eusdToken = contracts.eusdToken
+    usdeToken = contracts.usdeToken
     sortedTroves = contracts.sortedTroves
     troveManager = contracts.troveManager
     nameRegistry = contracts.nameRegistry
@@ -83,7 +83,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
 
     for (account of accounts.slice(0, 10)) {
       await th.openTrove(contracts, {
-        extraEUSDAmount: toBN(dec(20000, 18)),
+        extraUSDEAmount: toBN(dec(20000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: account
@@ -243,11 +243,11 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       }
     })
 
-    // increaseEUSD
-    it("increaseEUSDDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
+    // increaseUSDE
+    it("increaseUSDEDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await activePool.increaseEUSDDebt(100, {
+        const txAlice = await activePool.increaseUSDEDebt(100, {
           from: alice
         })
 
@@ -257,11 +257,11 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       }
     })
 
-    // decreaseEUSD
-    it("decreaseEUSDDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
+    // decreaseUSDE
+    it("decreaseUSDEDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await activePool.decreaseEUSDDebt(100, {
+        const txAlice = await activePool.decreaseUSDEDebt(100, {
           from: alice
         })
 
@@ -287,11 +287,11 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       }
     })
 
-    // increaseEUSD
-    it("increaseEUSDDebt(): reverts when called by an account that is not TroveManager", async () => {
+    // increaseUSDE
+    it("increaseUSDEDebt(): reverts when called by an account that is not TroveManager", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await defaultPool.increaseEUSDDebt(100, {
+        const txAlice = await defaultPool.increaseUSDEDebt(100, {
           from: alice
         })
 
@@ -301,11 +301,11 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       }
     })
 
-    // decreaseEUSD
-    it("decreaseEUSD(): reverts when called by an account that is not TroveManager", async () => {
+    // decreaseUSDE
+    it("decreaseUSDE(): reverts when called by an account that is not TroveManager", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await defaultPool.decreaseEUSDDebt(100, {
+        const txAlice = await defaultPool.decreaseUSDEDebt(100, {
           from: alice
         })
 
@@ -336,11 +336,11 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     // --- onlyActivePool ---
   })
 
-  describe('EUSDToken', async accounts => {
+  describe('USDEToken', async accounts => {
     //    mint
     it("mint(): reverts when called by an account that is not BorrowerOperations", async () => {
       // Attempt call from alice
-      const txAlice = eusdToken.mint(bob, 100, {
+      const txAlice = usdeToken.mint(bob, 100, {
         from: alice
       })
       await th.assertRevert(txAlice, "Caller is not BorrowerOperations")
@@ -350,7 +350,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     it("burn(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await eusdToken.burn(bob, 100, {
+        const txAlice = await usdeToken.burn(bob, 100, {
           from: alice
         })
 
@@ -364,7 +364,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     it("sendToPool(): reverts when called by an account that is not StabilityPool", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await eusdToken.sendToPool(bob, activePool.address, 100, {
+        const txAlice = await usdeToken.sendToPool(bob, activePool.address, 100, {
           from: alice
         })
 
@@ -378,7 +378,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
     it("returnFromPool(): reverts when called by an account that is not TroveManagerLiquidations nor StabilityPool", async () => {
       // Attempt call from alice
       try {
-        const txAlice = await eusdToken.returnFromPool(activePool.address, bob, 100, {
+        const txAlice = await usdeToken.returnFromPool(activePool.address, bob, 100, {
           from: alice
         })
 

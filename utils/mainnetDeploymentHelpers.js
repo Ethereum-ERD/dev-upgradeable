@@ -81,7 +81,7 @@ class MainnetDeploymentHelper {
     const collSurplusPoolFactory = await this.getFactory("CollSurplusPool")
     const borrowerOperationsFactory = await this.getFactory("BorrowerOperations")
     const hintHelpersFactory = await this.getFactory("HintHelpers")
-    const eusdTokenFactory = await this.getFactory("EUSDToken")
+    const usdeTokenFactory = await this.getFactory("USDEToken")
     const tellorCallerFactory = await this.getFactory("TellorCaller")
     const troveManagerLiquidationsFactory = await this.getFactory("TroveManagerLiquidations")
     const troveManagerRedemptionsFactory = await this.getFactory("TroveManagerRedemptions")
@@ -107,18 +107,18 @@ class MainnetDeploymentHelper {
     const troveManagerRedemptions = await this.loadOrDeploy(troveManagerRedemptionsFactory, 'troveManagerRedemptions', deploymentState)
     const collateralManager = await this.loadOrDeploy(collateralManagerFactory, 'collateralManager', deploymentState)
 
-    const eusdTokenParams = [
+    const usdeTokenParams = [
       troveManager.address,
       troveManagerLiquidations.address,
       troveManagerRedemptions.address,
       stabilityPool.address,
       borrowerOperations.address
     ]
-    const eusdToken = await this.loadOrDeploy(
-      eusdTokenFactory,
-      'eusdToken',
+    const usdeToken = await this.loadOrDeploy(
+      usdeTokenFactory,
+      'usdeToken',
       deploymentState,
-      eusdTokenParams
+      usdeTokenParams
     )
 
     const rateParams = [
@@ -155,7 +155,7 @@ class MainnetDeploymentHelper {
       // await this.verifyContract('borrowerOperations', deploymentState)
       // await this.verifyContract('hintHelpers', deploymentState)
       // await this.verifyContract('tellorCaller', deploymentState, [tellorMasterAddr])
-      // await this.verifyContract('eusdToken', deploymentState, eusdTokenParams)
+      // await this.verifyContract('usdeToken', deploymentState, usdeTokenParams)
       // await this.verifyContract('collateralManager', deploymentState)
       // await this.verifyContract('troveInterestRateStrategy', deploymentState)
       // await this.verifyContract('troveDebt', deploymentState)
@@ -165,7 +165,7 @@ class MainnetDeploymentHelper {
       priceFeed,
       stETHOracle,
       collateralManager,
-      eusdToken,
+      usdeToken,
       sortedTroves,
       troveManager,
       troveManagerLiquidations,
@@ -290,7 +290,7 @@ class MainnetDeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeed.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManagerRedemptions.address,
       contracts.troveManagerLiquidations.address,
@@ -322,7 +322,7 @@ class MainnetDeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeed.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManager.address,
       contracts.collateralManager.address, {
@@ -346,7 +346,7 @@ class MainnetDeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeed.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManager.address,
       contracts.collateralManager.address,
@@ -374,7 +374,7 @@ class MainnetDeploymentHelper {
       contracts.collSurplusPool.address,
       contracts.priceFeed.address,
       contracts.sortedTroves.address,
-      contracts.eusdToken.address, {
+      contracts.usdeToken.address, {
         gasPrice
       }
     ))
@@ -396,7 +396,7 @@ class MainnetDeploymentHelper {
         contracts.collateralManager.address,
         contracts.troveManagerLiquidations.address,
         contracts.activePool.address,
-        contracts.eusdToken.address,
+        contracts.usdeToken.address,
         contracts.sortedTroves.address,
         contracts.priceFeed.address,
         ERDContracts.communityIssuance.address,

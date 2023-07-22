@@ -5,7 +5,7 @@ const TroveManagerLiquidations = artifacts.require("./TroveManagerLiquidations.s
 const TroveManagerRedemptions = artifacts.require("./TroveManagerRedemptions.sol")
 const CollateralManager = artifacts.require("./CollateralManager.sol")
 const PriceFeedTestnet = artifacts.require("./PriceFeedTestnet.sol")
-const EUSDToken = artifacts.require("./EUSDToken.sol")
+const USDEToken = artifacts.require("./USDEToken.sol")
 const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol")
@@ -32,7 +32,7 @@ const deployERD = async () => {
   const defaultPool = await DefaultPool.new()
   const functionCaller = await FunctionCaller.new()
   const borrowerOperations = await BorrowerOperations.new()
-  const eusdToken = await EUSDToken.new(
+  const usdeToken = await USDEToken.new(
     troveManager.address,
     troveManagerLiquidations.address,
     troveManagerRedemptions.address,
@@ -43,7 +43,7 @@ const deployERD = async () => {
   const troveDebt = await TroveDebt.new()
   DefaultPool.setAsDeployed(defaultPool)
   PriceFeedTestnet.setAsDeployed(priceFeedTestnet)
-  EUSDToken.setAsDeployed(eusdToken)
+  USDEToken.setAsDeployed(usdeToken)
   SortedTroves.setAsDeployed(sortedTroves)
   TroveManager.setAsDeployed(troveManager)
   TroveManagerLiquidations.setAsDeployed(troveManagerLiquidations)
@@ -58,7 +58,7 @@ const deployERD = async () => {
 
   const contracts = {
     priceFeedTestnet,
-    eusdToken,
+    usdeToken,
     sortedTroves,
     troveManager,
     troveManagerLiquidations,
@@ -79,7 +79,7 @@ const getAddresses = (contracts) => {
   return {
     BorrowerOperations: contracts.borrowerOperations.address,
     PriceFeedTestnet: contracts.priceFeedTestnet.address,
-    EUSDToken: contracts.eusdToken.address,
+    USDEToken: contracts.usdeToken.address,
     SortedTroves: contracts.sortedTroves.address,
     TroveManager: contracts.troveManager.address,
     TroveManagerLiquidations: contracts.troveManagerLiquidations.address,
@@ -107,7 +107,7 @@ const connectContracts = async (contracts, addresses) => {
   await contracts.priceFeedTestnet.setTroveManagerAddress(addresses.TroveManager)
 
   // set contracts in the Trove Manager
-  await contracts.troveManager.setEUSDToken(addresses.EUSDToken)
+  await contracts.troveManager.setUSDEToken(addresses.USDEToken)
   await contracts.troveManager.setSortedTroves(addresses.SortedTroves)
   await contracts.troveManager.setPriceFeed(addresses.PriceFeedTestnet)
   await contracts.troveManager.setActivePool(addresses.ActivePool)

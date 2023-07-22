@@ -4,7 +4,7 @@ const TroveManagerLiquidations = artifacts.require("./TroveManagerLiquidations.s
 const TroveManagerRedemptions = artifacts.require("./TroveManagerRedemptions.sol")
 const PriceFeedTestnet = artifacts.require("./PriceFeedTestnet.sol")
 
-const EUSDToken = artifacts.require("./EUSDToken.sol")
+const USDEToken = artifacts.require("./USDEToken.sol")
 const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol")
@@ -36,7 +36,7 @@ const DefaultPoolTester = artifacts.require("./DefaultPoolTester.sol")
 const ERDMathTester = artifacts.require("./ERDMathTester.sol")
 // const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
-const EUSDTokenTester = artifacts.require("./EUSDTokenTester.sol")
+const USDETokenTester = artifacts.require("./USDETokenTester.sol")
 
 // Proxy scripts
 const BorrowerOperationsScript = artifacts.require('BorrowerOperationsScript')
@@ -100,7 +100,7 @@ class DeploymentHelper {
     const functionCaller = await FunctionCaller.new()
     const borrowerOperations = await BorrowerOperations.new()
     const hintHelpers = await HintHelpers.new()
-    const eusdToken = await EUSDToken.new()
+    const usdeToken = await USDEToken.new()
     const collateralManager = await CollateralManager.new()
 
     const troveInterestRateStrategy = await TroveInterestRateStrategy.new()
@@ -127,7 +127,7 @@ class DeploymentHelper {
     PriceFeedTestnet.setAsDeployed(priceFeedETH);
 
     CollateralManager.setAsDeployed(collateralManager)
-    EUSDToken.setAsDeployed(eusdToken)
+    USDEToken.setAsDeployed(usdeToken)
     DefaultPool.setAsDeployed(defaultPool)
     SortedTroves.setAsDeployed(sortedTroves)
     TroveManager.setAsDeployed(troveManager)
@@ -148,7 +148,7 @@ class DeploymentHelper {
     const coreContracts = {
       priceFeedSTETH,
       priceFeedETH,
-      eusdToken,
+      usdeToken,
       sortedTroves,
       troveManager,
       activePool,
@@ -193,7 +193,7 @@ class DeploymentHelper {
     testerContracts.hintHelpers = await HintHelpers.new()
     testerContracts.troveManagerLiquidations = await TroveManagerLiquidations.new()
     testerContracts.troveManagerRedemptions = await TroveManagerRedemptions.new()
-    testerContracts.eusdToken = await EUSDTokenTester.new(
+    testerContracts.usdeToken = await USDETokenTester.new(
       testerContracts.troveManager.address,
       testerContracts.troveManagerLiquidations.address,
       testerContracts.troveManagerRedemptions.address,
@@ -273,7 +273,7 @@ class DeploymentHelper {
     const functionCaller = await FunctionCaller.new()
     const borrowerOperations = await BorrowerOperations.new()
     const hintHelpers = await HintHelpers.new()
-    const eusdToken = await EUSDToken.new(
+    const usdeToken = await USDEToken.new(
       troveManager.address,
       troveManagerLiquidations.address,
       troveManagerRedemptions.address,
@@ -293,7 +293,7 @@ class DeploymentHelper {
     const coreContracts = {
       priceFeedSTETH,
       priceFeedETH,
-      eusdToken,
+      usdeToken,
       sortedTroves,
       troveManager,
       troveManagerLiquidations,
@@ -328,13 +328,13 @@ class DeploymentHelper {
     return ERDContracts
   }
 
-  static async deployEUSDToken(contracts) {
-    contracts.eusdToken = await EUSDToken.new()
+  static async deployUSDEToken(contracts) {
+    contracts.usdeToken = await USDEToken.new()
     return contracts
   }
 
-  static async deployEUSDTokenTester(contracts, ERDContracts) {
-    contracts.eusdToken = await EUSDTokenTester.new(
+  static async deployUSDETokenTester(contracts, ERDContracts) {
+    contracts.usdeToken = await USDETokenTester.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
@@ -352,7 +352,7 @@ class DeploymentHelper {
     const borrowerWrappersScript = await BorrowerWrappersScript.new(
       contracts.borrowerOperations.address,
       contracts.troveManager.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.collateralManager.address
     )
     contracts.borrowerWrappers = new BorrowerWrappersProxy(owner, proxies, borrowerWrappersScript.address)
@@ -368,8 +368,8 @@ class DeploymentHelper {
 
     contracts.sortedTroves = new SortedTrovesProxy(owner, proxies, contracts.sortedTroves)
 
-    const eusdTokenScript = await TokenScript.new(contracts.eusdToken.address)
-    contracts.eusdToken = new TokenProxy(owner, proxies, eusdTokenScript.address, contracts.eusdToken)
+    const usdeTokenScript = await TokenScript.new(contracts.usdeToken.address)
+    contracts.usdeToken = new TokenProxy(owner, proxies, usdeTokenScript.address, contracts.usdeToken)
   }
 
   // Connect contracts to their dependencies
@@ -393,7 +393,7 @@ class DeploymentHelper {
     await contracts.collateralManager.initialize()
     await contracts.troveDebt.initialize()
     try {
-      await contracts.eusdToken.initialize(
+      await contracts.usdeToken.initialize(
         contracts.troveManager.address,
         contracts.troveManagerLiquidations.address,
         contracts.troveManagerRedemptions.address,
@@ -441,7 +441,7 @@ class DeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeedETH.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
@@ -465,7 +465,7 @@ class DeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeedETH.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManager.address,
       contracts.collateralManager.address
@@ -483,7 +483,7 @@ class DeploymentHelper {
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeedETH.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.troveManager.address,
       contracts.collateralManager.address
@@ -504,7 +504,7 @@ class DeploymentHelper {
       contracts.collSurplusPool.address,
       contracts.priceFeedETH.address,
       contracts.sortedTroves.address,
-      contracts.eusdToken.address
+      contracts.usdeToken.address
     )
 
     await contracts.borrowerOperations.init(
@@ -520,7 +520,7 @@ class DeploymentHelper {
       contracts.collateralManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.activePool.address,
-      contracts.eusdToken.address,
+      contracts.usdeToken.address,
       contracts.sortedTroves.address,
       contracts.priceFeedETH.address,
       ERDContracts.communityIssuance.address,

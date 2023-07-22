@@ -140,9 +140,9 @@ async function main() {
     console.log("multiTroveGetter deployed to:", multiTroveGetter.address);
     saveData("multiTroveGetter", multiTroveGetter.address);
 
-    // deploy EUSDToken
-    const EUSDToken = await ethers.getContractFactory("EUSDToken");
-    const eusdToken = await upgrades.deployProxy(EUSDToken, [
+    // deploy USDEToken
+    const USDEToken = await ethers.getContractFactory("USDEToken");
+    const usdeToken = await upgrades.deployProxy(USDEToken, [
         troveManager.address,
         troveManagerLiquidations.address,
         troveManagerRedemptions.address,
@@ -151,9 +151,9 @@ async function main() {
         treasury.address,
         liquidityIncentive.address
     ]);
-    await eusdToken.deployed();
-    console.log("eusdToken deployed to:", eusdToken.address);
-    saveData("eusdToken", eusdToken.address);
+    await usdeToken.deployed();
+    console.log("usdeToken deployed to:", usdeToken.address);
+    saveData("usdeToken", usdeToken.address);
 
     // deploy PriceFeed
     // Testnet

@@ -12,7 +12,7 @@ const _dec = (number) => toBN(dec(1, number))
 
 const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const EUSDToken = artifacts.require("EUSDToken")
+const USDEToken = artifacts.require("USDEToken")
 
 contract('TroveManager - Redistribution reward calculations', async accounts => {
 
@@ -25,7 +25,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
   let priceFeed
   let priceFeedSTETH
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let nameRegistry
@@ -40,7 +40,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
   let contracts
 
-  const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+  const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
   const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee)
   const openTrove = async (params) => th.openTrove(contracts, params)
   const addColl = async (params) => th.addColl(contracts, params)
@@ -52,7 +52,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
     contracts.defaultPool = await DefaultPoolTester.new()
-    contracts.eusdToken = await EUSDToken.new(
+    contracts.usdeToken = await USDEToken.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
@@ -63,7 +63,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     priceFeed = contracts.priceFeedETH
     priceFeedSTETH = contracts.priceFeedSTETH
-    eusdToken = contracts.eusdToken
+    usdeToken = contracts.usdeToken
     sortedTroves = contracts.sortedTroves
     troveManager = contracts.troveManager
     nameRegistry = contracts.nameRegistry
@@ -105,9 +105,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // let systemColl = await await contracts.borrowerOperations.getEntireSystemColl()
     // console.log('Init: \n')
     // console.log('collValue in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collValue in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system collValue: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -133,9 +133,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('Price dropped to 100: \n')
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -168,9 +168,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('Price dropped to 100: \n')
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -246,8 +246,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address)).toString()
     assert.equal(entireSystemColl, A_coll.add(C_coll).add(th.applyLiquidationFee(B_coll.add(D_coll))))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: A, B, C Open. C Liquidated. D, E, F Open. F Liquidated. Distributes correct rewards", async () => {
@@ -370,8 +370,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address)).toString()
     assert.equal(entireSystemColl, A_coll.add(B_coll).add(D_coll).add(E_coll).add(th.applyLiquidationFee(C_coll.add(F_coll))))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: Sequence of alternate opening/liquidation: final surviving trove has ETH from all previously liquidated troves", async () => {
@@ -400,10 +400,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount in active pool', (await weth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount in default pool', (await weth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -442,10 +442,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount in active pool', (await weth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount in default pool', (await weth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
     // console.log('entire system amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -482,10 +482,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount in active pool', (await weth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount in default pool', (await weth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
     // console.log('entire system amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -616,8 +616,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address)).toString()
     assert.isAtMost(th.getDifference(entireSystemColl, F_coll.add(gainedETH)), 1000)
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(1000, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(1000, 18))
   })
 
   // ---Trove adds collateral --- 
@@ -629,7 +629,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: A_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: A
       }
@@ -638,7 +638,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: B
       }
@@ -647,7 +647,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: C_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: C
       }
@@ -656,7 +656,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(20000, 16)),
-      extraEUSDAmount: dec(10, 18),
+      extraUSDEAmount: dec(10, 18),
       extraParams: {
         from: D
       }
@@ -665,7 +665,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: E_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: E
       }
@@ -758,7 +758,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: A_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: A
       }
@@ -767,7 +767,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: B
       }
@@ -776,7 +776,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: C_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: C
       }
@@ -785,7 +785,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(20000, 16)),
-      extraEUSDAmount: dec(10, 18),
+      extraUSDEAmount: dec(10, 18),
       extraParams: {
         from: D
       }
@@ -794,7 +794,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: E_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100000, 18),
+      extraUSDEAmount: dec(100000, 18),
       extraParams: {
         from: E
       }
@@ -940,7 +940,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: B_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -950,7 +950,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: C_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol
       }
@@ -974,8 +974,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       value: addedColl
     })
 
-    // Alice withdraws EUSD
-    await borrowerOperations.withdrawEUSD(await getNetBorrowingAmount(A_totalDebt), alice, alice, th._100pct, {
+    // Alice withdraws USDE
+    await borrowerOperations.withdrawUSDE(await getNetBorrowingAmount(A_totalDebt), alice, alice, th._100pct, {
       from: alice
     })
     const A_debt_after_withdraw = await getTroveEntireDebt(alice)
@@ -987,10 +987,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.isTrue(txA.receipt.status)
     assert.isFalse(await sortedTroves.contains(alice))
 
-    // Expect Bob now holds all Ether and EUSDDebt in the system: 2 + 0.4975+0.4975*0.995+0.995 Ether and 110*3 EUSD (10 each for gas compensation)
+    // Expect Bob now holds all Ether and USDEDebt in the system: 2 + 0.4975+0.4975*0.995+0.995 Ether and 110*3 USDE (10 each for gas compensation)
     const bob_Coll = (await getTroveEntireColl(bob))[0].toString()
 
-    const bob_EUSDDebt = (await getTroveEntireDebt(bob)).toString()
+    const bob_USDEDebt = (await getTroveEntireDebt(bob)).toString()
 
     const expected_B_coll = B_coll
       .add(addedColl)
@@ -998,7 +998,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(th.applyLiquidationFee(C_coll).mul(B_coll).div(A_coll.add(B_coll)))
       .add(th.applyLiquidationFee(th.applyLiquidationFee(C_coll).mul(A_coll).div(A_coll.add(B_coll))))
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000)
-    assert.isAtMost(th.getDifference(bob_EUSDDebt, A_debt_after_withdraw.add(B_debt_after_carol)), _dec(14))
+    assert.isAtMost(th.getDifference(bob_USDEDebt, A_debt_after_withdraw.add(B_debt_after_carol)), _dec(14))
   })
 
   it("redistribution: A,B,C Open. Liq(C). B tops up coll. D Opens. Liq(D). Distributes correct rewards.", async () => {
@@ -1017,7 +1017,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: B_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1027,7 +1027,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: C_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol
       }
@@ -1056,7 +1056,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: D_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis
       }
@@ -1070,27 +1070,27 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.isTrue(txA.receipt.status)
     assert.isFalse(await sortedTroves.contains(dennis))
     /* Bob rewards:
-     L1: 1/2*0.995 ETH, 55 EUSD
-     L2: (2.4975/3.995)*0.995 = 0.622 ETH , 110*(2.4975/3.995)= 68.77 EUSDDebt
+     L1: 1/2*0.995 ETH, 55 USDE
+     L2: (2.4975/3.995)*0.995 = 0.622 ETH , 110*(2.4975/3.995)= 68.77 USDEDebt
 
     coll: 3.1195 ETH
-    debt: 233.77 EUSDDebt
+    debt: 233.77 USDEDebt
 
      Alice rewards:
-    L1 1/2*0.995 ETH, 55 EUSD
-    L2 (1.4975/3.995)*0.995 = 0.3730 ETH, 110*(1.4975/3.995) = 41.23 EUSDDebt
+    L1 1/2*0.995 ETH, 55 USDE
+    L2 (1.4975/3.995)*0.995 = 0.3730 ETH, 110*(1.4975/3.995) = 41.23 USDEDebt
 
     coll: 1.8705 ETH
-    debt: 146.23 EUSDDebt
+    debt: 146.23 USDEDebt
 
     totalColl: 4.99 ETH
-    totalDebt 380 EUSD (includes 50 each for gas compensation)
+    totalDebt 380 USDE (includes 50 each for gas compensation)
     */
     const bob_Coll = (await getTroveEntireColl(bob))[0].toString()
-    const bob_EUSDDebt = (await getTroveEntireDebt(bob)).toString()
+    const bob_USDEDebt = (await getTroveEntireDebt(bob)).toString()
 
     const alice_Coll = (await getTroveEntireColl(alice))[0].toString()
-    const alice_EUSDDebt = (await getTroveEntireDebt(alice)).toString()
+    const alice_USDEDebt = (await getTroveEntireDebt(alice)).toString()
 
     const totalCollAfterL1 = A_coll.add(B_coll).add(addedColl).add(th.applyLiquidationFee(C_coll))
     const B_collAfterL1 = B_coll.add(B_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll))).add(addedColl)
@@ -1100,7 +1100,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(B_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1))
 
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000)
-    assert.isAtMost(th.getDifference(bob_EUSDDebt, expected_B_debt), _dec(14))
+    assert.isAtMost(th.getDifference(bob_USDEDebt, expected_B_debt), _dec(14))
 
     const A_collAfterL1 = A_coll.add(A_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll)))
     const expected_A_coll = A_collAfterL1.add(A_collAfterL1.mul(th.applyLiquidationFee(D_coll)).div(totalCollAfterL1))
@@ -1108,10 +1108,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(A_coll.mul(C_totalDebt).div(A_coll.add(B_coll)))
       .add(A_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1))
     assert.isAtMost(th.getDifference(alice_Coll, expected_A_coll), 1000)
-    assert.isAtMost(th.getDifference(alice_EUSDDebt, expected_A_debt), _dec(14))
+    assert.isAtMost(th.getDifference(alice_USDEDebt, expected_A_debt), _dec(14))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: Trove with the majority stake tops up. A,B,C, D open. Liq(D). C tops up. E Enters, Liq(E). Distributes correct rewards", async () => {
@@ -1129,7 +1129,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(400, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1137,7 +1137,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const {
       collateral: C_coll
     } = await openTrove({
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol,
         value: _998_Ether
@@ -1147,7 +1147,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis,
         value: dec(1000, 'ether')
@@ -1251,8 +1251,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl_3 = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address)).toString()
     th.assertIsApproximatelyEqual(entireSystemColl_3, totalCollAfterL1.add(th.applyLiquidationFee(E_coll)))
 
-    // check EUSD gas compensation
-    th.assertIsApproximatelyEqual((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    th.assertIsApproximatelyEqual((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: Trove with the majority stake tops up. A,B,C, D open. Liq(D). A, B, C top up. E Enters, Liq(E). Distributes correct rewards", async () => {
@@ -1270,7 +1270,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(400, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1278,7 +1278,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const {
       collateral: C_coll
     } = await openTrove({
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol,
         value: _998_Ether
@@ -1288,7 +1288,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis,
         value: dec(1000, 'ether')
@@ -1404,8 +1404,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl_3 = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address))
     th.assertIsApproximatelyEqual(entireSystemColl_3, totalCollAfterL1.add(th.applyLiquidationFee(E_coll)))
 
-    // check EUSD gas compensation
-    th.assertIsApproximatelyEqual((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    th.assertIsApproximatelyEqual((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   // --- Trove withdraws collateral ---
@@ -1426,7 +1426,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: B_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1436,7 +1436,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: C_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol
       }
@@ -1459,8 +1459,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       from: bob
     })
 
-    // Alice withdraws EUSD
-    await borrowerOperations.withdrawEUSD(await getNetBorrowingAmount(A_totalDebt), alice, alice, th._100pct, {
+    // Alice withdraws USDE
+    await borrowerOperations.withdrawUSDE(await getNetBorrowingAmount(A_totalDebt), alice, alice, th._100pct, {
       from: alice
     })
 
@@ -1472,10 +1472,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.isTrue(txA.receipt.status)
     assert.isFalse(await sortedTroves.contains(alice))
 
-    // Expect Bob now holds all Ether and EUSDDebt in the system: 2.5 Ether and 300 EUSD
+    // Expect Bob now holds all Ether and USDEDebt in the system: 2.5 Ether and 300 USDE
     // 1 + 0.995/2 - 0.5 + 1.4975*0.995
     const bob_Coll = (await getTroveEntireColl(bob))[0].toString()
-    const bob_EUSDDebt = (await getTroveEntireDebt(bob)).toString()
+    const bob_USDEDebt = (await getTroveEntireDebt(bob)).toString()
 
     const expected_B_coll = B_coll
       .sub(withdrawnColl)
@@ -1483,10 +1483,10 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(th.applyLiquidationFee(C_coll).mul(B_coll).div(A_coll.add(B_coll)))
       .add(th.applyLiquidationFee(th.applyLiquidationFee(C_coll).mul(A_coll).div(A_coll.add(B_coll))))
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000)
-    assert.isAtMost(th.getDifference(bob_EUSDDebt, A_totalDebt.mul(toBN(2)).add(B_totalDebt).add(C_totalDebt)), _dec(14))
+    assert.isAtMost(th.getDifference(bob_USDEDebt, A_totalDebt.mul(toBN(2)).add(B_totalDebt).add(C_totalDebt)), _dec(14))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: A,B,C Open. Liq(C). B withdraws coll. D Opens. Liq(D). Distributes correct rewards.", async () => {
@@ -1505,7 +1505,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: B_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1515,7 +1515,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: C_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol
       }
@@ -1544,7 +1544,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: D_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis
       }
@@ -1559,27 +1559,27 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.isFalse(await sortedTroves.contains(dennis))
 
     /* Bob rewards:
-     L1: 0.4975 ETH, 55 EUSD
-     L2: (0.9975/2.495)*0.995 = 0.3978 ETH , 110*(0.9975/2.495)= 43.98 EUSDDebt
+     L1: 0.4975 ETH, 55 USDE
+     L2: (0.9975/2.495)*0.995 = 0.3978 ETH , 110*(0.9975/2.495)= 43.98 USDEDebt
 
     coll: (1 + 0.4975 - 0.5 + 0.3968) = 1.3953 ETH
-    debt: (110 + 55 + 43.98 = 208.98 EUSDDebt
+    debt: (110 + 55 + 43.98 = 208.98 USDEDebt
 
      Alice rewards:
-    L1 0.4975, 55 EUSD
-    L2 (1.4975/2.495)*0.995 = 0.5972 ETH, 110*(1.4975/2.495) = 66.022 EUSDDebt
+    L1 0.4975, 55 USDE
+    L2 (1.4975/2.495)*0.995 = 0.5972 ETH, 110*(1.4975/2.495) = 66.022 USDEDebt
 
     coll: (1 + 0.4975 + 0.5972) = 2.0947 ETH
-    debt: (50 + 55 + 66.022) = 171.022 EUSD Debt
+    debt: (50 + 55 + 66.022) = 171.022 USDE Debt
 
     totalColl: 3.49 ETH
-    totalDebt 380 EUSD (Includes 50 in each trove for gas compensation)
+    totalDebt 380 USDE (Includes 50 in each trove for gas compensation)
     */
     const bob_Coll = (await getTroveEntireColl(bob))[0].toString()
-    const bob_EUSDDebt = (await getTroveEntireDebt(bob)).toString()
+    const bob_USDEDebt = (await getTroveEntireDebt(bob)).toString()
 
     const alice_Coll = (await getTroveEntireColl(alice))[0].toString()
-    const alice_EUSDDebt = (await getTroveEntireDebt(alice)).toString()
+    const alice_USDEDebt = (await getTroveEntireDebt(alice)).toString()
 
     const totalCollAfterL1 = A_coll.add(B_coll).sub(withdrawnColl).add(th.applyLiquidationFee(C_coll))
     const B_collAfterL1 = B_coll.add(B_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll))).sub(withdrawnColl)
@@ -1588,7 +1588,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(B_coll.mul(C_totalDebt).div(A_coll.add(B_coll)))
       .add(B_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1))
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000)
-    assert.isAtMost(th.getDifference(bob_EUSDDebt, expected_B_debt), _dec(14))
+    assert.isAtMost(th.getDifference(bob_USDEDebt, expected_B_debt), _dec(14))
 
     const A_collAfterL1 = A_coll.add(A_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll)))
     const expected_A_coll = A_collAfterL1.add(A_collAfterL1.mul(th.applyLiquidationFee(D_coll)).div(totalCollAfterL1))
@@ -1597,15 +1597,15 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       .add(A_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1))
 
     assert.isAtMost(th.getDifference(alice_Coll, expected_A_coll), 1000)
-    assert.isAtMost(th.getDifference(alice_EUSDDebt, expected_A_debt), _dec(14))
+    assert.isAtMost(th.getDifference(alice_USDEDebt, expected_A_debt), _dec(14))
 
     const entireSystemColl = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address))
     th.assertIsApproximatelyEqual(entireSystemColl, A_coll.add(B_coll).add(th.applyLiquidationFee(C_coll)).sub(withdrawnColl).add(th.applyLiquidationFee(D_coll)))
-    const entireSystemDebt = (await activePool.getEUSDDebt()).add(await defaultPool.getEUSDDebt())
+    const entireSystemDebt = (await activePool.getUSDEDebt()).add(await defaultPool.getUSDEDebt())
     th.assertIsApproximatelyEqual(entireSystemDebt, A_totalDebt.add(B_totalDebt).add(C_totalDebt).add(D_totalDebt))
 
-    // check EUSD gas compensation
-    th.assertIsApproximatelyEqual((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    th.assertIsApproximatelyEqual((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: Trove with the majority stake withdraws. A,B,C,D open. Liq(D). C withdraws some coll. E Enters, Liq(E). Distributes correct rewards", async () => {
@@ -1623,7 +1623,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(400, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1631,7 +1631,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const {
       collateral: C_coll
     } = await openTrove({
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol,
         value: _998_Ether
@@ -1641,7 +1641,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis,
         value: dec(1000, 'ether')
@@ -1744,8 +1744,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl_3 = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address))
     th.assertIsApproximatelyEqual(entireSystemColl_3, totalCollAfterL1.add(th.applyLiquidationFee(E_coll)))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("redistribution: Trove with the majority stake withdraws. A,B,C,D open. Liq(D). A, B, C withdraw. E Enters, Liq(E). Distributes correct rewards", async () => {
@@ -1763,7 +1763,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(400, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: bob
       }
@@ -1771,7 +1771,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const {
       collateral: C_coll
     } = await openTrove({
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: carol,
         value: _998_Ether
@@ -1781,7 +1781,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis,
         value: dec(1000, 'ether')
@@ -1908,8 +1908,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemColl_3 = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address))
     th.assertIsApproximatelyEqual(entireSystemColl_3, totalCollAfterL1.add(th.applyLiquidationFee(E_coll)))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   // For calculations of correct values used in test, see scenario 1:
@@ -1920,7 +1920,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: A_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: alice
       }
@@ -1929,7 +1929,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: B_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: bob
       }
@@ -1938,7 +1938,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: C_coll
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: carol
       }
@@ -1972,7 +1972,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: D_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: dennis
       }
@@ -2023,7 +2023,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: E_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: erin
       }
@@ -2033,7 +2033,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       totalDebt: F_totalDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
-      extraEUSDAmount: dec(110, 18),
+      extraUSDEAmount: dec(110, 18),
       extraParams: {
         from: freddy
       }
@@ -2095,8 +2095,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     th.assertIsApproximatelyEqual(totalStakesSnapshot, totalStakesSnapshotAfterL3)
     th.assertIsApproximatelyEqual(totalCollateralSnapshot, totalCollateralSnapshotAfterL3)
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(600, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(600, 18))
   })
 
   // For calculations of correct values used in test, see scenario 2:
@@ -2162,7 +2162,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: D_coll,
       totalDebt: D_totalDebt
     } = await openTrove({
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: dennis,
         value: toBN(dec(35, 15))
@@ -2217,7 +2217,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: E_coll,
       totalDebt: E_totalDebt
     } = await openTrove({
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: erin,
         value: toBN(dec(1, 22))
@@ -2227,7 +2227,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
       collateral: F_coll,
       totalDebt: F_totalDebt
     } = await openTrove({
-      extraEUSDAmount: dec(100, 18),
+      extraUSDEAmount: dec(100, 18),
       extraParams: {
         from: freddy,
         value: toBN('700000000000000')
@@ -2293,8 +2293,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     th.assertIsApproximatelyEqual(totalStakesSnapshot, totalStakesSnapshotAfterL3)
     th.assertIsApproximatelyEqual(totalCollateralSnapshot, totalCollateralSnapshotAfterL3)
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(600, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(600, 18))
   })
 
   it("open alice and bob", async () => {
@@ -2319,9 +2319,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // let systemColl = await contracts.borrowerOperations.getEntireSystemColl()
     // console.log('With weth only: \n')
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -2347,9 +2347,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('Price dropped to 100: \n')
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -2381,9 +2381,9 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('Liquidated Bob & price back to 200: \n')
 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system debt: ', (await contracts.borrowerOperations.getEntireSystemDebt()).toString())
@@ -2459,8 +2459,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.equal(entireSystemColl, A_coll.add(C_coll).add(th.applyLiquidationFee(B_coll.add(D_coll))))
 
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("multi redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {
@@ -2512,11 +2512,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2551,11 +2551,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2598,11 +2598,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2710,8 +2710,8 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemSTETH = (await activePool.getCollateralAmount(steth.address)).add(await defaultPool.getCollateralAmount(steth.address)).toString()
     assert.equal(entireSystemSTETH, A_amounts[1].add(C_amounts[1]).add(th.applyLiquidationFee(B_amounts[1].add(D_amounts[1]))))
 
-    // check EUSD gas compensation
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(400, 18))
+    // check USDE gas compensation
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(400, 18))
   })
 
   it("multi redistribution: A open with ETH, B open with STETH, C open with both, liquidate C", async () => {
@@ -2775,11 +2775,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2822,11 +2822,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2877,11 +2877,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -2934,7 +2934,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
 
     const entireSystemSTETH = (await activePool.getCollateralAmount(steth.address)).add(await defaultPool.getCollateralAmount(steth.address)).toString()
     assert.equal(entireSystemSTETH, B_amounts[0].add(th.applyLiquidationFee(C_amounts[1])))
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(200, 18))
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(200, 18))
   })
 
   it("multi redistribution: A open with ETH, B open with STETH, C open with both 5:1.5 ratio, liquidate C", async () => {
@@ -3001,11 +3001,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount wavstethax in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -3049,11 +3049,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount wavstethax in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -3101,11 +3101,11 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
     // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
     // console.log('total amount wavstethax in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
-    // console.log('debt in active pool: ', (await activePool.getEUSDDebt()).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
     // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
     // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
     // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
-    // console.log('debt in default pool: ', (await defaultPool.getEUSDDebt()).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
     // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
     // console.log('entire system VC: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
     // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
@@ -3158,7 +3158,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const entireSystemSTETH = (await activePool.getCollateralAmount(steth.address)).add(await defaultPool.getCollateralAmount(steth.address)).toString()
     assert.isAtMost(th.getDifference(entireSystemSTETH, B_amounts[0].add(th.applyLiquidationFee(C_amounts[1]))), 1)
 
-    assert.equal((await eusdToken.balanceOf(owner)).toString(), dec(200, 18))
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(200, 18))
   })
 
 })

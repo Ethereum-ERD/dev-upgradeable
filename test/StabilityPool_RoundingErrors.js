@@ -23,7 +23,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
   let contracts
 
   let priceFeed
-  let eusdToken
+  let usdeToken
   let stabilityPool
   let troveManager
   let borrowerOperations
@@ -37,7 +37,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
     const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-    contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
+    contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
     await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
@@ -49,7 +49,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     priceFeedSTETH = contracts.priceFeedSTETH
     priceFeedETH = contracts.priceFeedETH
     priceFeed = priceFeedETH
-    eusdToken = contracts.eusdToken
+    usdeToken = contracts.usdeToken
     sortedTroves = contracts.sortedTroves
     troveManager = contracts.troveManager
     activePool = contracts.activePool
@@ -63,14 +63,14 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     liquidityIncentive = ERDContracts.liquidityIncentive
     communityIssuance = ERDContracts.communityIssuance
 
-    EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
+    USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
     MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
     BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
   })
 
   // skipped to not slow down CI
-  it("Rounding errors: 100 deposits of 100EUSD into SP, then 200 liquidations of 49EUSD", async () => {
-    // it.skip("Rounding errors: 100 deposits of 100EUSD into SP, then 200 liquidations of 49EUSD", async () => {
+  it("Rounding errors: 100 deposits of 100USDE into SP, then 200 liquidations of 49USDE", async () => {
+    // it.skip("Rounding errors: 100 deposits of 100USDE into SP, then 200 liquidations of 49USDE", async () => {
     const owner = accounts[0]
     // const depositors = accounts.slice(1, 101)
     // const defaulters = accounts.slice(101, 301)
@@ -79,7 +79,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
 
     for (let account of depositors) {
       await openTrove({
-        extraEUSDAmount: toBN(dec(10000, 18)),
+        extraUSDEAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: account
@@ -110,9 +110,9 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
       });
     }
 
-    const SP_TotalDeposits = await stabilityPool.getTotalEUSDDeposits()
+    const SP_TotalDeposits = await stabilityPool.getTotalUSDEDeposits()
     const SP_ETH = await stabilityPool.getCollateralAmount(contracts.weth.address)
-    const compoundedDeposit = await stabilityPool.getCompoundedEUSDDeposit(depositors[0])
+    const compoundedDeposit = await stabilityPool.getCompoundedUSDEDeposit(depositors[0])
     const ETH_Gain = await stabilityPool.getDepositorCollateralGain(depositors[0])
 
     // Check depostiors receive their share without too much error

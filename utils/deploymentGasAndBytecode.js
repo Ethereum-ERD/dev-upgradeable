@@ -2,7 +2,7 @@
 const SortedTroves = artifacts.require("./SortedTroves.sol")
 const TroveManager = artifacts.require("./TroveManager.sol")
 const PriceFeed = artifacts.require("./PriceFeed.sol")
-const EUSDToken = artifacts.require("./EUSDToken.sol")
+const USDEToken = artifacts.require("./USDEToken.sol")
 const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol")
@@ -21,7 +21,7 @@ const DefaultPoolTester = artifacts.require("./DefaultPoolTester.sol")
 const ERDMathTester = artifacts.require("./ERDMathTester.sol")
 // const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
-const EUSDTokenTester = artifacts.require("./EUSDTokenTester.sol")
+const USDETokenTester = artifacts.require("./USDETokenTester.sol")
 
 const {
   TestHelper: th
@@ -33,7 +33,7 @@ const ARBITRARY_ADDRESS = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419" // placeh
 const coreContractABIs = [
   BorrowerOperations,
   PriceFeed,
-  EUSDToken,
+  USDEToken,
   SortedTroves,
   TroveManager,
   ActivePool,
@@ -57,7 +57,7 @@ const TesterContractABIs = [
   ERDMathTester,
   BorrowerOperations,
   TroveManagerTester,
-  EUSDTokenTester,
+  USDETokenTester,
 ]
 
 const getGasFromContractDeployment = async (contractObject, name) => {

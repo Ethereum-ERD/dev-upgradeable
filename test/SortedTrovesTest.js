@@ -10,7 +10,7 @@ const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
 // const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
 // const SortedTrovesBOTester = artifacts.require("./SortedTrovesBOTester.sol")
-const EUSDToken = artifacts.require("EUSDToken")
+const USDEToken = artifacts.require("USDEToken")
 
 const th = testHelpers.TestHelper
 const dec = th.dec
@@ -50,7 +50,7 @@ contract('SortedTroves', async accounts => {
   let troveManager
   let troveManagerRedemptions
   let borrowerOperations
-  let eusdToken
+  let usdeToken
 
   let stableCoin
   let priceFeedStableCoin
@@ -62,7 +62,7 @@ contract('SortedTroves', async accounts => {
 
   let contracts
 
-  const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+  const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
   const openTrove = async (params) => th.openTrove(contracts, params)
 
   describe('SortedTroves', () => {
@@ -70,7 +70,7 @@ contract('SortedTroves', async accounts => {
       contracts = await deploymentHelper.deployERDCore()
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
-      // contracts.eusdToken = await EUSDToken.new(
+      // contracts.usdeToken = await USDEToken.new(
       //   contracts.troveManager.address,
       //   contracts.troveManagerLiquidations.address,
       //   contracts.troveManagerRedemptions.address,
@@ -84,7 +84,7 @@ contract('SortedTroves', async accounts => {
       troveManager = contracts.troveManager
       collateralManager = contracts.collateralManager
       borrowerOperations = contracts.borrowerOperations
-      eusdToken = contracts.eusdToken
+      usdeToken = contracts.usdeToken
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
     })
 
@@ -151,7 +151,7 @@ contract('SortedTroves', async accounts => {
     it('contains(): returns false for addresses that opened and then closed a trove', async () => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
-        extraEUSDAmount: toBN(dec(3000, 18)),
+        extraUSDEAmount: toBN(dec(3000, 18)),
         extraParams: {
           from: whale
         }
@@ -177,13 +177,13 @@ contract('SortedTroves', async accounts => {
       })
 
       // to compensate borrowing fees
-      await eusdToken.transfer(alice, dec(1000, 18), {
+      await usdeToken.transfer(alice, dec(1000, 18), {
         from: whale
       })
-      await eusdToken.transfer(bob, dec(1000, 18), {
+      await usdeToken.transfer(bob, dec(1000, 18), {
         from: whale
       })
-      await eusdToken.transfer(carol, dec(1000, 18), {
+      await usdeToken.transfer(carol, dec(1000, 18), {
         from: whale
       })
 
@@ -213,7 +213,7 @@ contract('SortedTroves', async accounts => {
     it('contains(): returns true for addresses that opened, closed and then re-opened a trove', async () => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
-        extraEUSDAmount: toBN(dec(3000, 18)),
+        extraUSDEAmount: toBN(dec(3000, 18)),
         extraParams: {
           from: whale
         }
@@ -239,13 +239,13 @@ contract('SortedTroves', async accounts => {
       })
 
       // to compensate borrowing fees
-      await eusdToken.transfer(alice, dec(1000, 18), {
+      await usdeToken.transfer(alice, dec(1000, 18), {
         from: whale
       })
-      await eusdToken.transfer(bob, dec(1000, 18), {
+      await usdeToken.transfer(bob, dec(1000, 18), {
         from: whale
       })
-      await eusdToken.transfer(carol, dec(1000, 18), {
+      await usdeToken.transfer(carol, dec(1000, 18), {
         from: whale
       })
 
@@ -415,7 +415,7 @@ contract('SortedTroves', async accounts => {
       contracts.troveManager = await TroveManagerTester.new()
       // contracts.borrowerOperations = await SortedTrovesBOTester.new()
       //contracts.borrowerOperations = await BorrowerOperationsTester.new()
-      // contracts.eusdToken = await EUSDToken.new(
+      // contracts.usdeToken = await USDEToken.new(
       //   contracts.troveManager.address,
       //   contracts.troveManagerLiquidations.address,
       //   contracts.troveManagerRedemptions.address,
@@ -428,7 +428,7 @@ contract('SortedTroves', async accounts => {
       sortedTroves = contracts.sortedTroves
       troveManager = contracts.troveManager
       borrowerOperations = contracts.borrowerOperations
-      eusdToken = contracts.eusdToken
+      usdeToken = contracts.usdeToken
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
       sortedTrovesTester = await SortedTrovesTester.new()
@@ -499,7 +499,7 @@ contract('SortedTroves', async accounts => {
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
       // contracts.borrowerOperations = await SortedTrovesBOTester.new()
-      // contracts.eusdToken = await EUSDToken.new(
+      // contracts.usdeToken = await USDEToken.new(
       //   contracts.troveManager.address,
       //   contracts.troveManagerLiquidations.address,
       //   contracts.troveManagerRedemptions.address,
@@ -515,7 +515,7 @@ contract('SortedTroves', async accounts => {
       troveManager = contracts.troveManager
       collateralManager = contracts.collateralManager
       borrowerOperations = contracts.borrowerOperations
-      eusdToken = contracts.eusdToken
+      usdeToken = contracts.usdeToken
       troveManagerRedemptions = contracts.troveManagerRedemptions
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
@@ -708,7 +708,7 @@ contract('SortedTroves', async accounts => {
   })
 
 
-  // Sequentially add coll and withdraw EUSD, 1 account at a time
+  // Sequentially add coll and withdraw USDE, 1 account at a time
   const makeTrovesInSequence = async () => {
     // const makeTrovesInSequence = async () => {
     const allColls = [contracts.weth, contracts.steth, stableCoin, tokenRisky]

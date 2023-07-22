@@ -6,7 +6,7 @@ const testHelpers = require("../utils/testHelpers.js")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
 // const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
 const TroveManagerLiquidations = artifacts.require("./TroveManagerLiquidations.sol")
-const EUSDTokenTester = artifacts.require("./EUSDTokenTester")
+const USDETokenTester = artifacts.require("./USDETokenTester")
 
 const th = testHelpers.TestHelper
 const dec = th.dec
@@ -15,7 +15,7 @@ const mv = testHelpers.MoneyValues
 const timeValues = testHelpers.TimeValues
 
 const TroveManagerTester = artifacts.require("TroveManagerTester")
-const EUSDToken = artifacts.require("EUSDToken")
+const USDEToken = artifacts.require("USDEToken")
 const NonPayable = artifacts.require('NonPayable.sol')
 const _1e14BN = toBN(dec(1, 14))
 const ZERO = toBN('0')
@@ -35,7 +35,7 @@ contract('StabilityPool', async accounts => {
   const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3]
   let contracts
   let priceFeed
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let collateralManager
@@ -72,7 +72,7 @@ contract('StabilityPool', async accounts => {
 
   let gasPriceInWei
 
-  const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+  const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
   const openTrove = async (params) => th.openTrove(contracts, params)
   const openTroveToken = async (token, params) => th.openTroveWithToken(contracts, token, params)
 
@@ -89,17 +89,17 @@ contract('StabilityPool', async accounts => {
       // contracts.borrowerOperations = await BorrowerOperationsTester.new()
       contracts.troveManager = await TroveManagerTester.new()
 
-      // contracts.eusdToken = await EUSDTokenTester.new(contracts.troveManager.address,
+      // contracts.usdeToken = await USDETokenTester.new(contracts.troveManager.address,
       //     contracts.troveManagerLiquidations.address,
       //     contracts.troveManagerRedemptions.address,
       //     contracts.stabilityPool.address,
       //     contracts.borrowerOperations.address),
       const ERDContracts = await deploymentHelper.deployERDContracts()
-      contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
+      contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
       priceFeedETH = contracts.priceFeedETH
       priceFeedSTETH = contracts.priceFeedSTETH
-      eusdToken = contracts.eusdToken
+      usdeToken = contracts.usdeToken
       sortedTroves = contracts.sortedTroves
       troveManager = contracts.troveManager
       activePool = contracts.activePool
@@ -209,7 +209,7 @@ contract('StabilityPool', async accounts => {
       eTokenStableCoin = result.eToken
     })
 
-    it("MULTICOLLATERAL withdrawFromSP(): partial retrieval - retrieves correct EUSD amount and the entire ETH Gain, and updates deposit", async () => {
+    it("MULTICOLLATERAL withdrawFromSP(): partial retrieval - retrieves correct USDE amount and the entire ETH Gain, and updates deposit", async () => {
       // --- SETUP ---
 
       await th.addERC20(steth, whale, borrowerOperations.address, toBN(dec(2, 24)), {
@@ -224,7 +224,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(18500, 18)),
+        await getOpenTroveUSDEAmount(dec(18500, 18)),
         whale,
         whale, {
           from: whale,
@@ -233,7 +233,7 @@ contract('StabilityPool', async accounts => {
       )
 
 
-      // Whale deposits 10000 EUSD in StabilityPool
+      // Whale deposits 10000 USDE in StabilityPool
       await stabilityPool.provideToSP(whaleInSP, frontEnd_1, {
         from: whale
       })
@@ -243,7 +243,7 @@ contract('StabilityPool', async accounts => {
         [],
         [],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
         defaulter_1, {
           from: defaulter_1,
@@ -258,7 +258,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(21, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
         defaulter_2, {
           from: defaulter_2
@@ -272,7 +272,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         alice,
         alice, {
           from: alice
@@ -286,7 +286,7 @@ contract('StabilityPool', async accounts => {
 
       // // --- TEST ---
 
-      // Alice makes deposit #1: 2000 EUSD
+      // Alice makes deposit #1: 2000 USDE
       await stabilityPool.provideToSP(aliceInSP, frontEnd_1, {
         from: alice
       })
@@ -301,32 +301,32 @@ contract('StabilityPool', async accounts => {
       const whale_pre_WETH_balance = toBN(await web3.eth.getBalance(whale))
       const whale_pre_STETH_balance = await steth.balanceOf(whale);
 
-      // // 2 users with Trove with 170 EUSD drawn are closed
+      // // 2 users with Trove with 170 USDE drawn are closed
       const liquidationTX_1 = await troveManager.liquidate(defaulter_1, {
         from: owner
-      }) // 170 EUSD closed
+      }) // 170 USDE closed
       const liquidationTX_2 = await troveManager.liquidate(defaulter_2, {
         from: owner
-      }) // 170 EUSD closed
+      }) // 170 USDE closed
 
-      const [liquidatedDebt_1, eusdGasComp_1, liquidatedCollAmounts_1,
+      const [liquidatedDebt_1, usdeGasComp_1, liquidatedCollAmounts_1,
         totalCollGasCompAmounts_1
       ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1);
 
-      const [liquidatedDebt_2, eusdGasComp_2, liquidatedCollAmounts_2,
+      const [liquidatedDebt_2, usdeGasComp_2, liquidatedCollAmounts_2,
         totalCollGasCompAmounts_2
       ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2);
 
-      // Alice EUSDLoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
+      // Alice USDELoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
 
-      const expectedEUSDLoss_A = liquidatedDebt_1.mul(toBN(aliceInSP)).div(toBN(aliceInSP).add(toBN(whaleInSP)))
+      const expectedUSDELoss_A = liquidatedDebt_1.mul(toBN(aliceInSP)).div(toBN(aliceInSP).add(toBN(whaleInSP)))
         .add(liquidatedDebt_2.mul(toBN(aliceInSP)).div(toBN(aliceInSP).add(toBN(whaleInSP))))
 
-      const expectedCompoundedEUSDDeposit_A = toBN(aliceInSP).sub(expectedEUSDLoss_A)
-      const compoundedEUSDDeposit_A = await stabilityPool.getCompoundedEUSDDeposit(alice)
+      const expectedCompoundedUSDEDeposit_A = toBN(aliceInSP).sub(expectedUSDELoss_A)
+      const compoundedUSDEDeposit_A = await stabilityPool.getCompoundedUSDEDeposit(alice)
 
-      assert.isAtMost(th.getDifference(expectedCompoundedEUSDDeposit_A, compoundedEUSDDeposit_A), 100000)
-      // Alice retrieves part of her entitled EUSD: 1800 EUSDer
+      assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_A, compoundedUSDEDeposit_A), 100000)
+      // Alice retrieves part of her entitled USDE: 1800 USDEer
       await stabilityPool.withdrawFromSP(dec(1000, 18), {
         from: alice,
         gasPrice: 0
@@ -347,7 +347,7 @@ contract('StabilityPool', async accounts => {
       // gains from STETH liquidation
       assert.isAtMost(th.getDifference(alice_STETH_gain, alice_expected_STETH_gain), 100000)
 
-      const expectedNewDeposit_A = (compoundedEUSDDeposit_A.sub(toBN(dec(1000, 18))))
+      const expectedNewDeposit_A = (compoundedUSDEDeposit_A.sub(toBN(dec(1000, 18))))
 
       // check Alice's deposit has been updated to equal her compounded deposit minus her withdrawal */
       const newDeposit = ((await stabilityPool.deposits(alice))[0]).toString()
@@ -363,18 +363,18 @@ contract('StabilityPool', async accounts => {
 
       // Whale Gains Are Accurate
 
-      const expectedEUSDLoss_whale = liquidatedDebt_1.mul(whaleInSP).div(aliceInSP.add(whaleInSP))
+      const expectedUSDELoss_whale = liquidatedDebt_1.mul(whaleInSP).div(aliceInSP.add(whaleInSP))
         .add(liquidatedDebt_2.mul(whaleInSP).div(aliceInSP.add(whaleInSP)))
 
-      const expectedCompoundedEUSDDeposit_Whale = toBN(whaleInSP).sub(expectedEUSDLoss_whale)
-      const compoundedEUSDDeposit_Whale = await stabilityPool.getCompoundedEUSDDeposit(whale)
+      const expectedCompoundedUSDEDeposit_Whale = toBN(whaleInSP).sub(expectedUSDELoss_whale)
+      const compoundedUSDEDeposit_Whale = await stabilityPool.getCompoundedUSDEDeposit(whale)
 
-      assert.isAtMost(th.getDifference(expectedCompoundedEUSDDeposit_Whale, compoundedEUSDDeposit_Whale), 100000)
+      assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_Whale, compoundedUSDEDeposit_Whale), 100000)
 
       await stabilityPool.withdrawFromSP(dec(1000, 18), {
         from: whale,
         gasPrice: 0
-      }) // whale withdraws 1000 EUSD from SP
+      }) // whale withdraws 1000 USDE from SP
 
       const whale_post_WETH_balance = toBN(await web3.eth.getBalance(whale))
       const whale_post_STETH_balance = await steth.balanceOf(whale);
@@ -391,7 +391,7 @@ contract('StabilityPool', async accounts => {
       // gains from STETH liquidation
       assert.isAtMost(th.getDifference(whale_STETH_gain, whale_expected_STETH_gain), 100000)
 
-      const expectedNewDeposit_Whale = (compoundedEUSDDeposit_Whale.sub(toBN(dec(1000, 18))))
+      const expectedNewDeposit_Whale = (compoundedUSDEDeposit_Whale.sub(toBN(dec(1000, 18))))
 
       // check whale's deposit has been updated to equal her compounded deposit minus her withdrawal */
       const newWhaleDeposit = ((await stabilityPool.deposits(whale))[0]).toString()
@@ -425,7 +425,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(1000, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(25000, 18)),
+        await getOpenTroveUSDEAmount(dec(25000, 18)),
         bob,
         bob, {
           from: bob,
@@ -441,7 +441,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(18500, 18)),
+        await getOpenTroveUSDEAmount(dec(18500, 18)),
         whale,
         whale, {
           from: whale,
@@ -450,7 +450,7 @@ contract('StabilityPool', async accounts => {
       )
 
 
-      // Whale deposits 10000 EUSD in StabilityPool
+      // Whale deposits 10000 USDE in StabilityPool
       await stabilityPool.provideToSP(whaleInSP, frontEnd_1, {
         from: whale
       })
@@ -460,7 +460,7 @@ contract('StabilityPool', async accounts => {
         [],
         [],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
         defaulter_1, {
           from: defaulter_1,
@@ -475,7 +475,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(21, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
         defaulter_2, {
           from: defaulter_2
@@ -489,7 +489,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         alice,
         alice, {
           from: alice
@@ -504,7 +504,7 @@ contract('StabilityPool', async accounts => {
 
       // // --- TEST ---
 
-      // Alice makes deposit #1: 2000 EUSD
+      // Alice makes deposit #1: 2000 USDE
       await stabilityPool.provideToSP(aliceInSP, frontEnd_1, {
         from: alice,
         gasPrice: 0
@@ -523,33 +523,33 @@ contract('StabilityPool', async accounts => {
       const whale_pre_WETH_balance = toBN(await web3.eth.getBalance(whale))
       const whale_pre_STETH_balance = await steth.balanceOf(whale);
 
-      // // 2 users with Trove with 170 EUSD drawn are closed
+      // // 2 users with Trove with 170 USDE drawn are closed
       const liquidationTX_1 = await troveManager.liquidate(defaulter_1, {
         from: owner
-      }) // 170 EUSD closed
+      }) // 170 USDE closed
       const liquidationTX_2 = await troveManager.liquidate(defaulter_2, {
         from: owner
-      }) // 170 EUSD closed
+      }) // 170 USDE closed
 
-      const [liquidatedDebt_1, eusdGasComp_1, liquidatedCollAmounts_1,
+      const [liquidatedDebt_1, usdeGasComp_1, liquidatedCollAmounts_1,
         totalCollGasCompAmounts_1
       ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1);
 
-      const [liquidatedDebt_2, eusdGasComp_2, liquidatedCollAmounts_2,
+      const [liquidatedDebt_2, usdeGasComp_2, liquidatedCollAmounts_2,
         totalCollGasCompAmounts_2
       ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2);
 
-      // Alice EUSDLoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
+      // Alice USDELoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
 
-      const expectedEUSDLoss_A = liquidatedDebt_1.mul(toBN(aliceInSP)).div(toBN(aliceInSP).add(toBN(whaleInSP).add(toBN(bobInSP))))
+      const expectedUSDELoss_A = liquidatedDebt_1.mul(toBN(aliceInSP)).div(toBN(aliceInSP).add(toBN(whaleInSP).add(toBN(bobInSP))))
         .add(liquidatedDebt_2.mul(toBN(aliceInSP)).div((toBN(aliceInSP).add(toBN(whaleInSP).add(toBN(bobInSP))))))
 
-      const expectedCompoundedEUSDDeposit_A = toBN(aliceInSP).sub(expectedEUSDLoss_A)
-      const compoundedEUSDDeposit_A = await stabilityPool.getCompoundedEUSDDeposit(alice)
+      const expectedCompoundedUSDEDeposit_A = toBN(aliceInSP).sub(expectedUSDELoss_A)
+      const compoundedUSDEDeposit_A = await stabilityPool.getCompoundedUSDEDeposit(alice)
 
-      assert.isAtMost(th.getDifference(expectedCompoundedEUSDDeposit_A, compoundedEUSDDeposit_A), 100000)
+      assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_A, compoundedUSDEDeposit_A), 100000)
 
-      // Alice retrieves part of her entitled EUSD: 1800 EUSDer
+      // Alice retrieves part of her entitled USDE: 1800 USDEer
       await stabilityPool.withdrawFromSP(dec(1000, 18), {
         from: alice,
         gasPrice: 0
@@ -571,7 +571,7 @@ contract('StabilityPool', async accounts => {
       // gains from STETH liquidation
       assert.isAtMost(th.getDifference(alice_STETH_gain, alice_expected_STETH_gain), 100000)
 
-      const expectedNewDeposit_A = (compoundedEUSDDeposit_A.sub(toBN(dec(1000, 18))))
+      const expectedNewDeposit_A = (compoundedUSDEDeposit_A.sub(toBN(dec(1000, 18))))
 
       // check Alice's deposit has been updated to equal her compounded deposit minus her withdrawal */
       const newDeposit = ((await stabilityPool.deposits(alice))[0]).toString()
@@ -587,13 +587,13 @@ contract('StabilityPool', async accounts => {
 
       // Whale Gains Are Accurate
 
-      const expectedEUSDLoss_whale = liquidatedDebt_1.mul(whaleInSP).div(aliceInSP.add(whaleInSP).add(bobInSP))
+      const expectedUSDELoss_whale = liquidatedDebt_1.mul(whaleInSP).div(aliceInSP.add(whaleInSP).add(bobInSP))
         .add(liquidatedDebt_2.mul(whaleInSP).div(aliceInSP.add(whaleInSP).add(bobInSP)))
 
-      const expectedCompoundedEUSDDeposit_Whale = toBN(whaleInSP).sub(expectedEUSDLoss_whale)
-      const compoundedEUSDDeposit_Whale = await stabilityPool.getCompoundedEUSDDeposit(whale)
+      const expectedCompoundedUSDEDeposit_Whale = toBN(whaleInSP).sub(expectedUSDELoss_whale)
+      const compoundedUSDEDeposit_Whale = await stabilityPool.getCompoundedUSDEDeposit(whale)
 
-      assert.isAtMost(th.getDifference(expectedCompoundedEUSDDeposit_Whale, compoundedEUSDDeposit_Whale), 100000)
+      assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_Whale, compoundedUSDEDeposit_Whale), 100000)
 
       // new depositor to stability pool
       await th.addERC20(steth, carol, borrowerOperations.address, toBN(dec(230, 18)), {
@@ -603,14 +603,14 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         carol,
         carol, {
           from: carol
         }
       )
 
-      // carol makes deposit #1: 2000 EUSD
+      // carol makes deposit #1: 2000 USDE
       await stabilityPool.provideToSP(carolInSP, frontEnd_1, {
         from: carol
       })
@@ -637,7 +637,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(20000, 18)),
+        await getOpenTroveUSDEAmount(dec(20000, 18)),
         whale,
         whale, {
           from: whale,
@@ -649,7 +649,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(12000, 18)),
+        await getOpenTroveUSDEAmount(dec(12000, 18)),
         alice,
         alice, {
           from: alice,
@@ -661,7 +661,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(25000, 18)),
+        await getOpenTroveUSDEAmount(dec(25000, 18)),
         bob,
         bob, {
           from: bob,
@@ -673,7 +673,7 @@ contract('StabilityPool', async accounts => {
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(35000, 18)),
+        await getOpenTroveUSDEAmount(dec(35000, 18)),
         carol,
         carol, {
           from: carol,
@@ -789,11 +789,11 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      // Whale transfers EUSD to A, B
-      await eusdToken.transfer(A, dec(100, 18), {
+      // Whale transfers USDE to A, B
+      await usdeToken.transfer(A, dec(100, 18), {
         from: whale
       })
-      await eusdToken.transfer(B, dec(200, 18), {
+      await usdeToken.transfer(B, dec(200, 18), {
         from: whale
       })
 
@@ -900,7 +900,7 @@ contract('StabilityPool', async accounts => {
         [],
         [],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
         defaulter_1, {
           from: defaulter_1,
@@ -912,7 +912,7 @@ contract('StabilityPool', async accounts => {
         [],
         [],
         th._100pct,
-        await getOpenTroveEUSDAmount(dec(2400, 18)),
+        await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
         defaulter_2, {
           from: defaulter_2,
@@ -921,21 +921,21 @@ contract('StabilityPool', async accounts => {
 
       // A, B, C open troves and make Stability Pool deposits
       await openTrove({
-        extraEUSDAmount: toBN(dec(1000, 18)),
+        extraUSDEAmount: toBN(dec(1000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: alice
         }
       })
       await openTrove({
-        extraEUSDAmount: toBN(dec(2000, 18)),
+        extraUSDEAmount: toBN(dec(2000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: bob
         }
       })
       await openTrove({
-        extraEUSDAmount: toBN(dec(3000, 18)),
+        extraUSDEAmount: toBN(dec(3000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: carol
@@ -954,7 +954,7 @@ contract('StabilityPool', async accounts => {
 
       // D opens a trove
       await openTrove({
-        extraEUSDAmount: toBN(dec(300, 18)),
+        extraUSDEAmount: toBN(dec(300, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: {
           from: dennis
@@ -974,38 +974,38 @@ contract('StabilityPool', async accounts => {
       assert.isFalse(await sortedTroves.contains(defaulter_1))
       assert.isFalse(await sortedTroves.contains(defaulter_2))
 
-      const alice_EUSDDeposit_Before = (await stabilityPool.getCompoundedEUSDDeposit(alice)).toString()
-      const bob_EUSDDeposit_Before = (await stabilityPool.getCompoundedEUSDDeposit(bob)).toString()
-      const carol_EUSDDeposit_Before = (await stabilityPool.getCompoundedEUSDDeposit(carol)).toString()
+      const alice_USDEDeposit_Before = (await stabilityPool.getCompoundedUSDEDeposit(alice)).toString()
+      const bob_USDEDeposit_Before = (await stabilityPool.getCompoundedUSDEDeposit(bob)).toString()
+      const carol_USDEDeposit_Before = (await stabilityPool.getCompoundedUSDEDeposit(carol)).toString()
 
       const alice_ETHGain_Before = ((await stabilityPool.getDepositorCollateralGain(alice))[1][0]).toString()
       const bob_ETHGain_Before = ((await stabilityPool.getDepositorCollateralGain(bob))[1][0]).toString()
       const carol_ETHGain_Before = ((await stabilityPool.getDepositorCollateralGain(carol))[1][0]).toString()
 
-      //check non-zero EUSD and ETHGain in the Stability Pool
-      const EUSDinSP = await stabilityPool.getTotalEUSDDeposits()
+      //check non-zero USDE and ETHGain in the Stability Pool
+      const USDEinSP = await stabilityPool.getTotalUSDEDeposits()
       const ETHinSP = await stabilityPool.getCollateralAmount(weth.address)
-      assert.isTrue(EUSDinSP.gt(mv._zeroBN))
+      assert.isTrue(USDEinSP.gt(mv._zeroBN))
       assert.isTrue(ETHinSP.gt(mv._zeroBN))
 
       // D makes an SP deposit
       await stabilityPool.provideToSP(dec(1000, 18), frontEnd_1, {
         from: dennis
       })
-      assert.equal((await stabilityPool.getCompoundedEUSDDeposit(dennis)).toString(), dec(1000, 18))
+      assert.equal((await stabilityPool.getCompoundedUSDEDeposit(dennis)).toString(), dec(1000, 18))
 
-      const alice_EUSDDeposit_After = (await stabilityPool.getCompoundedEUSDDeposit(alice)).toString()
-      const bob_EUSDDeposit_After = (await stabilityPool.getCompoundedEUSDDeposit(bob)).toString()
-      const carol_EUSDDeposit_After = (await stabilityPool.getCompoundedEUSDDeposit(carol)).toString()
+      const alice_USDEDeposit_After = (await stabilityPool.getCompoundedUSDEDeposit(alice)).toString()
+      const bob_USDEDeposit_After = (await stabilityPool.getCompoundedUSDEDeposit(bob)).toString()
+      const carol_USDEDeposit_After = (await stabilityPool.getCompoundedUSDEDeposit(carol)).toString()
 
       const alice_ETHGain_After = ((await stabilityPool.getDepositorCollateralGain(alice))[1][0]).toString()
       const bob_ETHGain_After = ((await stabilityPool.getDepositorCollateralGain(bob))[1][0]).toString()
       const carol_ETHGain_After = ((await stabilityPool.getDepositorCollateralGain(carol))[1][0]).toString()
 
       // Check compounded deposits and ETH gains for A, B and C have not changed
-      assert.equal(alice_EUSDDeposit_Before, alice_EUSDDeposit_After)
-      assert.equal(bob_EUSDDeposit_Before, bob_EUSDDeposit_After)
-      assert.equal(carol_EUSDDeposit_Before, carol_EUSDDeposit_After)
+      assert.equal(alice_USDEDeposit_Before, alice_USDEDeposit_After)
+      assert.equal(bob_USDEDeposit_Before, bob_USDEDeposit_After)
+      assert.equal(carol_USDEDeposit_Before, carol_USDEDeposit_After)
 
       assert.equal(alice_ETHGain_Before, alice_ETHGain_After)
       assert.equal(bob_ETHGain_Before, bob_ETHGain_After)
@@ -1081,7 +1081,7 @@ contract('StabilityPool', async accounts => {
       const TCR = await collateralManager.getTCR();
       // console.log("TCR", TCR.toString());
 
-      // A, B, C provides 10000, 5000, 3000 EUSD to SP
+      // A, B, C provides 10000, 5000, 3000 USDE to SP
       await stabilityPool.provideToSP(dec(2000, 18), frontEnd_1, {
         from: alice
       })
@@ -1105,23 +1105,23 @@ contract('StabilityPool', async accounts => {
       await troveManager.liquidate(defaulter_1)
       assert.isFalse(await sortedTroves.contains(defaulter_1))
 
-      const alice_EUSD_Balance_Before = await eusdToken.balanceOf(alice)
-      const bob_EUSD_Balance_Before = await eusdToken.balanceOf(bob)
-      const carol_EUSD_Balance_Before = await eusdToken.balanceOf(carol)
+      const alice_USDE_Balance_Before = await usdeToken.balanceOf(alice)
+      const bob_USDE_Balance_Before = await usdeToken.balanceOf(bob)
+      const carol_USDE_Balance_Before = await usdeToken.balanceOf(carol)
 
       const alice_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(alice))
       const bob_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(bob))
       const carol_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(carol))
 
-      const alice_Deposit_Before = await stabilityPool.getCompoundedEUSDDeposit(alice)
-      const bob_Deposit_Before = await stabilityPool.getCompoundedEUSDDeposit(bob)
-      const carol_Deposit_Before = await stabilityPool.getCompoundedEUSDDeposit(carol)
+      const alice_Deposit_Before = await stabilityPool.getCompoundedUSDEDeposit(alice)
+      const bob_Deposit_Before = await stabilityPool.getCompoundedUSDEDeposit(bob)
+      const carol_Deposit_Before = await stabilityPool.getCompoundedUSDEDeposit(carol)
 
       const alice_ETHGain_Before = (await stabilityPool.getDepositorCollateralGain(alice))[1][0]
       const bob_ETHGain_Before = (await stabilityPool.getDepositorCollateralGain(bob))[1][0]
       const carol_ETHGain_Before = (await stabilityPool.getDepositorCollateralGain(carol))[1][0]
 
-      const EUSDinSP_Before = await stabilityPool.getTotalEUSDDeposits()
+      const USDEinSP_Before = await stabilityPool.getTotalUSDEDeposits()
 
       // Price rises
       // await priceFeedSTETH.setPrice(dec(220, 18))
@@ -1142,20 +1142,20 @@ contract('StabilityPool', async accounts => {
         gasPrice: 0
       })
 
-      // Check EUSD balances of A, B, C have risen by the value of their compounded deposits, respectively
-      const alice_expectedEUSDBalance = (alice_EUSD_Balance_Before.add(alice_Deposit_Before)).toString()
+      // Check USDE balances of A, B, C have risen by the value of their compounded deposits, respectively
+      const alice_expectedUSDEBalance = (alice_USDE_Balance_Before.add(alice_Deposit_Before)).toString()
 
-      const bob_expectedEUSDBalance = (bob_EUSD_Balance_Before.add(bob_Deposit_Before)).toString()
-      const carol_expectedEUSDBalance = (carol_EUSD_Balance_Before.add(carol_Deposit_Before)).toString()
+      const bob_expectedUSDEBalance = (bob_USDE_Balance_Before.add(bob_Deposit_Before)).toString()
+      const carol_expectedUSDEBalance = (carol_USDE_Balance_Before.add(carol_Deposit_Before)).toString()
 
-      const alice_EUSD_Balance_After = (await eusdToken.balanceOf(alice)).toString()
+      const alice_USDE_Balance_After = (await usdeToken.balanceOf(alice)).toString()
 
-      const bob_EUSD_Balance_After = (await eusdToken.balanceOf(bob)).toString()
-      const carol_EUSD_Balance_After = (await eusdToken.balanceOf(carol)).toString()
+      const bob_USDE_Balance_After = (await usdeToken.balanceOf(bob)).toString()
+      const carol_USDE_Balance_After = (await usdeToken.balanceOf(carol)).toString()
 
-      assert.equal(alice_EUSD_Balance_After, alice_expectedEUSDBalance)
-      assert.equal(bob_EUSD_Balance_After, bob_expectedEUSDBalance)
-      assert.equal(carol_EUSD_Balance_After, carol_expectedEUSDBalance)
+      assert.equal(alice_USDE_Balance_After, alice_expectedUSDEBalance)
+      assert.equal(bob_USDE_Balance_After, bob_expectedUSDEBalance)
+      assert.equal(carol_USDE_Balance_After, carol_expectedUSDEBalance)
 
       // Check ETH balances of A, B, C have increased by the value of their ETH gain from liquidations, respectively
       const alice_expectedETHBalance = (alice_ETH_Balance_Before.add(alice_ETHGain_Before)).toString()
@@ -1170,14 +1170,14 @@ contract('StabilityPool', async accounts => {
       assert.equal(bob_expectedETHBalance, bob_ETHBalance_After)
       assert.equal(carol_expectedETHBalance, carol_ETHBalance_After)
 
-      // Check EUSD in Stability Pool has been reduced by A, B and C's compounded deposit
-      const expectedEUSDinSP = (EUSDinSP_Before
+      // Check USDE in Stability Pool has been reduced by A, B and C's compounded deposit
+      const expectedUSDEinSP = (USDEinSP_Before
           .sub(alice_Deposit_Before)
           .sub(bob_Deposit_Before)
           .sub(carol_Deposit_Before))
         .toString()
-      const EUSDinSP_After = (await stabilityPool.getTotalEUSDDeposits()).toString()
-      assert.equal(EUSDinSP_After, expectedEUSDinSP)
+      const USDEinSP_After = (await stabilityPool.getTotalUSDEDeposits()).toString()
+      assert.equal(USDEinSP_After, expectedUSDEinSP)
 
       // Check ETH in SP has reduced to zero
       const ETHinSP_After = (await stabilityPool.getCollateralAmount(weth.address)).toString()

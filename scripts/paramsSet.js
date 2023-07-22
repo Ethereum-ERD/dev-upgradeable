@@ -25,7 +25,7 @@ const _troveManagerAddress = deploy.troveManager;
 const _troveManagerLiquidationsAddress = deploy.troveManagerLiquidations;
 const _troveManagerRedemptionsAddress = deploy.troveManagerRedemptions;
 const _multiTroveGetterAddress = deploy.multiTroveGetter;
-const _eusdTokenAddress = deploy.eusdToken;
+const _usdeTokenAddress = deploy.usdeToken;
 const _priceFeedAddress = deploy.priceFeed;
 const _stETHOracleAddress = deploy.stETHOracle;
 const _eETHAddress = deploy.eETH;
@@ -69,7 +69,7 @@ async function main() {
         _collSurplusPoolAddress,
         _priceFeedAddress,
         _sortedTrovesAddress,
-        _eusdTokenAddress
+        _usdeTokenAddress
     );
     await tx.wait(); // wait mining
     var txInit = await borrowerOperations.init(
@@ -167,7 +167,7 @@ async function main() {
         _collateralManagerAddress,
         _troveManagerLiquidationsAddress,
         _activePoolAddress,
-        _eusdTokenAddress,
+        _usdeTokenAddress,
         _sortedTrovesAddress,
         _priceFeedAddress,
         _communityIssuanceAddress,
@@ -212,7 +212,7 @@ async function main() {
         _gasPoolAddress,
         _collSurplusPoolAddress,
         _priceFeedAddress,
-        _eusdTokenAddress,
+        _usdeTokenAddress,
         _sortedTrovesAddress,
         _troveManagerLiquidationsAddress,
         _troveManagerRedemptionsAddress,
@@ -232,7 +232,7 @@ async function main() {
         _gasPoolAddress,
         _collSurplusPoolAddress,
         _priceFeedAddress,
-        _eusdTokenAddress,
+        _usdeTokenAddress,
         _sortedTrovesAddress,
         _troveManagerAddress,
         _collateralManagerAddress
@@ -255,7 +255,7 @@ async function main() {
         _gasPoolAddress,
         _collSurplusPoolAddress,
         _priceFeedAddress,
-        _eusdTokenAddress,
+        _usdeTokenAddress,
         _sortedTrovesAddress,
         _troveManagerAddress,
         _collateralManagerAddress

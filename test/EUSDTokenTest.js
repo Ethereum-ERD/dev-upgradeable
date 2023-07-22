@@ -62,7 +62,7 @@ const getPermitDigest = (name, address, chainId, version,
     ]))
 }
 
-contract('EUSDToken', async accounts => {
+contract('USDEToken', async accounts => {
   const [owner, alice, bob, carol, dennis] = accounts;
 
   // the second account our hardhatenv creates (for Alice)
@@ -70,8 +70,8 @@ contract('EUSDToken', async accounts => {
   const alicePrivateKey = '0xeaa445c85f7b438dEd6e831d06a4eD0CEBDc2f8527f84Fcda6EBB5fCfAd4C0e9'
 
   let chainId
-  let eusdTokenOriginal
-  let eusdTokenTester
+  let usdeTokenOriginal
+  let usdeTokenTester
   let stabilityPool
   let troveManager
   let borrowerOperations
@@ -88,40 +88,40 @@ contract('EUSDToken', async accounts => {
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
-      eusdTokenOriginal = contracts.eusdToken
+      usdeTokenOriginal = contracts.usdeToken
       if (withProxy) {
         const users = [alice, bob, carol, dennis]
         await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
       }
 
-      eusdTokenTester = contracts.eusdToken
+      usdeTokenTester = contracts.usdeToken
       // for some reason this doesn’t work with coverage network
       //chainId = await web3.eth.getChainId()
-      chainId = await eusdTokenOriginal.getChainId()
+      chainId = await usdeTokenOriginal.getChainId()
 
       stabilityPool = contracts.stabilityPool
       troveManager = contracts.stabilityPool
       borrowerOperations = contracts.borrowerOperations
 
-      tokenVersion = await eusdTokenOriginal.version()
-      tokenName = await eusdTokenOriginal.name()
+      tokenVersion = await usdeTokenOriginal.version()
+      tokenName = await usdeTokenOriginal.name()
 
       // mint some tokens
       if (withProxy) {
-        await eusdTokenOriginal.unprotectedMint(eusdTokenTester.getProxyAddressFromUser(alice), 150)
-        await eusdTokenOriginal.unprotectedMint(eusdTokenTester.getProxyAddressFromUser(bob), 100)
-        await eusdTokenOriginal.unprotectedMint(eusdTokenTester.getProxyAddressFromUser(carol), 50)
+        await usdeTokenOriginal.unprotectedMint(usdeTokenTester.getProxyAddressFromUser(alice), 150)
+        await usdeTokenOriginal.unprotectedMint(usdeTokenTester.getProxyAddressFromUser(bob), 100)
+        await usdeTokenOriginal.unprotectedMint(usdeTokenTester.getProxyAddressFromUser(carol), 50)
       } else {
-        await eusdTokenOriginal.unprotectedMint(alice, 150)
-        await eusdTokenOriginal.unprotectedMint(bob, 100)
-        await eusdTokenOriginal.unprotectedMint(carol, 50)
+        await usdeTokenOriginal.unprotectedMint(alice, 150)
+        await usdeTokenOriginal.unprotectedMint(bob, 100)
+        await usdeTokenOriginal.unprotectedMint(carol, 50)
       }
     })
 
     it('balanceOf(): gets the balance of the account', async () => {
-      const aliceBalance = (await eusdTokenTester.balanceOf(alice)).toNumber()
-      const bobBalance = (await eusdTokenTester.balanceOf(bob)).toNumber()
-      const carolBalance = (await eusdTokenTester.balanceOf(carol)).toNumber()
+      const aliceBalance = (await usdeTokenTester.balanceOf(alice)).toNumber()
+      const bobBalance = (await usdeTokenTester.balanceOf(bob)).toNumber()
+      const carolBalance = (await usdeTokenTester.balanceOf(carol)).toNumber()
 
       assert.equal(aliceBalance, 150)
       assert.equal(bobBalance, 100)
@@ -129,59 +129,59 @@ contract('EUSDToken', async accounts => {
     })
 
     it('totalSupply(): gets the total supply', async () => {
-      const total = (await eusdTokenTester.totalSupply()).toString()
+      const total = (await usdeTokenTester.totalSupply()).toString()
       assert.equal(total, '300') // 300
     })
 
     it("name(): returns the token's name", async () => {
-      const name = await eusdTokenTester.name()
-      assert.equal(name, "EUSD Stablecoin")
+      const name = await usdeTokenTester.name()
+      assert.equal(name, "USDE Stablecoin")
     })
 
     it("symbol(): returns the token's symbol", async () => {
-      const symbol = await eusdTokenTester.symbol()
-      assert.equal(symbol, "EUSD")
+      const symbol = await usdeTokenTester.symbol()
+      assert.equal(symbol, "USDE")
     })
 
     it("decimal(): returns the number of decimal digits used", async () => {
-      const decimals = await eusdTokenTester.decimals()
+      const decimals = await usdeTokenTester.decimals()
       assert.equal(decimals, "18")
     })
 
     it("allowance(): returns an account's spending allowance for another account's balance", async () => {
-      await eusdTokenTester.approve(alice, 100, {
+      await usdeTokenTester.approve(alice, 100, {
         from: bob
       })
 
-      const allowance_A = await eusdTokenTester.allowance(bob, alice)
-      const allowance_D = await eusdTokenTester.allowance(bob, dennis)
+      const allowance_A = await usdeTokenTester.allowance(bob, alice)
+      const allowance_D = await usdeTokenTester.allowance(bob, dennis)
 
       assert.equal(allowance_A, 100)
       assert.equal(allowance_D, '0')
     })
 
     it("approve(): approves an account to spend the specified amount", async () => {
-      const allowance_A_before = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_before = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_before, '0')
 
-      await eusdTokenTester.approve(alice, 100, {
+      await usdeTokenTester.approve(alice, 100, {
         from: bob
       })
 
-      const allowance_A_after = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_after = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_after, 100)
     })
 
     if (!withProxy) {
       it("approve(): reverts when spender param is address(0)", async () => {
-        const txPromise = eusdTokenTester.approve(ZERO_ADDRESS, 100, {
+        const txPromise = usdeTokenTester.approve(ZERO_ADDRESS, 100, {
           from: bob
         })
         await assertAssert(txPromise, "ERC20: approve to the zero address")
       })
 
       it("approve(): reverts when owner param is address(0)", async () => {
-        const txPromise = eusdTokenTester.callInternalApprove(ZERO_ADDRESS, alice, dec(1000, 18), {
+        const txPromise = usdeTokenTester.callInternalApprove(ZERO_ADDRESS, alice, dec(1000, 18), {
           from: bob
         })
         await assertAssert(txPromise, "ERC20: approve from the zero address")
@@ -189,203 +189,203 @@ contract('EUSDToken', async accounts => {
     }
 
     it("transferFrom(): successfully transfers from an account which is it approved to transfer from", async () => {
-      const allowance_A_0 = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_0 = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_0, '0')
 
-      await eusdTokenTester.approve(alice, 50, {
+      await usdeTokenTester.approve(alice, 50, {
         from: bob
       })
 
       // Check A's allowance of Bob's funds has increased
-      const allowance_A_1 = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_1 = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_1, 50)
 
 
-      assert.equal(await eusdTokenTester.balanceOf(carol), 50)
+      assert.equal(await usdeTokenTester.balanceOf(carol), 50)
 
       // Alice transfers from bob to Carol, using up her allowance
-      await eusdTokenTester.transferFrom(bob, carol, 50, {
+      await usdeTokenTester.transferFrom(bob, carol, 50, {
         from: alice
       })
-      assert.equal(await eusdTokenTester.balanceOf(carol), 100)
+      assert.equal(await usdeTokenTester.balanceOf(carol), 100)
 
       // Check A's allowance of Bob's funds has decreased
-      const allowance_A_2 = (await eusdTokenTester.allowance(bob, alice)).toString()
+      const allowance_A_2 = (await usdeTokenTester.allowance(bob, alice)).toString()
       assert.equal(allowance_A_2, '0')
 
       // Check bob's balance has decreased
-      assert.equal(await eusdTokenTester.balanceOf(bob), 50)
+      assert.equal(await usdeTokenTester.balanceOf(bob), 50)
 
       // Alice tries to transfer more tokens from bob's account to carol than she's allowed
-      const txPromise = eusdTokenTester.transferFrom(bob, carol, 50, {
+      const txPromise = usdeTokenTester.transferFrom(bob, carol, 50, {
         from: alice
       })
       await assertRevert(txPromise)
     })
 
     it("transfer(): increases the recipient's balance by the correct amount", async () => {
-      assert.equal(await eusdTokenTester.balanceOf(alice), 150)
+      assert.equal(await usdeTokenTester.balanceOf(alice), 150)
 
-      await eusdTokenTester.transfer(alice, 37, {
+      await usdeTokenTester.transfer(alice, 37, {
         from: bob
       })
 
-      assert.equal(await eusdTokenTester.balanceOf(alice), 187)
+      assert.equal(await usdeTokenTester.balanceOf(alice), 187)
     })
 
     it("transfer(): reverts if amount exceeds sender's balance", async () => {
-      assert.equal(await eusdTokenTester.balanceOf(bob), 100)
+      assert.equal(await usdeTokenTester.balanceOf(bob), 100)
 
-      const txPromise = eusdTokenTester.transfer(alice, 101, {
+      const txPromise = usdeTokenTester.transfer(alice, 101, {
         from: bob
       })
       await assertRevert(txPromise)
     })
 
     it('transfer(): transferring to a blacklisted address reverts', async () => {
-      await assertRevert(eusdTokenTester.transfer(eusdTokenTester.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(usdeTokenTester.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(ZERO_ADDRESS, 1, {
+      await assertRevert(usdeTokenTester.transfer(ZERO_ADDRESS, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(troveManager.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(troveManager.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(stabilityPool.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(stabilityPool.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(borrowerOperations.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(borrowerOperations.address, 1, {
         from: alice
       }))
     })
 
     it("increaseAllowance(): increases an account's allowance by the correct amount", async () => {
-      const allowance_A_Before = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_Before = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_Before, '0')
 
-      await eusdTokenTester.increaseAllowance(alice, 100, {
+      await usdeTokenTester.increaseAllowance(alice, 100, {
         from: bob
       })
 
-      const allowance_A_After = await eusdTokenTester.allowance(bob, alice)
+      const allowance_A_After = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_After, 100)
     })
 
     if (!withProxy) {
       it('mint(): issues correct amount of tokens to the given address', async () => {
-        const alice_balanceBefore = await eusdTokenTester.balanceOf(alice)
+        const alice_balanceBefore = await usdeTokenTester.balanceOf(alice)
         assert.equal(alice_balanceBefore, 150)
 
-        await eusdTokenTester.unprotectedMint(alice, 100)
+        await usdeTokenTester.unprotectedMint(alice, 100)
 
-        const alice_BalanceAfter = await eusdTokenTester.balanceOf(alice)
+        const alice_BalanceAfter = await usdeTokenTester.balanceOf(alice)
         assert.equal(alice_BalanceAfter, 250)
       })
 
       it('burn(): burns correct amount of tokens from the given address', async () => {
-        const alice_balanceBefore = await eusdTokenTester.balanceOf(alice)
+        const alice_balanceBefore = await usdeTokenTester.balanceOf(alice)
         assert.equal(alice_balanceBefore, 150)
 
-        await eusdTokenTester.unprotectedBurn(alice, 70)
+        await usdeTokenTester.unprotectedBurn(alice, 70)
 
-        const alice_BalanceAfter = await eusdTokenTester.balanceOf(alice)
+        const alice_BalanceAfter = await usdeTokenTester.balanceOf(alice)
         assert.equal(alice_BalanceAfter, 80)
       })
 
-      // TODO: Rewrite this test - it should check the actual eusdTokenTester's balance.
+      // TODO: Rewrite this test - it should check the actual usdeTokenTester's balance.
       it('sendToPool(): changes balances of Stability pool and user by the correct amounts', async () => {
-        const stabilityPool_BalanceBefore = await eusdTokenTester.balanceOf(stabilityPool.address)
-        const bob_BalanceBefore = await eusdTokenTester.balanceOf(bob)
+        const stabilityPool_BalanceBefore = await usdeTokenTester.balanceOf(stabilityPool.address)
+        const bob_BalanceBefore = await usdeTokenTester.balanceOf(bob)
         assert.equal(stabilityPool_BalanceBefore, 0)
         assert.equal(bob_BalanceBefore, 100)
 
-        await eusdTokenTester.unprotectedSendToPool(bob, stabilityPool.address, 75)
+        await usdeTokenTester.unprotectedSendToPool(bob, stabilityPool.address, 75)
 
-        const stabilityPool_BalanceAfter = await eusdTokenTester.balanceOf(stabilityPool.address)
-        const bob_BalanceAfter = await eusdTokenTester.balanceOf(bob)
+        const stabilityPool_BalanceAfter = await usdeTokenTester.balanceOf(stabilityPool.address)
+        const bob_BalanceAfter = await usdeTokenTester.balanceOf(bob)
         assert.equal(stabilityPool_BalanceAfter, 75)
         assert.equal(bob_BalanceAfter, 25)
       })
 
       it('returnFromPool(): changes balances of Stability pool and user by the correct amounts', async () => {
-        /// --- SETUP --- give pool 100 EUSD
-        await eusdTokenTester.unprotectedMint(stabilityPool.address, 100)
+        /// --- SETUP --- give pool 100 USDE
+        await usdeTokenTester.unprotectedMint(stabilityPool.address, 100)
 
         /// --- TEST ---
-        const stabilityPool_BalanceBefore = await eusdTokenTester.balanceOf(stabilityPool.address)
-        const bob_BalanceBefore = await eusdTokenTester.balanceOf(bob)
+        const stabilityPool_BalanceBefore = await usdeTokenTester.balanceOf(stabilityPool.address)
+        const bob_BalanceBefore = await usdeTokenTester.balanceOf(bob)
         assert.equal(stabilityPool_BalanceBefore, 100)
         assert.equal(bob_BalanceBefore, 100)
 
-        await eusdTokenTester.unprotectedReturnFromPool(stabilityPool.address, bob, 75)
+        await usdeTokenTester.unprotectedReturnFromPool(stabilityPool.address, bob, 75)
 
-        const stabilityPool_BalanceAfter = await eusdTokenTester.balanceOf(stabilityPool.address)
-        const bob_BalanceAfter = await eusdTokenTester.balanceOf(bob)
+        const stabilityPool_BalanceAfter = await usdeTokenTester.balanceOf(stabilityPool.address)
+        const bob_BalanceAfter = await usdeTokenTester.balanceOf(bob)
         assert.equal(stabilityPool_BalanceAfter, 25)
         assert.equal(bob_BalanceAfter, 175)
       })
     }
 
     it('transfer(): transferring to a blacklisted address reverts', async () => {
-      await assertRevert(eusdTokenTester.transfer(eusdTokenTester.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(usdeTokenTester.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(ZERO_ADDRESS, 1, {
+      await assertRevert(usdeTokenTester.transfer(ZERO_ADDRESS, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(troveManager.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(troveManager.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(stabilityPool.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(stabilityPool.address, 1, {
         from: alice
       }))
-      await assertRevert(eusdTokenTester.transfer(borrowerOperations.address, 1, {
+      await assertRevert(usdeTokenTester.transfer(borrowerOperations.address, 1, {
         from: alice
       }))
     })
 
     it('decreaseAllowance(): decreases allowance by the expected amount', async () => {
-      await eusdTokenTester.approve(bob, dec(3, 18), {
+      await usdeTokenTester.approve(bob, dec(3, 18), {
         from: alice
       })
-      assert.equal((await eusdTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
-      await eusdTokenTester.decreaseAllowance(bob, dec(1, 18), {
+      assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
+      await usdeTokenTester.decreaseAllowance(bob, dec(1, 18), {
         from: alice
       })
-      assert.equal((await eusdTokenTester.allowance(alice, bob)).toString(), dec(2, 18))
+      assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(2, 18))
     })
 
     it('decreaseAllowance(): fails trying to decrease more than previously allowed', async () => {
-      await eusdTokenTester.approve(bob, dec(3, 18), {
+      await usdeTokenTester.approve(bob, dec(3, 18), {
         from: alice
       })
-      assert.equal((await eusdTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
-      await assertRevert(eusdTokenTester.decreaseAllowance(bob, dec(4, 18), {
+      assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
+      await assertRevert(usdeTokenTester.decreaseAllowance(bob, dec(4, 18), {
         from: alice
       }))
-      assert.equal((await eusdTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
+      assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
     })
 
     // EIP2612 tests
 
     if (!withProxy) {
       it("version(): returns the token contract's version", async () => {
-        const version = await eusdTokenTester.version()
+        const version = await usdeTokenTester.version()
         assert.equal(version, "1")
       })
 
       it('Initializes PERMIT_TYPEHASH correctly', async () => {
-        assert.equal(await eusdTokenTester.permitTypeHash(), PERMIT_TYPEHASH)
+        assert.equal(await usdeTokenTester.permitTypeHash(), PERMIT_TYPEHASH)
       })
 
       it('Initializes DOMAIN_SEPARATOR correctly', async () => {
-        assert.equal(await eusdTokenTester.DOMAIN_SEPARATOR(),
-          getDomainSeparator(tokenName, eusdTokenTester.address, chainId, tokenVersion))
+        assert.equal(await usdeTokenTester.DOMAIN_SEPARATOR(),
+          getDomainSeparator(tokenName, usdeTokenTester.address, chainId, tokenVersion))
       })
 
       it('Initial nonce for a given address is 0', async function () {
-        assert.equal(toBN(await eusdTokenTester.nonces(alice)).toString(), '0');
+        assert.equal(toBN(await usdeTokenTester.nonces(alice)).toString(), '0');
       });
 
       // Create the approval tx data
@@ -396,11 +396,11 @@ contract('EUSDToken', async accounts => {
       }
 
       const buildPermitTx = async (deadline) => {
-        const nonce = (await eusdTokenTester.nonces(approve.owner)).toString()
+        const nonce = (await usdeTokenTester.nonces(approve.owner)).toString()
 
         // Get the EIP712 digest
         const digest = getPermitDigest(
-          tokenName, eusdTokenTester.address,
+          tokenName, usdeTokenTester.address,
           chainId, tokenVersion,
           approve.owner, approve.spender,
           approve.value, nonce, deadline
@@ -412,7 +412,7 @@ contract('EUSDToken', async accounts => {
           s
         } = sign(digest, alicePrivateKey)
 
-        const tx = eusdTokenTester.permit(
+        const tx = usdeTokenTester.permit(
           approve.owner, approve.spender, approve.value,
           deadline, v, hexlify(r), hexlify(s)
         )
@@ -440,16 +440,16 @@ contract('EUSDToken', async accounts => {
 
         // Check that approval was successful
         assert.equal(event.event, 'Approval')
-        assert.equal(await eusdTokenTester.nonces(approve.owner), 1)
-        assert.equal(await eusdTokenTester.allowance(approve.owner, approve.spender), approve.value)
+        assert.equal(await usdeTokenTester.nonces(approve.owner), 1)
+        assert.equal(await usdeTokenTester.allowance(approve.owner, approve.spender), approve.value)
 
         // Check that we can not use re-use the same signature, since the user's nonce has been incremented (replay protection)
-        await assertRevert(eusdTokenTester.permit(
+        await assertRevert(usdeTokenTester.permit(
           approve.owner, approve.spender, approve.value,
-          deadline, v, r, s), 'EUSD: invalid signature')
+          deadline, v, r, s), 'USDE: invalid signature')
 
         // Check that the zero address fails
-        await assertAssert(eusdTokenTester.permit('0x0000000000000000000000000000000000000000',
+        await assertAssert(usdeTokenTester.permit('0x0000000000000000000000000000000000000000',
           approve.spender, approve.value, deadline, '0x99', r, s), "ECDSA: invalid signature")
       })
 
@@ -462,7 +462,7 @@ contract('EUSDToken', async accounts => {
           s,
           tx
         } = await buildPermitTx(deadline)
-        await assertRevert(tx, 'EUSD: expired deadline')
+        await assertRevert(tx, 'USDE: expired deadline')
       })
 
       it('permits(): fails with the wrong signature', async () => {
@@ -474,12 +474,12 @@ contract('EUSDToken', async accounts => {
           s
         } = await buildPermitTx(deadline)
 
-        const tx = eusdTokenTester.permit(
+        const tx = usdeTokenTester.permit(
           carol, approve.spender, approve.value,
           deadline, v, hexlify(r), hexlify(s)
         )
 
-        await assertRevert(tx, 'EUSD: invalid signature')
+        await assertRevert(tx, 'USDE: invalid signature')
       })
     }
   }

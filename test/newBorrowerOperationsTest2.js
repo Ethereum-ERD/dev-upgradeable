@@ -5,7 +5,7 @@ const testHelpers = require("../utils/testHelpers.js")
 const NonPayable = artifacts.require('NonPayable.sol')
 const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const EUSDTokenTester = artifacts.require("./EUSDTokenTester")
+const USDETokenTester = artifacts.require("./USDETokenTester")
 
 const th = testHelpers.TestHelper
 
@@ -18,10 +18,10 @@ const ZERO_ADDRESS = th.ZERO_ADDRESS
 const assertRevert = th.assertRevert
 const STETH_ADDRESS = ZERO_ADDRESS;
 
-/* NOTE: Some of the borrowing tests do not test for specific EUSD fee values. They only test that the
+/* NOTE: Some of the borrowing tests do not test for specific USDE fee values. They only test that the
  * fees are non-zero when they should occur, and that they decay over time.
  *
- * Specific EUSD fee values will depend on the final fee schedule used, and the final choice for
+ * Specific USDE fee values will depend on the final fee schedule used, and the final choice for
  *  the parameter MINUTE_DECAY_FACTOR in the TroveManager, which is still TBD based on economic
  * modelling.
  * 
@@ -39,7 +39,7 @@ contract('BorrowerOperations', async accounts => {
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
 
   let priceFeed
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let collateralManager
@@ -52,14 +52,14 @@ contract('BorrowerOperations', async accounts => {
 
   let contracts
 
-  const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+  const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
   const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee)
   const getActualDebtFromComposite = async (compositeDebt) => th.getActualDebtFromComposite(compositeDebt, contracts)
   const getTroveEntireColl = async (trove) => th.getTroveEntireColl(contracts, trove)
   const getTroveEntireDebt = async (trove) => th.getTroveEntireDebt(contracts, trove)
   const getTroveStake = async (trove) => th.getTroveStake(contracts, trove)
 
-  let EUSD_GAS_COMPENSATION
+  let USDE_GAS_COMPENSATION
   let MIN_NET_DEBT
   let BORROWING_FEE_FLOOR
 
@@ -76,7 +76,7 @@ contract('BorrowerOperations', async accounts => {
       contracts.troveManager = await TroveManagerTester.new()
       contracts.collateralManager = await CollateralManagerTester.new()
       const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-      contracts = await deploymentHelper.deployEUSDTokenTester(contracts, ERDContracts)
+      contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
       await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
@@ -87,7 +87,7 @@ contract('BorrowerOperations', async accounts => {
 
       priceFeedSTETH = contracts.priceFeedSTETH
       priceFeed = contracts.priceFeedETH
-      eusdToken = contracts.eusdToken
+      usdeToken = contracts.usdeToken
       sortedTroves = contracts.sortedTroves
       troveManager = contracts.troveManager
       activePool = contracts.activePool
@@ -101,7 +101,7 @@ contract('BorrowerOperations', async accounts => {
       liquidityIncentive = ERDContracts.liquidityIncentive
       communityIssuance = ERDContracts.communityIssuance
 
-      EUSD_GAS_COMPENSATION = await borrowerOperations.EUSD_GAS_COMPENSATION()
+      USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
       MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
       BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
     })

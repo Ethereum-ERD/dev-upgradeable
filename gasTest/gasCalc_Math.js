@@ -27,7 +27,7 @@ contract('Gas costs for math functions', async accounts => {
     const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = contracts.priceFeedETH
-    eusdToken = contracts.eusdToken
+    usdeToken = contracts.usdeToken
     sortedTroves = contracts.sortedTroves
     troveManager = contracts.troveManager
     activePool = contracts.activePool

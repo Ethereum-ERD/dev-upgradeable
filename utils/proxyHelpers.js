@@ -103,12 +103,12 @@ class BorrowerOperationsProxy extends Proxy {
     return this.forwardFunction(params, 'withdrawColl(address[],uint256[],address,address)')
   }
 
-  async withdrawEUSD(...params) {
-    return this.forwardFunction(params, 'withdrawEUSD(uint256,address,address,uint256)')
+  async withdrawUSDE(...params) {
+    return this.forwardFunction(params, 'withdrawUSDE(uint256,address,address,uint256)')
   }
 
-  async repayEUSD(...params) {
-    return this.forwardFunction(params, 'repayEUSD(uint256,address,address)')
+  async repayUSDE(...params) {
+    return this.forwardFunction(params, 'repayUSDE(uint256,address,address)')
   }
 
   async closeTrove(...params) {
@@ -135,8 +135,8 @@ class BorrowerOperationsProxy extends Proxy {
     return this.proxyFunction('getCompositeDebt', params)
   }
 
-  async EUSD_GAS_COMPENSATION(...params) {
-    return this.proxyFunction('EUSD_GAS_COMPENSATION', params)
+  async USDE_GAS_COMPENSATION(...params) {
+    return this.proxyFunction('USDE_GAS_COMPENSATION', params)
   }
 
   async MIN_NET_DEBT(...params) {
@@ -195,8 +195,8 @@ class TroveManagerProxy extends Proxy {
     return this.proxyFunction('getPendingCollReward', params)
   }
 
-  async getPendingEUSDDebtReward(...params) {
-    return this.proxyFunction('getPendingEUSDDebtReward', params)
+  async getPendingUSDEDebtReward(...params) {
+    return this.proxyFunction('getPendingUSDEDebtReward', params)
   }
 
   async liquidate(user) {
@@ -223,12 +223,12 @@ class TroveManagerProxy extends Proxy {
     return this.proxyFunction('baseRate', [])
   }
 
-  async L_Coll(collateral) {
-    return this.proxyFunction('L_Coll', collateral)
+  async E_Coll(collateral) {
+    return this.proxyFunction('E_Coll', collateral)
   }
 
-  async L_EUSDDebt(collateral) {
-    return this.proxyFunction('L_EUSDDebt', collateral)
+  async E_USDEDebt(collateral) {
+    return this.proxyFunction('E_USDEDebt', collateral)
   }
 
   async rewardSnapshots(user) {
@@ -281,8 +281,8 @@ class StabilityPoolProxy extends Proxy {
     return this.forwardFunction(params, 'provideToSP(uint256,address)')
   }
 
-  async getCompoundedEUSDDeposit(user) {
-    return this.proxyFunctionWithUser('getCompoundedEUSDDeposit', user)
+  async getCompoundedUSDEDeposit(user) {
+    return this.proxyFunctionWithUser('getCompoundedUSDEDeposit', user)
   }
 
   async deposits(user) {

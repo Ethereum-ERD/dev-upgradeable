@@ -30,7 +30,7 @@ contract('Gas cost tests', async accounts => {
   let contracts
 
   let priceFeed
-  let eusdToken
+  let usdeToken
   let sortedTroves
   let troveManager
   let activePool
@@ -48,7 +48,7 @@ contract('Gas cost tests', async accounts => {
     contracts = await deploymentHelper.deployTesterContractsHardhat(ERDContracts)
 
     priceFeed = contracts.priceFeedETH
-    eusdToken = contracts.eusdToken
+    usdeToken = contracts.usdeToken
     sortedTroves = contracts.sortedTroves
     troveManager = contracts.troveManager
     activePool = contracts.activePool
@@ -122,7 +122,7 @@ contract('Gas cost tests', async accounts => {
   // --- openTrove() ---
 
   // it("", async () => {
-  //   const message = 'openTrove(), single account, 0 existing Troves in system. Adds 10 ether and issues 100 EUSD'
+  //   const message = 'openTrove(), single account, 0 existing Troves in system. Adds 10 ether and issues 100 USDE'
   //   const tx = await borrowerOperations.openTrove(_100pct, dec(100, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2], value: dec(10, 'ether') })
   //   const gas = th.gasUsed(tx)
   //   th.logGas(gas, message)
@@ -131,7 +131,7 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'openTrove(), single account, 1 existing Trove in system. Adds 10 ether and issues 100 EUSD'
+  //   const message = 'openTrove(), single account, 1 existing Trove in system. Adds 10 ether and issues 100 USDE'
   //   await borrowerOperations.openTrove(_100pct, dec(100, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(10, 'ether') })
 
   //   const tx = await borrowerOperations.openTrove(_100pct, dec(100, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2], value: dec(10, 'ether') })
@@ -142,7 +142,7 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'openTrove(), single account, Inserts between 2 existing CDs in system. Adds 10 ether and issues 80 EUSD. '
+  //   const message = 'openTrove(), single account, Inserts between 2 existing CDs in system. Adds 10 ether and issues 80 USDE. '
 
   //   await borrowerOperations.openTrove(_100pct, dec(100, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(10, 'ether') })
   //   await borrowerOperations.openTrove(_100pct, dec(50, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2], value: dec(10, 'ether') })
@@ -156,11 +156,11 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'openTrove(), 10 accounts, each account adds 10 ether and issues 100 EUSD'
+  //   const message = 'openTrove(), 10 accounts, each account adds 10 ether and issues 100 USDE'
 
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = 0
-  //   const gasResults = await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = 0
+  //   const gasResults = await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountUSDE)
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -168,10 +168,10 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'openTrove(), 10 accounts, each account adds 10 ether and issues less EUSD than the previous one'
+  //   const message = 'openTrove(), 10 accounts, each account adds 10 ether and issues less USDE than the previous one'
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = 200
-  //   const gasResults = await th.openTrove_allAccounts_decreasingEUSDAmounts(_10_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = 200
+  //   const gasResults = await th.openTrove_allAccounts_decreasingUSDEAmounts(_10_Accounts, contracts, amountETH, amountUSDE)
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -179,10 +179,10 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'openTrove(), 50 accounts, each account adds random ether and random EUSD'
+    const message = 'openTrove(), 50 accounts, each account adds random ether and random USDE'
     const amountETH = dec(10, 'ether')
-    const amountEUSD = 0
-    const gasResults = await th.openTrove_allAccounts_randomETH_randomEUSD(1, 9, _50_Accounts, contracts, 2, 100, true)
+    const amountUSDE = 0
+    const gasResults = await th.openTrove_allAccounts_randomETH_randomUSDE(1, 9, _50_Accounts, contracts, 2, 100, true)
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
 
@@ -192,17 +192,17 @@ contract('Gas cost tests', async accounts => {
   // --- adjustTrove ---
 
   // it("", async () => {
-  //   const message = 'adjustTrove(). ETH/EUSD Increase/Increase. 10 accounts, each account adjusts up -  1 ether and 100 EUSD'
+  //   const message = 'adjustTrove(). ETH/USDE Increase/Increase. 10 accounts, each account adjusts up -  1 ether and 100 USDE'
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(100, 'ether') })
 
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = dec(100, 18)
-  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = dec(100, 18)
+  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountUSDE)
 
 
   //   const amountETH_2 = dec(1, 'ether')
-  //   const amountEUSD_2 = dec(100, 18)
-  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountEUSD_2)
+  //   const amountUSDE_2 = dec(100, 18)
+  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountUSDE_2)
 
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -211,16 +211,16 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'adjustTrove(). ETH/EUSD Decrease/Decrease. 10 accounts, each account adjusts down by 0.1 ether and 10 EUSD'
+  //   const message = 'adjustTrove(). ETH/USDE Decrease/Decrease. 10 accounts, each account adjusts down by 0.1 ether and 10 USDE'
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(100, 'ether') })
 
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = dec(100, 18)
-  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = dec(100, 18)
+  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountUSDE)
 
   //   const amountETH_2 = "-100000000000000000"  // coll decrease of 0.1 ETH 
-  //   const amountEUSD_2 = "-10000000000000000000" // debt decrease of 10 EUSD
-  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountEUSD_2)
+  //   const amountUSDE_2 = "-10000000000000000000" // debt decrease of 10 USDE
+  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountUSDE_2)
 
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -229,16 +229,16 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'adjustTrove(). ETH/EUSD Increase/Decrease. 10 accounts, each account adjusts up by 0.1 ether and down by 10 EUSD'
+  //   const message = 'adjustTrove(). ETH/USDE Increase/Decrease. 10 accounts, each account adjusts up by 0.1 ether and down by 10 USDE'
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(100, 'ether') })
 
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = dec(100, 18)
-  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = dec(100, 18)
+  //   await th.openTrove_allAccounts(_10_Accounts, contracts, amountETH, amountUSDE)
 
   //   const amountETH_2 = "100000000000000000"  // coll increase of 0.1 ETH 
-  //   const amountEUSD_2 = "-10000000000000000000" // debt decrease of 10 EUSD
-  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountEUSD_2)
+  //   const amountUSDE_2 = "-10000000000000000000" // debt decrease of 10 USDE
+  //   const gasResults = await th.adjustTrove_allAccounts(_10_Accounts, contracts, amountETH_2, amountUSDE_2)
 
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -251,10 +251,10 @@ contract('Gas cost tests', async accounts => {
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(100, 'ether') })
 
   //   const amountETH = dec(10, 'ether')
-  //   const amountEUSD = dec(100, 18)
-  //   await th.openTrove_allAccounts(_30_Accounts, contracts, amountETH, amountEUSD)
+  //   const amountUSDE = dec(100, 18)
+  //   await th.openTrove_allAccounts(_30_Accounts, contracts, amountETH, amountUSDE)
 
-  //   // Randomly add between 1-9 ETH, and withdraw 1-100 EUSD
+  //   // Randomly add between 1-9 ETH, and withdraw 1-100 USDE
   //   const gasResults = await th.adjustTrove_allAccounts_randomAmount(_30_Accounts, contracts, 1, 9, 1, 100)
 
   //   th.logGasMetrics(gasResults, message)
@@ -268,9 +268,9 @@ contract('Gas cost tests', async accounts => {
     await borrowerOperations.openTrove(_100pct, 0, accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(100, 'ether') })
 
     const amountETH = dec(9, 'ether')
-    const amountEUSD = dec(100, 18)
-    await th.openTrove_allAccounts(_40_Accounts, contracts, amountETH, amountEUSD)
-    // Randomly add between 1-9 ETH, and withdraw 1-100 EUSD
+    const amountUSDE = dec(100, 18)
+    await th.openTrove_allAccounts(_40_Accounts, contracts, amountETH, amountUSDE)
+    // Randomly add between 1-9 ETH, and withdraw 1-100 USDE
     const gasResults = await th.adjustTrove_allAccounts_randomAmount(_40_Accounts, contracts, 1, 9, 1, 100)
 
     th.logGasMetrics(gasResults, message)
@@ -284,10 +284,10 @@ contract('Gas cost tests', async accounts => {
   it("", async () => {
     const message = 'closeTrove(), 10 accounts, 1 account closes its trove'
 
-    await th.openTrove_allAccounts_decreasingEUSDAmounts(_10_Accounts, contracts, dec(10, 'ether'), 200)
+    await th.openTrove_allAccounts_decreasingUSDEAmounts(_10_Accounts, contracts, dec(10, 'ether'), 200)
 
     for (account of _10_Accounts ) {
-      await eusdToken.unprotectedMint(account, dec(1000, 18))
+      await usdeToken.unprotectedMint(account, dec(1000, 18))
     }
 
     const tx = await borrowerOperations.closeTrove({ from: accounts[1] })
@@ -298,12 +298,12 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'closeTrove(), 20 accounts, each account adds 10 ether and issues less EUSD than the previous one. First 10 accounts close their trove. '
+    const message = 'closeTrove(), 20 accounts, each account adds 10 ether and issues less USDE than the previous one. First 10 accounts close their trove. '
 
-    await th.openTrove_allAccounts_decreasingEUSDAmounts(_20_Accounts, contracts, dec(10, 'ether'), 200)
+    await th.openTrove_allAccounts_decreasingUSDEAmounts(_20_Accounts, contracts, dec(10, 'ether'), 200)
 
     for (account of _20_Accounts ) {
-      await eusdToken.unprotectedMint(account, dec(1000, 18))
+      await usdeToken.unprotectedMint(account, dec(1000, 18))
     }
     
     const gasResults = await th.closeTrove_allAccounts(_20_Accounts.slice(1), contracts)
@@ -421,13 +421,13 @@ contract('Gas cost tests', async accounts => {
     th.appendData(gasResults, message, data)
   })
 
-  // --- withdrawEUSD() ---
+  // --- withdrawUSDE() ---
 
   // it("", async () => {
-  //   const message = 'withdrawEUSD(), first withdrawal, 10 accounts, each account withdraws 100 EUSD'
+  //   const message = 'withdrawUSDE(), first withdrawal, 10 accounts, each account withdraws 100 USDE'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
 
-  //   const gasResults = await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   const gasResults = await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -435,11 +435,11 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'withdrawEUSD(), second withdrawal, 10 accounts, each account withdraws 100 EUSD'
+  //   const message = 'withdrawUSDE(), second withdrawal, 10 accounts, each account withdraws 100 USDE'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-  //   const gasResults = await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   const gasResults = await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -447,10 +447,10 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'withdrawEUSD(), first withdrawal, 30 accounts, each account withdraws a random EUSD amount'
+    const message = 'withdrawUSDE(), first withdrawal, 30 accounts, each account withdraws a random USDE amount'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
 
-    const gasResults = await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _30_Accounts, contracts)
+    const gasResults = await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _30_Accounts, contracts)
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
 
@@ -458,25 +458,25 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'withdrawEUSD(), second withdrawal, 30 accounts, each account withdraws a random EUSD amount'
+    const message = 'withdrawUSDE(), second withdrawal, 30 accounts, each account withdraws a random USDE amount'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
 
-    const gasResults = await th.withdrawEUSD_allAccounts_randomAmount(1, 70, _30_Accounts, contracts)
+    const gasResults = await th.withdrawUSDE_allAccounts_randomAmount(1, 70, _30_Accounts, contracts)
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
 
     th.appendData(gasResults, message, data)
   })
 
-  // --- repayEUSD() ---
+  // --- repayUSDE() ---
 
   // it("", async () => {
-  //   const message = 'repayEUSD(), partial repayment, 10 accounts, repay 30 EUSD (of 100 EUSD)'
+  //   const message = 'repayUSDE(), partial repayment, 10 accounts, repay 30 USDE (of 100 USDE)'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-  //   const gasResults = await th.repayEUSD_allAccounts(_10_Accounts, contracts, dec(30, 18))
+  //   const gasResults = await th.repayUSDE_allAccounts(_10_Accounts, contracts, dec(30, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -484,12 +484,12 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'repayEUSD(), second partial repayment, 10 accounts, repay 30 EUSD (of 70 EUSD)'
+  //   const message = 'repayUSDE(), second partial repayment, 10 accounts, repay 30 USDE (of 70 USDE)'
   //   await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
-  //   await th.repayEUSD_allAccounts(_30_Accounts, contracts, dec(30, 18))
+  //   await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
+  //   await th.repayUSDE_allAccounts(_30_Accounts, contracts, dec(30, 18))
 
-  //   const gasResults = await th.repayEUSD_allAccounts(_30_Accounts, contracts, dec(30, 18))
+  //   const gasResults = await th.repayUSDE_allAccounts(_30_Accounts, contracts, dec(30, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -497,11 +497,11 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'repayEUSD(), partial repayment, 30 accounts, repay random amount of EUSD (of 100 EUSD)'
+    const message = 'repayUSDE(), partial repayment, 30 accounts, repay random amount of USDE (of 100 USDE)'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
 
-    const gasResults = await th.repayEUSD_allAccounts_randomAmount(1, 99, _30_Accounts, contracts)
+    const gasResults = await th.repayUSDE_allAccounts_randomAmount(1, 99, _30_Accounts, contracts)
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
 
@@ -509,11 +509,11 @@ contract('Gas cost tests', async accounts => {
   })
 
   // it("", async () => {
-  //   const message = 'repayEUSD(), first repayment, 10 accounts, repay in full (100 of 100 EUSD)'
+  //   const message = 'repayUSDE(), first repayment, 10 accounts, repay in full (100 of 100 USDE)'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-  //   const gasResults = await th.repayEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+  //   const gasResults = await th.repayUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
 
@@ -521,12 +521,12 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'repayEUSD(), first repayment, 30 accounts, repay in full (50 of 50 EUSD)'
+    const message = 'repayUSDE(), first repayment, 30 accounts, repay in full (50 of 50 USDE)'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
-    await th.repayEUSD_allAccounts(_30_Accounts, contracts, dec(50, 18))
+    await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
+    await th.repayUSDE_allAccounts(_30_Accounts, contracts, dec(50, 18))
 
-    const gasResults = await th.repayEUSD_allAccounts(_30_Accounts, contracts, dec(50, 18))
+    const gasResults = await th.repayUSDE_allAccounts(_30_Accounts, contracts, dec(50, 18))
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
 
@@ -539,8 +539,8 @@ contract('Gas cost tests', async accounts => {
     const message = 'single getCurrentICR() call'
 
     await th.openTrove_allAccounts([accounts[1]], contracts, dec(10, 'ether'), 0)
-    const randEUSDAmount = th.randAmountInWei(1, 180)
-    await borrowerOperations.withdrawEUSD(_100pct, randEUSDAmount, accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    const randUSDEAmount = th.randAmountInWei(1, 180)
+    await borrowerOperations.withdrawUSDE(_100pct, randUSDEAmount, accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
     const price = await priceFeed.getPrice()
     const tx = await functionCaller.troveManager_getCurrentICR(accounts[1], price)
@@ -560,9 +560,9 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'getCurrentICR(), Troves with 10 ether and 100 EUSD withdrawn'
+    const message = 'getCurrentICR(), Troves with 10 ether and 100 USDE withdrawn'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
     const gasResults = await th.getCurrentICR_allAccounts(_10_Accounts, contracts, functionCaller)
     th.logGasMetrics(gasResults, message)
@@ -572,9 +572,9 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'getCurrentICR(), Troves with 10 ether and random EUSD amount withdrawn'
+    const message = 'getCurrentICR(), Troves with 10 ether and random USDE amount withdrawn'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts_randomAmount(1, 1300, _10_Accounts, contracts)
+    await th.withdrawUSDE_allAccounts_randomAmount(1, 1300, _10_Accounts, contracts)
 
     const gasResults = await th.getCurrentICR_allAccounts(_10_Accounts, contracts, functionCaller)
     th.logGasMetrics(gasResults, message)
@@ -588,10 +588,10 @@ contract('Gas cost tests', async accounts => {
   it("", async () => {
     const message = 'single getCurrentICR() call, WITH pending rewards'
 
-    const randEUSDAmount = th.randAmountInWei(1, 180)
-    await borrowerOperations.openTrove(_100pct, randEUSDAmount, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(10, 'ether') })
+    const randUSDEAmount = th.randAmountInWei(1, 180)
+    await borrowerOperations.openTrove(_100pct, randUSDEAmount, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(10, 'ether') })
 
-    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
     await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(1, 'ether') })
 
     // Price drops, account[999]'s ICR falls below MCR, and gets liquidated
@@ -611,7 +611,7 @@ contract('Gas cost tests', async accounts => {
     const message = 'getCurrentICR(), new Troves with 10 ether and no withdrawals,  WITH pending rewards'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(100, 18))
 
-    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
     await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(1, 'ether') })
 
     // Price drops, account[999]'s ICR falls below MCR, and gets liquidated
@@ -626,10 +626,10 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'getCurrentICR(), Troves with 10 ether and 100 EUSD withdrawn, WITH pending rewards'
+    const message = 'getCurrentICR(), Troves with 10 ether and 100 USDE withdrawn, WITH pending rewards'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(100, 18))
 
-    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
     await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(1, 'ether') })
 
 
@@ -645,10 +645,10 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'getCurrentICR(), Troves with 10 ether and random EUSD amount withdrawn, WITH pending rewards'
+    const message = 'getCurrentICR(), Troves with 10 ether and random USDE amount withdrawn, WITH pending rewards'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(100, 18))
 
-    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
     await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999], value: dec(1, 'ether') })
 
     // Price drops, account[999]'s ICR falls below MCR, and gets liquidated
@@ -664,9 +664,9 @@ contract('Gas cost tests', async accounts => {
 
   // --- redeemCollateral() ---
   it("", async () => {
-    const message = 'redeemCollateral(), redeems 50 EUSD, redemption hits 1 Trove. One account in system, partial redemption'
+    const message = 'redeemCollateral(), redeems 50 USDE, redemption hits 1 Trove. One account in system, partial redemption'
     await th.openTrove_allAccounts([accounts[0]], contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts([accounts[0]], contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts([accounts[0]], contracts, dec(100, 18))
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(accounts[0], contracts, dec(50, 18))
@@ -676,16 +676,16 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeems 50 EUSD, redemption hits 1 Trove. No pending rewards. 3 accounts in system, partial redemption'
+    const message = 'redeemCollateral(), redeems 50 USDE, redemption hits 1 Trove. No pending rewards. 3 accounts in system, partial redemption'
     // 3 accounts add coll
     await th.openTrove_allAccounts(accounts.slice(0, 3), contracts, dec(10, 'ether'), 0)
-    // 3 accounts withdraw successively less EUSD
-    await borrowerOperations.withdrawEUSD(_100pct, dec(100, 18), accounts[0], ZERO_ADDRESS, { from: accounts[0] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(90, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(80, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    // 3 accounts withdraw successively less USDE
+    await borrowerOperations.withdrawUSDE(_100pct, dec(100, 18), accounts[0], ZERO_ADDRESS, { from: accounts[0] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(90, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(80, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
 
-    /* Account 2 redeems 50 EUSD. It is redeemed from account 0's Trove,
-    leaving the Trove active with 30 EUSD and ((200 *10 - 50 ) / 200 ) = 9.75 ETH.
+    /* Account 2 redeems 50 USDE. It is redeemed from account 0's Trove,
+    leaving the Trove active with 30 USDE and ((200 *10 - 50 ) / 200 ) = 9.75 ETH.
     
     It's ICR jumps from 2500% to 6500% and it is reinserted at the top of the list.
     */
@@ -698,13 +698,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 101 EUSD, redemption hits 2 Troves, last redemption is partial'
+    const message = 'redeemCollateral(), redeemed 101 USDE, redemption hits 2 Troves, last redemption is partial'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 500 EUSD, redeems 101 EUSD
+    // Whale adds 200 ether, withdraws 500 USDE, redeems 101 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(101, 18))
@@ -714,13 +714,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 500 EUSD, redemption hits 5 Troves, all full redemptions'
+    const message = 'redeemCollateral(), redeemed 500 USDE, redemption hits 5 Troves, all full redemptions'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 500 EUSD, redeems 500 EUSD
+    // Whale adds 200 ether, withdraws 500 USDE, redeems 500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(500, 18))
@@ -730,13 +730,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 450 EUSD, redemption hits 5 Troves,  last redemption is partial (50 of 100 EUSD)'
+    const message = 'redeemCollateral(), redeemed 450 USDE, redemption hits 5 Troves,  last redemption is partial (50 of 100 USDE)'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 450 EUSD, redeems 500 EUSD
+    // Whale adds 200 ether, withdraws 450 USDE, redeems 500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(450, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(450, 18), whale, ZERO_ADDRESS, { from: whale })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(450, 18))
@@ -746,13 +746,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 1000 EUSD, redemption hits 10 Troves'
+    const message = 'redeemCollateral(), redeemed 1000 USDE, redemption hits 10 Troves'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 1000 EUSD, redeems 500 EUSD
+    // Whale adds 200 ether, withdraws 1000 USDE, redeems 500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(1000, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(1000, 18), whale, ZERO_ADDRESS, { from: whale })
     
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(1000, 18))
@@ -762,13 +762,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 1500 EUSD, redemption hits 15 Troves'
+    const message = 'redeemCollateral(), redeemed 1500 USDE, redemption hits 15 Troves'
     await th.openTrove_allAccounts(_20_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_20_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_20_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 1500 EUSD, redeems 1500 EUSD
+    // Whale adds 200 ether, withdraws 1500 USDE, redeems 1500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(1500, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(1500, 18), whale, ZERO_ADDRESS, { from: whale })
     
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(1500, 18))
@@ -778,13 +778,13 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 2000 EUSD, redemption hits 20 Troves'
+    const message = 'redeemCollateral(), redeemed 2000 USDE, redemption hits 20 Troves'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 2000 EUSD, redeems 2000 EUSD
+    // Whale adds 200 ether, withdraws 2000 USDE, redeems 2000 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(2000, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(2000, 18), whale, ZERO_ADDRESS, { from: whale })
     
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_MONTH, web3.currentProvider)
     const gas = await th.redeemCollateral(whale, contracts, dec(2000, 18))
@@ -796,9 +796,9 @@ contract('Gas cost tests', async accounts => {
   // Slow test
 
   // it("", async () => { 
-  //   const message = 'redeemCollateral(),  EUSD, each redemption only hits the first Trove, never closes it'
+  //   const message = 'redeemCollateral(),  USDE, each redemption only hits the first Trove, never closes it'
   //   await th.addColl_allAccounts(_20_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts(_20_Accounts, troveManager, dec(100, 18))
+  //   await th.withdrawUSDE_allAccounts(_20_Accounts, troveManager, dec(100, 18))
 
   //   const gasResults = await th.redeemCollateral_allAccounts_randomAmount( 1, 10, _10_Accounts, troveManager)
   //   th.logGasMetrics(gasResults, message)
@@ -810,13 +810,13 @@ contract('Gas cost tests', async accounts => {
   // --- redeemCollateral(), with pending redistribution rewards --- 
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeems 50 EUSD, redemption hits 1 Trove, WITH pending rewards. One account in system'
+    const message = 'redeemCollateral(), redeems 50 USDE, redemption hits 1 Trove, WITH pending rewards. One account in system'
     await th.openTrove_allAccounts([accounts[1]], contracts, dec(10, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(100, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(100, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
-    // acct 998 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 998 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
@@ -831,24 +831,24 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeems 50 EUSD, redemption hits 1 Trove. WITH pending rewards. 3 accounts in system.'
+    const message = 'redeemCollateral(), redeems 50 USDE, redemption hits 1 Trove. WITH pending rewards. 3 accounts in system.'
     // 3 accounts add coll
     await th.openTrove_allAccounts(accounts.slice(0, 3), contracts, dec(10, 'ether'), 0)
-    // 3 accounts withdraw successively less EUSD
-    await borrowerOperations.withdrawEUSD(_100pct, dec(100, 18), accounts[0], ZERO_ADDRESS, { from: accounts[0] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(90, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(80, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    // 3 accounts withdraw successively less USDE
+    await borrowerOperations.withdrawUSDE(_100pct, dec(100, 18), accounts[0], ZERO_ADDRESS, { from: accounts[0] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(90, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(80, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
 
-    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
     await troveManager.liquidate(accounts[998], { from: accounts[0] })
 
-    /* Account 2 redeems 50 EUSD. It is redeemed from account 0's Trove,
-    leaving the Trove active with 30 EUSD and ((200 *10 - 50 ) / 200 ) = 9.75 ETH.
+    /* Account 2 redeems 50 USDE. It is redeemed from account 0's Trove,
+    leaving the Trove active with 30 USDE and ((200 *10 - 50 ) / 200 ) = 9.75 ETH.
     
     It's ICR jumps from 2500% to 6500% and it is reinserted at the top of the list.
     */
@@ -861,17 +861,17 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 500 EUSD, WITH pending rewards, redemption hits 5 Troves, WITH pending rewards'
+    const message = 'redeemCollateral(), redeemed 500 USDE, WITH pending rewards, redemption hits 5 Troves, WITH pending rewards'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 500 EUSD, redeems 500 EUSD
+    // Whale adds 200 ether, withdraws 500 USDE, redeems 500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(500, 18), whale, ZERO_ADDRESS, { from: whale })
 
-    // acct 998 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 998 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
@@ -885,17 +885,17 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 1000 EUSD, WITH pending rewards, redemption hits 10 Troves, WITH pending rewards'
+    const message = 'redeemCollateral(), redeemed 1000 USDE, WITH pending rewards, redemption hits 10 Troves, WITH pending rewards'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 1000 EUSD, redeems 500 EUSD
+    // Whale adds 200 ether, withdraws 1000 USDE, redeems 500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(1000, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(1000, 18), whale, ZERO_ADDRESS, { from: whale })
 
-    // acct 998 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 998 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
@@ -909,17 +909,17 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 1500 EUSD, WITH pending rewards, redemption hits 15 Troves, WITH pending rewards'
+    const message = 'redeemCollateral(), redeemed 1500 USDE, WITH pending rewards, redemption hits 15 Troves, WITH pending rewards'
     await th.openTrove_allAccounts(_20_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_20_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_20_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 1500 EUSD, redeems 1500 EUSD
+    // Whale adds 200 ether, withdraws 1500 USDE, redeems 1500 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(1500, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(1500, 18), whale, ZERO_ADDRESS, { from: whale })
 
-    //  // acct 998 adds coll, withdraws EUSD, sits at 111% ICR
+    //  // acct 998 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
@@ -933,17 +933,17 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'redeemCollateral(), redeemed 2000 EUSD, WITH pending rewards, redemption hits 20 Troves, WITH pending rewards'
+    const message = 'redeemCollateral(), redeemed 2000 USDE, WITH pending rewards, redemption hits 20 Troves, WITH pending rewards'
     await th.openTrove_allAccounts(_30_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_30_Accounts, contracts, dec(100, 18))
+    await th.withdrawUSDE_allAccounts(_30_Accounts, contracts, dec(100, 18))
 
-    // Whale adds 200 ether, withdraws 2000 EUSD, redeems 2000 EUSD
+    // Whale adds 200 ether, withdraws 2000 USDE, redeems 2000 USDE
     await borrowerOperations.openTrove(_100pct, 0, whale, ZERO_ADDRESS, { from: whale, value: dec(200, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(2000, 18), whale, ZERO_ADDRESS, { from: whale })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(2000, 18), whale, ZERO_ADDRESS, { from: whale })
 
-    // acct 998 adds coll, withdraws EUSD, sits at 111% ICR
+    // acct 998 adds coll, withdraws USDE, sits at 111% ICR
     await th.openTrove_allAccounts([accounts[998]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[998], ZERO_ADDRESS, { from: accounts[998] })
 
     // Price drops, account[998]'s ICR falls below MCR, and gets liquidated
     await priceFeed.setPrice(dec(100, 18))
@@ -959,13 +959,13 @@ contract('Gas cost tests', async accounts => {
   // Slow test
 
   // it("", async () => { 
-  //   const message = 'redeemCollateral(),  EUSD, each redemption only hits the first Trove, never closes it, WITH pending rewards'
+  //   const message = 'redeemCollateral(),  USDE, each redemption only hits the first Trove, never closes it, WITH pending rewards'
   //   await th.addColl_allAccounts(_20_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts(_20_Accounts, troveManager, dec(100, 18))
+  //   await th.withdrawUSDE_allAccounts(_20_Accounts, troveManager, dec(100, 18))
 
-  //    // acct 999 adds coll, withdraws EUSD, sits at 111% ICR
+  //    // acct 999 adds coll, withdraws USDE, sits at 111% ICR
   //    await borrowerOperations.addColl(accounts[999], {from: accounts[999], value:dec(1, 'ether')})
-  //    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999]})
+  //    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[999], ZERO_ADDRESS, { from: accounts[999]})
 
   //     // Price drops, account[999]'s ICR falls below MCR, and gets liquidated
   //    await priceFeed.setPrice(dec(100, 18))
@@ -984,7 +984,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => {
   //   const message = 'getApproxHint(), numTrials = 10, 10 calls, each with random CR'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0 )
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
 
   //   gasCostList = []
 
@@ -1005,7 +1005,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => {
   //   const message = 'getApproxHint(), numTrials = 10:  i.e. k = 1, list size = 1'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0 )
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 10)
@@ -1018,7 +1018,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => {
   //   const message = 'getApproxHint(), numTrials = 32:  i.e. k = 10, list size = 10'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0 )
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
 
 
   //   const CR = '200000000000000000000'
@@ -1032,7 +1032,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => {
   //   const message = 'getApproxHint(), numTrials = 100: i.e. k = 10, list size = 100'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0 )
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, borrowerOperations)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 100)
@@ -1047,7 +1047,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => { //8mil. gas
   //   const message = 'getApproxHint(), numTrials = 320: i.e. k = 10, list size = 1000'
   //   await th.addColl_allAccounts(_10_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 320)
@@ -1060,7 +1060,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => { // 25mil. gas
   //   const message = 'getApproxHint(), numTrials = 1000:  i.e. k = 10, list size = 10000'
   //   await th.addColl_allAccounts(_10_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 1000)
@@ -1073,7 +1073,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => { // 81mil. gas
   //   const message = 'getApproxHint(), numTrials = 3200:  i.e. k = 10, list size = 100000'
   //   await th.addColl_allAccounts(_10_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 3200)
@@ -1089,7 +1089,7 @@ contract('Gas cost tests', async accounts => {
   // it("", async () => { 
   //   const message = 'getApproxHint(), numTrials = 10000:  i.e. k = 10, list size = 1000000'
   //   await th.addColl_allAccounts(_10_Accounts, troveManager, dec(10, 'ether'))
-  //   await th.withdrawEUSD_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
+  //   await th.withdrawUSDE_allAccounts_randomAmount(1, 180, _10_Accounts, troveManager)
 
   //   const CR = '200000000000000000000'
   //   tx = await functionCaller.troveManager_getApproxHint(CR, 10000)
@@ -1104,9 +1104,9 @@ contract('Gas cost tests', async accounts => {
   // --- First deposit ---
 
   // it("", async () => {
-  //   const message = 'provideToSP(), No pending rewards, part of issued EUSD: all accounts withdraw 180 EUSD, all make first deposit, provide 100 EUSD'
+  //   const message = 'provideToSP(), No pending rewards, part of issued USDE: all accounts withdraw 180 USDE, all make first deposit, provide 100 USDE'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(130, 18))
+  //   await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(130, 18))
 
   //   // first funds provided
   //   const gasResults = await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(100, 18))
@@ -1117,9 +1117,9 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'provideToSP(), No pending rewards, all issued EUSD: all accounts withdraw 180 EUSD, all make first deposit, 180 EUSD'
+  //   const message = 'provideToSP(), No pending rewards, all issued USDE: all accounts withdraw 180 USDE, all make first deposit, 180 USDE'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(130, 18))
+  //   await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(130, 18))
 
   //   // first funds provided
   //   const gasResults = await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(130, 18))
@@ -1130,9 +1130,9 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'provideToSP(), No pending rewards, all accounts withdraw 180 EUSD, all make first deposit, random EUSD amount'
+    const message = 'provideToSP(), No pending rewards, all accounts withdraw 180 USDE, all make first deposit, random USDE amount'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(130, 18))
 
     // first funds provided
     const gasResults = await th.provideToSP_allAccounts_randomAmount(1, 129, _10_Accounts, stabilityPool)
@@ -1145,9 +1145,9 @@ contract('Gas cost tests', async accounts => {
      // --- Top-up deposit ---
 
   it("", async () => {
-    const message = 'provideToSP(), No pending rewards, deposit part of issued EUSD: all accounts withdraw 180 EUSD, all make second deposit, provide 50 EUSD'
+    const message = 'provideToSP(), No pending rewards, deposit part of issued USDE: all accounts withdraw 180 USDE, all make second deposit, provide 50 USDE'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(130, 18))
     await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(50, 18))
 
     // >>FF time and one account tops up, triggers gains for all
@@ -1165,9 +1165,9 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'provideToSP(), No pending rewards, all accounts withdraw 180 EUSD, make second deposit, random EUSD amount'
+    const message = 'provideToSP(), No pending rewards, all accounts withdraw 180 USDE, make second deposit, random USDE amount'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(_10_Accounts, contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(_10_Accounts, contracts, dec(130, 18))
     await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(50, 18))
 
     // >>FF time and one account tops up, triggers gains for all
@@ -1187,13 +1187,13 @@ contract('Gas cost tests', async accounts => {
   //   // --- Top-up deposit ---
 
   // it("", async () => {
-  //   const message = 'provideToSP(), with pending rewards in system. deposit part of issued EUSD: all accounts make second deposit, provide 50 EUSD'
-  //   // 9 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 50 EUSD to Stability Pool
+  //   const message = 'provideToSP(), with pending rewards in system. deposit part of issued USDE: all accounts make second deposit, provide 50 USDE'
+  //   // 9 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 50 USDE to Stability Pool
   //   await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(accounts.slice(2, 12), contracts, dec(130, 18))
+  //   await th.withdrawUSDE_allAccounts(accounts.slice(2, 12), contracts, dec(130, 18))
   //   await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(50, 18))
 
-  //   //1 acct open Trove with 1 ether and withdraws 170 EUSD
+  //   //1 acct open Trove with 1 ether and withdraws 170 USDE
   //   await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
 
   //   // >>FF time and one account tops up, triggers  gains for all
@@ -1206,7 +1206,7 @@ contract('Gas cost tests', async accounts => {
 
   //   await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-  //   // 9 active Troves top up their Stability Pool deposits with 50 EUSD
+  //   // 9 active Troves top up their Stability Pool deposits with 50 USDE
   //   const gasResults = await th.provideToSP_allAccounts(accounts.slice(2, 11), stabilityPool, dec(50, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -1215,13 +1215,13 @@ contract('Gas cost tests', async accounts => {
   // })
 
   // it("", async () => {
-  //   const message = 'provideToSP(), with pending rewards in system. deposit all issued EUSD: all accounts make second deposit, provide 90 EUSD'
-  //   // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 90 EUSD to Stability Pool
+  //   const message = 'provideToSP(), with pending rewards in system. deposit all issued USDE: all accounts make second deposit, provide 90 USDE'
+  //   // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 90 USDE to Stability Pool
   //   await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), 0)
-  //   await th.withdrawEUSD_allAccounts(accounts.slice(2, 12), contracts, dec(130, 18))
+  //   await th.withdrawUSDE_allAccounts(accounts.slice(2, 12), contracts, dec(130, 18))
   //   await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(50, 18))
 
-  //   //1 acct open Trove with 1 ether and withdraws 180 EUSD
+  //   //1 acct open Trove with 1 ether and withdraws 180 USDE
   //   await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
 
   //   // >>FF time and one account tops up, triggers gains for all
@@ -1234,7 +1234,7 @@ contract('Gas cost tests', async accounts => {
 
   //   await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-  //   // 5 active Troves top up their Stability Pool deposits with 90 EUSD, using up all their issued EUSD
+  //   // 5 active Troves top up their Stability Pool deposits with 90 USDE, using up all their issued USDE
   //   const gasResults = await th.provideToSP_allAccounts(accounts.slice(7, 12), stabilityPool, dec(50, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -1243,12 +1243,12 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'provideToSP(), with pending rewards in system. deposit part of issued EUSD: all make second deposit, provide random EUSD amount'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 90 EUSD to Stability Pool
+    const message = 'provideToSP(), with pending rewards in system. deposit part of issued USDE: all make second deposit, provide random USDE amount'
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 90 USDE to Stability Pool
     await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), dec(130, 18))
     await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(50, 18))
 
-    //1 acct open Trove with 1 ether and withdraws 180 EUSD
+    //1 acct open Trove with 1 ether and withdraws 180 USDE
     await borrowerOperations.openTrove(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
 
     // >>FF time and one account tops up, triggers gains for all
@@ -1261,7 +1261,7 @@ contract('Gas cost tests', async accounts => {
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-    // 5 active Troves top up their Stability Pool deposits with a random EUSD amount
+    // 5 active Troves top up their Stability Pool deposits with a random USDE amount
     const gasResults = await th.provideToSP_allAccounts_randomAmount(1, 49, accounts.slice(7, 12), stabilityPool)
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
@@ -1275,7 +1275,7 @@ contract('Gas cost tests', async accounts => {
 
   // partial
   // it("", async () => {
-  //   const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make partial withdrawal - 90 EUSD of 180 EUSD deposit'
+  //   const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make partial withdrawal - 90 USDE of 180 USDE deposit'
   //   await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(190, 18))
   //   await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(130, 18))
 
@@ -1292,7 +1292,7 @@ contract('Gas cost tests', async accounts => {
 
   // full
   it("", async () => {
-    const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make full withdrawal - 130 EUSD of 130 EUSD deposit'
+    const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make full withdrawal - 130 USDE of 130 USDE deposit'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(190, 18))
     await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(130, 18))
 
@@ -1309,7 +1309,7 @@ contract('Gas cost tests', async accounts => {
 
   // random amount
   it("", async () => {
-    const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make partial withdrawal - random EUSD amount, less than 180 EUSD deposit'
+    const message = 'withdrawFromSP(), no pending rewards. Stability Pool depositors make partial withdrawal - random USDE amount, less than 180 USDE deposit'
     await th.openTrove_allAccounts(_10_Accounts, contracts, dec(10, 'ether'), dec(130, 18))
     await th.provideToSP_allAccounts(_10_Accounts, stabilityPool, dec(130, 18))
 
@@ -1326,14 +1326,14 @@ contract('Gas cost tests', async accounts => {
   // // --- Pending rewards in system ---
 
   // it("", async () => {
-  //   const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make partial withdrawal - 90 EUSD of 130 EUSD deposit'
-  //   // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 180 EUSD to Stability Pool
+  //   const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make partial withdrawal - 90 USDE of 130 USDE deposit'
+  //   // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 180 USDE to Stability Pool
   //   await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), dec(130, 18))
   //   await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(130, 18))
 
-  //   //1 acct open Trove with 1 ether and withdraws 170 EUSD
+  //   //1 acct open Trove with 1 ether and withdraws 170 USDE
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
-  //   await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+  //   await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
   //   await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
@@ -1344,7 +1344,7 @@ contract('Gas cost tests', async accounts => {
 
   //   await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-  //   // 5 active Troves reduce their Stability Pool deposit by 90 EUSD
+  //   // 5 active Troves reduce their Stability Pool deposit by 90 USDE
   //   const gasResults = await th.withdrawFromSP_allAccounts(accounts.slice(7, 12), stabilityPool, dec(90, 18))
   //   th.logGasMetrics(gasResults, message)
   //   th.logAllGasCosts(gasResults)
@@ -1353,14 +1353,14 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make full withdrawal - 130 EUSD of 130 EUSD deposit'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 180 EUSD to Stability Pool
+    const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make full withdrawal - 130 USDE of 130 USDE deposit'
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 180 USDE to Stability Pool
     await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), dec(130, 18))
     await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(130, 18))
 
-    //1 acct open Trove with 1 ether and withdraws 170 EUSD
+    //1 acct open Trove with 1 ether and withdraws 170 USDE
     await borrowerOperations.openTrove(_100pct, 0, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
@@ -1372,7 +1372,7 @@ contract('Gas cost tests', async accounts => {
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-    // 5 active Troves reduce their Stability Pool deposit by 130 EUSD
+    // 5 active Troves reduce their Stability Pool deposit by 130 USDE
     const gasResults = await th.withdrawFromSP_allAccounts(accounts.slice(7, 12), stabilityPool, dec(130, 18))
     th.logGasMetrics(gasResults, message)
     th.logAllGasCosts(gasResults)
@@ -1381,14 +1381,14 @@ contract('Gas cost tests', async accounts => {
   })
 
   it("", async () => {
-    const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make partial withdrawal - random amount of EUSD'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 130 EUSD to Stability Pool
+    const message = 'withdrawFromSP(), pending rewards in system. Stability Pool depositors make partial withdrawal - random amount of USDE'
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 130 USDE to Stability Pool
     await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), dec(130, 18))
     await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(130, 18))
 
-    //1 acct open Trove with 1 ether and withdraws 170 EUSD
+    //1 acct open Trove with 1 ether and withdraws 170 USDE
     await borrowerOperations.openTrove(_100pct, 0, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
@@ -1411,14 +1411,14 @@ contract('Gas cost tests', async accounts => {
 
   // --- withdrawETHGainToTrove() - deposit has pending rewards ---
   // it("", async () => {
-  //   const message = 'withdrawETHGainToTrove(), pending rewards in system. Accounts withdraw 180 EUSD, provide 180 EUSD, then withdraw all to SP after a liquidation'
-  //   // 10 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 130 EUSD to Stability Pool
+  //   const message = 'withdrawETHGainToTrove(), pending rewards in system. Accounts withdraw 180 USDE, provide 180 USDE, then withdraw all to SP after a liquidation'
+  //   // 10 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 130 USDE to Stability Pool
   //   await th.openTrove_allAccounts(accounts.slice(2, 12), contracts, dec(10, 'ether'), dec(130, 18))
   //   await th.provideToSP_allAccounts(accounts.slice(2, 12), stabilityPool, dec(130, 18))
 
-  //   //1 acct open Trove with 1 ether and withdraws 170 EUSD
+  //   //1 acct open Trove with 1 ether and withdraws 170 USDE
   //   await borrowerOperations.openTrove(_100pct, 0, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
-  //   await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+  //   await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
   //   await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
@@ -1438,14 +1438,14 @@ contract('Gas cost tests', async accounts => {
   // })
 
   it("", async () => {
-    const message = 'withdrawETHGainToTrove(), pending rewards in system. Accounts withdraw 180 EUSD, provide a random amount, then withdraw all to SP after a liquidation'
-    // 20 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 180 EUSD to Stability Pool
+    const message = 'withdrawETHGainToTrove(), pending rewards in system. Accounts withdraw 180 USDE, provide a random amount, then withdraw all to SP after a liquidation'
+    // 20 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 180 USDE to Stability Pool
     await th.openTrove_allAccounts(accounts.slice(2, 22), contracts, dec(10, 'ether'), dec(130, 18))
     await await th.provideToSP_allAccounts_randomAmount(1, 129, accounts.slice(2, 22), stabilityPool)
 
-    //1 acct open Trove with 1 ether and withdraws 180 EUSD
+    //1 acct open Trove with 1 ether and withdraws 180 USDE
     await borrowerOperations.openTrove(_100pct, 0, accounts[1], ZERO_ADDRESS, { from: accounts[1], value: dec(1, 'ether') })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
   
@@ -1469,11 +1469,11 @@ contract('Gas cost tests', async accounts => {
   // Pure redistribution WITH pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has pending rewards. Pure redistribution'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    //6s acct open Trove with 1 ether and withdraw 180 EUSD (inc gas comp)
+    //6s acct open Trove with 1 ether and withdraw 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(0, 6), contracts, dec(1, 'ether'), dec(130, 18))
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
@@ -1501,15 +1501,15 @@ contract('Gas cost tests', async accounts => {
 
   it("", async () => {
     const message = 'Series of liquidate() calls. Liquidee has pending rewards. Pure redistribution'
-    // 100 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 100 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 200), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 200), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 200), contracts, dec(130, 18))
 
     const liquidationAcctRange = accounts.slice(1, 10)
 
-    // Accts open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    // Accts open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(liquidationAcctRange, contracts, dec(1, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(liquidationAcctRange, contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(liquidationAcctRange, contracts, dec(130, 18))
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
@@ -1534,14 +1534,14 @@ contract('Gas cost tests', async accounts => {
   // Pure redistribution with NO pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has NO pending rewards. Pure redistribution'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    //2 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //2 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(2, 4), contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18))
@@ -1572,10 +1572,10 @@ contract('Gas cost tests', async accounts => {
   it("", async () => {
     const message = 'Series of liquidate() calls. Liquidee has NO pending rewards. Pure redistribution'
 
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
 
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
     const liquidationAcctRange = accounts.slice(1, 20)
 
@@ -1604,21 +1604,21 @@ contract('Gas cost tests', async accounts => {
   // Pure offset with NO pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has NO pending rewards. Pure offset with SP'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    //3 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //3 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(0, 4), contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
 
-    // Account 100 provides 600 EUSD to pool
-    await borrowerOperations.withdrawEUSD(_100pct, dec(600, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
+    // Account 100 provides 600 USDE to pool
+    await borrowerOperations.withdrawUSDE(_100pct, dec(600, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
     await stabilityPool.provideToSP(dec(600, 18), ZERO_ADDRESS, { from: accounts[100] })
 
     // Initial liquidations - full offset - makes SP reward terms and SP non-zero
@@ -1641,22 +1641,22 @@ contract('Gas cost tests', async accounts => {
   // Pure offset WITH pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has pending rewards. Pure offset with SP'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    // 5 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    // 5 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(0, 5), contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[4], ZERO_ADDRESS, { from: accounts[4] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[4], ZERO_ADDRESS, { from: accounts[4] })
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
 
-    // Account 100 provides 360 EUSD to SP
-    await borrowerOperations.withdrawEUSD(_100pct, dec(600, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
+    // Account 100 provides 360 USDE to SP
+    await borrowerOperations.withdrawUSDE(_100pct, dec(600, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
     await stabilityPool.provideToSP(dec(360, 18), ZERO_ADDRESS, { from: accounts[100] })
 
     // Initial liquidations - full offset - makes SP reward terms and SP non-zero
@@ -1685,15 +1685,15 @@ contract('Gas cost tests', async accounts => {
   // Partial offset + redistribution WITH pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has pending rewards. Partial offset + redistribution'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    //4 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //4 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(0, 4), contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
@@ -1705,7 +1705,7 @@ contract('Gas cost tests', async accounts => {
     await stabilityPool.provideToSP(dec(100, 18), ZERO_ADDRESS, { from: accounts[101] })
     await troveManager.liquidate(accounts[3], { from: accounts[0] })
 
-    // pool refilled with 100 EUSD
+    // pool refilled with 100 USDE
     await stabilityPool.provideToSP(dec(100, 18), ZERO_ADDRESS, { from: accounts[102] })
 
     const hasPendingRewards = await troveManager.hasPendingRewards(accounts[1])
@@ -1713,7 +1713,7 @@ contract('Gas cost tests', async accounts => {
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-    // account 1 180 EUSD liquidated  - partial offset
+    // account 1 180 USDE liquidated  - partial offset
     const tx = await troveManager.liquidate(accounts[1], { from: accounts[0] })
     const gas = th.gasUsed(tx)
     th.logGas(gas, message)
@@ -1724,14 +1724,14 @@ contract('Gas cost tests', async accounts => {
   // Partial offset + redistribution with NO pending rewards
   it("", async () => {
     const message = 'Single liquidate() call. Liquidee has NO pending rewards. Partial offset + redistribution'
-    // 10 accts each open Trove with 10 ether, withdraw 180 EUSD
+    // 10 accts each open Trove with 10 ether, withdraw 180 USDE
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 110), contracts, dec(130, 18))
 
-    //2 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //2 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts(accounts.slice(2, 4), contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[2], ZERO_ADDRESS, { from: accounts[2] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[3], ZERO_ADDRESS, { from: accounts[3] })
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
@@ -1744,7 +1744,7 @@ contract('Gas cost tests', async accounts => {
     await stabilityPool.provideToSP(dec(100, 18), ZERO_ADDRESS, { from: accounts[101] })
     await troveManager.liquidate(accounts[3], { from: accounts[0] })
 
-    // Pool refilled with 50 EUSD
+    // Pool refilled with 50 USDE
     await stabilityPool.provideToSP(dec(50, 18), ZERO_ADDRESS, { from: accounts[102] })
 
     // Account 1 opens trove
@@ -1758,7 +1758,7 @@ contract('Gas cost tests', async accounts => {
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
 
-    // account 1 70 EUSD liquidated  - partial offset against 50 EUSD in SP
+    // account 1 70 USDE liquidated  - partial offset against 50 USDE in SP
     const tx = await troveManager.liquidate(accounts[1], { from: accounts[0] })
     const gas = th.gasUsed(tx)
     th.logGas(gas, message)
@@ -1772,21 +1772,21 @@ contract('Gas cost tests', async accounts => {
     // 10 accts each open Trove with 10 ether
     await th.openTrove_allAccounts(accounts.slice(100, 110), contracts, dec(10, 'ether'), 0)
 
-    //Account 99 and 98 each open Trove with 1 ether, and withdraw 180 EUSD (inc gas comp)
+    //Account 99 and 98 each open Trove with 1 ether, and withdraw 180 USDE (inc gas comp)
     await th.openTrove_allAccounts([accounts[99]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[99], ZERO_ADDRESS, { from: accounts[99] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[99], ZERO_ADDRESS, { from: accounts[99] })
     await th.openTrove_allAccounts([accounts[98]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[98], ZERO_ADDRESS, { from: accounts[98] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[98], ZERO_ADDRESS, { from: accounts[98] })
 
-    // Acct 99 deposits 1 EUSD to SP
+    // Acct 99 deposits 1 USDE to SP
     await stabilityPool.provideToSP(dec(1, 18), ZERO_ADDRESS, { from: accounts[99] })
 
-    //Account 97 opens Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //Account 97 opens Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts([accounts[97]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[97], ZERO_ADDRESS, { from: accounts[97] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[97], ZERO_ADDRESS, { from: accounts[97] })
 
-    // Acct 100 withdraws 1800 EUSD and deposits it to the SP
-    await borrowerOperations.withdrawEUSD(_100pct, dec(1750, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
+    // Acct 100 withdraws 1800 USDE and deposits it to the SP
+    await borrowerOperations.withdrawUSDE(_100pct, dec(1750, 18), accounts[100], ZERO_ADDRESS, { from: accounts[100] })
     await stabilityPool.provideToSP(dec(1750, 18), ZERO_ADDRESS, { from: accounts[100] })
 
     // Price drops too $100, accounts 99 and 100 ICR fall below MCR
@@ -1810,7 +1810,7 @@ contract('Gas cost tests', async accounts => {
     // Account 98 is liquidated, with nothing in SP pool.  This creates pending rewards from distribution.
     await troveManager.liquidate(accounts[98], { from: accounts[0] })
 
-    // Account 7 deposits 1 EUSD in the Stability Pool
+    // Account 7 deposits 1 USDE in the Stability Pool
     await stabilityPool.provideToSP(dec(1, 18), ZERO_ADDRESS, { from: accounts[100] })
 
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_HOUR, web3.currentProvider)
@@ -1827,15 +1827,15 @@ contract('Gas cost tests', async accounts => {
   // pure offset
   it("", async () => {
     const message = 'liquidate() 1 Trove Normal Mode, 30 active Troves, no ETH gain in pool, pure offset with SP'
-    // 30 accts each open Trove with 10 ether, withdraw 180 EUSD, and provide 180 EUSD to Stability Pool
+    // 30 accts each open Trove with 10 ether, withdraw 180 USDE, and provide 180 USDE to Stability Pool
     await th.openTrove_allAccounts(accounts.slice(100, 130), contracts, dec(10, 'ether'), 0)
-    await th.withdrawEUSD_allAccounts(accounts.slice(100, 130), contracts, dec(130, 18))
+    await th.withdrawUSDE_allAccounts(accounts.slice(100, 130), contracts, dec(130, 18))
 
     await stabilityPool.provideToSP(dec(130, 18), ZERO_ADDRESS, { from: accounts[100] })
 
-    //1 acct open Trove with 1 ether and withdraws 180 EUSD (inc gas comp)
+    //1 acct open Trove with 1 ether and withdraws 180 USDE (inc gas comp)
     await th.openTrove_allAccounts([accounts[1]], contracts, dec(1, 'ether'), 0)
-    await borrowerOperations.withdrawEUSD(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
+    await borrowerOperations.withdrawUSDE(_100pct, dec(130, 18), accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
     // Price drops, account[1]'s ICR falls below MCR
     await priceFeed.setPrice(dec(100, 18))
@@ -1964,7 +1964,7 @@ Parameters to vary for gas tests:
 - Function call parameters - low, high, random, average of many random
   -Pre-existing state:
   --- Rewards accumulated (or not)
-  --- EUSD in StabilityPool (or not)
+  --- USDE in StabilityPool (or not)
   --- State variables non-zero e.g. Trove already opened, stake already made, etc
   - Steps in the the operation:
   --- number of liquidations to perform

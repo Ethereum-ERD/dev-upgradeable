@@ -11,7 +11,7 @@ const timeValues = testHelpers.TimeValues
 
 const TroveManagerTester = artifacts.require("TroveManagerTester")
 const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const EUSDToken = artifacts.require("EUSDToken")
+const USDEToken = artifacts.require("USDEToken")
 
 contract('CollSurplusPool', async accounts => {
   const [
@@ -28,14 +28,14 @@ contract('CollSurplusPool', async accounts => {
 
   let contracts
 
-  const getOpenTroveEUSDAmount = async (totalDebt) => th.getOpenTroveEUSDAmount(contracts, totalDebt)
+  const getOpenTroveUSDEAmount = async (totalDebt) => th.getOpenTroveUSDEAmount(contracts, totalDebt)
   const openTrove = async (params) => th.openTrove(contracts, params)
 
   beforeEach(async () => {
     contracts = await deploymentHelper.deployERDCore()
     contracts.troveManager = await TroveManagerTester.new()
     contracts.collateralManager = await CollateralManagerTester.new()
-    contracts.eusdToken = await EUSDToken.new(
+    contracts.usdeToken = await USDEToken.new(
       contracts.troveManager.address,
       contracts.troveManagerLiquidations.address,
       contracts.troveManagerRedemptions.address,
@@ -64,7 +64,7 @@ contract('CollSurplusPool', async accounts => {
 
     const { collateral: B_coll, netDebt: B_netDebt } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: B } })
 
-    await openTrove({ extraEUSDAmount: B_netDebt.add(toBN(dec(500, 18))), extraParams: { from: A, value: dec(3000, 'ether') } })
+    await openTrove({ extraUSDEAmount: B_netDebt.add(toBN(dec(500, 18))), extraParams: { from: A, value: dec(3000, 'ether') } })
 
     // skip bootstrapping phase
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_WEEK * 2, web3.currentProvider)
