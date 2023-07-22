@@ -40,7 +40,7 @@ contract TroveManagerLiquidations is
 
     struct LocalVariables_OuterLiquidationFunction {
         uint256 price;
-        uint256 EUSDInStabPool;
+        uint256 USDEInStabPool;
         bool recoveryModeAtStart;
         uint256 liquidatedDebt;
         uint256[] liquidatedColls;
@@ -55,7 +55,7 @@ contract TroveManagerLiquidations is
     }
 
     struct LocalVariables_LiquidationSequence {
-        uint256 remainingEUSDInStabPool;
+        uint256 remainingUSDEInStabPool;
         uint256 i;
         uint256 ICR;
         address user;
@@ -79,7 +79,7 @@ contract TroveManagerLiquidations is
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerAddress,
         address _collateralManagerAddress
@@ -91,7 +91,7 @@ contract TroveManagerLiquidations is
         _requireIsContract(_gasPoolAddress);
         _requireIsContract(_collSurplusPoolAddress);
         _requireIsContract(_priceFeedAddress);
-        _requireIsContract(_eusdTokenAddress);
+        _requireIsContract(_usdeTokenAddress);
         _requireIsContract(_sortedTrovesAddress);
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_collateralManagerAddress);
@@ -103,7 +103,7 @@ contract TroveManagerLiquidations is
         gasPoolAddress = _gasPoolAddress;
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
-        eusdToken = IEUSDToken(_eusdTokenAddress);
+        usdeToken = IUSDEToken(_usdeTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         troveManager = ITroveManager(_troveManagerAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
@@ -115,7 +115,7 @@ contract TroveManagerLiquidations is
         emit GasPoolAddressChanged(_gasPoolAddress);
         emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
-        emit EUSDTokenAddressChanged(_eusdTokenAddress);
+        emit USDETokenAddressChanged(_usdeTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
         emit CollateralManagerAddressChanged(_collateralManagerAddress);
@@ -151,7 +151,7 @@ contract TroveManagerLiquidations is
         IActivePool _activePool,
         IDefaultPool _defaultPool,
         address _borrower,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         uint256 _price
     ) internal returns (DataTypes.LiquidationValues memory singleLiquidation) {
         LocalVariables_InnerSingleLiquidateFunction memory vars;
@@ -176,7 +176,7 @@ contract TroveManagerLiquidations is
             singleLiquidation.entireTroveColls
         );
 
-        singleLiquidation.EUSDGasCompensation = EUSD_GAS_COMPENSATION();
+        singleLiquidation.USDEGasCompensation = USDE_GAS_COMPENSATION();
 
         vars.collToLiquidates = ERDMath._subArray(
             singleLiquidation.entireTroveColls,
@@ -193,7 +193,7 @@ contract TroveManagerLiquidations is
             singleLiquidation.entireTroveDebt,
             vars.collaterals,
             vars.collToLiquidates,
-            _EUSDInStabPool
+            _USDEInStabPool
         );
 
         troveManager.closeTrove(_borrower);
@@ -220,7 +220,7 @@ contract TroveManagerLiquidations is
         IDefaultPool _defaultPool,
         address _borrower,
         uint256 _ICR,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         uint256 _TCR,
         uint256 _price
     ) internal returns (DataTypes.LiquidationValues memory singleLiquidation) {
@@ -240,7 +240,7 @@ contract TroveManagerLiquidations is
             singleLiquidation.entireTroveColls
         );
 
-        singleLiquidation.EUSDGasCompensation = EUSD_GAS_COMPENSATION();
+        singleLiquidation.USDEGasCompensation = USDE_GAS_COMPENSATION();
 
         vars.collToLiquidates = ERDMath._subArray(
             singleLiquidation.entireTroveColls,
@@ -304,7 +304,7 @@ contract TroveManagerLiquidations is
                 singleLiquidation.entireTroveDebt,
                 vars.collaterals,
                 vars.collToLiquidates,
-                _EUSDInStabPool
+                _USDEInStabPool
             );
 
             troveManager.closeTrove(_borrower);
@@ -324,14 +324,14 @@ contract TroveManagerLiquidations is
             );
             /*
              * If 110% <= ICR < current TCR (accounting for the preceding liquidations in the current sequence)
-             * and there is EUSD in the Stability Pool, only offset, with no redistribution,
+             * and there is USDE in the Stability Pool, only offset, with no redistribution,
              * but at a capped rate of 1.1 and only if the whole debt can be liquidated.
              * The remainder due to the capped rate will be claimable as collateral surplus.
              */
         } else if (
             (_ICR >= mcr) &&
             (_ICR < _TCR) &&
-            (singleLiquidation.entireTroveDebt <= _EUSDInStabPool)
+            (singleLiquidation.entireTroveDebt <= _USDEInStabPool)
         ) {
             troveManager.movePendingTroveRewardsToActivePool(
                 _activePool,
@@ -339,7 +339,7 @@ contract TroveManagerLiquidations is
                 vars.pendingDebtReward,
                 vars.pendingCollRewards
             );
-            assert(_EUSDInStabPool != 0);
+            assert(_USDEInStabPool != 0);
 
             troveManager.removeStake(_borrower);
 
@@ -374,7 +374,7 @@ contract TroveManagerLiquidations is
                 DataTypes.TroveManagerOperation.liquidateInRecoveryMode
             );
         } else {
-            // if (_ICR >= MCR && ( _ICR >= _TCR || singleLiquidation.entireTroveDebt > _EUSDInStabPool))
+            // if (_ICR >= MCR && ( _ICR >= _TCR || singleLiquidation.entireTroveDebt > _USDEInStabPool))
             DataTypes.LiquidationValues memory zeroVals;
             return zeroVals;
         }
@@ -390,7 +390,7 @@ contract TroveManagerLiquidations is
         uint256 _debt,
         address[] memory _collaterals,
         uint256[] memory _colls,
-        uint256 _EUSDInStabPool
+        uint256 _USDEInStabPool
     )
         internal
         view
@@ -404,18 +404,18 @@ contract TroveManagerLiquidations is
         uint256 length = _colls.length;
         collToSendToSPs = new uint256[](length);
         collToRedistributes = new uint256[](length);
-        if (_EUSDInStabPool > 0) {
+        if (_USDEInStabPool > 0) {
             /*
              * Offset as much debt & collateral as possible against the Stability Pool, and redistribute the remainder
              * between all active troves.
              *
-             *  If the trove's debt is larger than the deposited EUSD in the Stability Pool:
+             *  If the trove's debt is larger than the deposited USDE in the Stability Pool:
              *
-             *  - Offset an amount of the trove's debt equal to the EUSD in the Stability Pool
+             *  - Offset an amount of the trove's debt equal to the USDE in the Stability Pool
              *  - Send a fraction of the trove's collateral to the Stability Pool, equal to the fraction of its offset debt
              *
              */
-            debtToOffset = ERDMath._min(_debt, _EUSDInStabPool);
+            debtToOffset = ERDMath._min(_debt, _USDEInStabPool);
             (
                 uint256 totalLiquidateCollValue,
                 uint256[] memory values
@@ -494,7 +494,7 @@ contract TroveManagerLiquidations is
         singleLiquidation.collGasCompensations = _getCollGasCompensation(
             cappedCollPortions
         );
-        singleLiquidation.EUSDGasCompensation = EUSD_GAS_COMPENSATION();
+        singleLiquidation.USDEGasCompensation = USDE_GAS_COMPENSATION();
 
         singleLiquidation.debtToOffset = _entireTroveDebt;
         singleLiquidation.collToSendToSPs = ERDMath._subArray(
@@ -569,7 +569,7 @@ contract TroveManagerLiquidations is
                 collateralManager,
                 activePool,
                 defaultPool,
-                IEUSDToken(address(0)),
+                IUSDEToken(address(0)),
                 sortedTroves,
                 ICollSurplusPool(address(0)),
                 address(0)
@@ -583,7 +583,7 @@ contract TroveManagerLiquidations is
 
         vars.price = priceFeed.fetchPrice();
         contractsCache.collateralManager.priceUpdate();
-        vars.EUSDInStabPool = stabilityPoolCached.getTotalEUSDDeposits();
+        vars.USDEInStabPool = stabilityPoolCached.getTotalUSDEDeposits();
         vars.recoveryModeAtStart = _checkRecoveryMode(vars.price);
 
         // Perform the appropriate liquidation sequence - tally the values, and obtain their totals
@@ -591,7 +591,7 @@ contract TroveManagerLiquidations is
             totals = _getTotalsFromLiquidateTrovesSequence_RecoveryMode(
                 contractsCache,
                 vars.price,
-                vars.EUSDInStabPool,
+                vars.USDEInStabPool,
                 _n
             );
         } else {
@@ -600,7 +600,7 @@ contract TroveManagerLiquidations is
                 contractsCache.activePool,
                 contractsCache.defaultPool,
                 vars.price,
-                vars.EUSDInStabPool,
+                vars.USDEInStabPool,
                 _n
             );
         }
@@ -610,7 +610,7 @@ contract TroveManagerLiquidations is
             "TroveManagerLiquidations: nothing to liquidate"
         );
 
-        // Move liquidated collateral and EUSD to the appropriate pools
+        // Move liquidated collateral and USDE to the appropriate pools
         stabilityPoolCached.offset(
             totals.totalDebtToOffset,
             vars.collaterals,
@@ -671,14 +671,14 @@ contract TroveManagerLiquidations is
             vars.liquidatedDebt,
             vars.liquidatedColls,
             totals.totalCollGasCompensations,
-            totals.totalEUSDGasCompensation
+            totals.totalUSDEGasCompensation
         );
 
         // Send gas compensation to caller
         _sendGasCompensation(
             contractsCache.activePool,
             _liquidator,
-            totals.totalEUSDGasCompensation,
+            totals.totalUSDEGasCompensation,
             totals.totalCollGasCompensations
         );
     }
@@ -690,14 +690,14 @@ contract TroveManagerLiquidations is
     function _getTotalsFromLiquidateTrovesSequence_RecoveryMode(
         DataTypes.ContractsCache memory _contractsCache,
         uint256 _price,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         uint256 _n
     ) internal returns (DataTypes.LiquidationTotals memory totals) {
         uint256 price = _price;
         LocalVariables_LiquidationSequence memory vars;
         DataTypes.LiquidationValues memory singleLiquidation;
 
-        vars.remainingEUSDInStabPool = _EUSDInStabPool;
+        vars.remainingUSDEInStabPool = _USDEInStabPool;
         vars.backToNormalMode = false;
         vars.entireSystemDebt = getEntireSystemDebt();
         (vars.collaterals, vars.entireSystemColls) = getEntireSystemColl();
@@ -719,7 +719,7 @@ contract TroveManagerLiquidations is
 
             if (!vars.backToNormalMode) {
                 // Break the loop if ICR is greater than MCR and Stability Pool is empty
-                if (vars.ICR >= mcr && vars.remainingEUSDInStabPool == 0) {
+                if (vars.ICR >= mcr && vars.remainingUSDEInStabPool == 0) {
                     break;
                 }
 
@@ -733,13 +733,13 @@ contract TroveManagerLiquidations is
                     _contractsCache.defaultPool,
                     vars.user,
                     vars.ICR,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     TCR,
                     price
                 );
 
                 // Update aggregate trackers
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
                 vars.entireSystemDebt = vars.entireSystemDebt.sub(
@@ -776,11 +776,11 @@ contract TroveManagerLiquidations is
                     _contractsCache.activePool,
                     _contractsCache.defaultPool,
                     vars.user,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     _price
                 );
 
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
 
@@ -799,14 +799,14 @@ contract TroveManagerLiquidations is
         IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _price,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         uint256 _n
     ) internal returns (DataTypes.LiquidationTotals memory totals) {
         LocalVariables_LiquidationSequence memory vars;
         DataTypes.LiquidationValues memory singleLiquidation;
         ISortedTroves sortedTrovesCached = sortedTroves;
 
-        vars.remainingEUSDInStabPool = _EUSDInStabPool;
+        vars.remainingUSDEInStabPool = _USDEInStabPool;
         uint256 mcr = MCR();
         for (vars.i = 0; vars.i < _n; vars.i++) {
             vars.user = sortedTrovesCached.getLast();
@@ -817,11 +817,11 @@ contract TroveManagerLiquidations is
                     _activePool,
                     _defaultPool,
                     vars.user,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     _price
                 );
 
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
 
@@ -857,7 +857,7 @@ contract TroveManagerLiquidations is
 
         vars.price = priceFeed.fetchPrice();
         collateralManagerCached.priceUpdate();
-        vars.EUSDInStabPool = stabilityPoolCached.getTotalEUSDDeposits();
+        vars.USDEInStabPool = stabilityPoolCached.getTotalUSDEDeposits();
         vars.recoveryModeAtStart = _checkRecoveryMode(vars.price);
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
@@ -867,7 +867,7 @@ contract TroveManagerLiquidations is
                 activePoolCached,
                 defaultPoolCached,
                 vars.price,
-                vars.EUSDInStabPool,
+                vars.USDEInStabPool,
                 _troveArray
             );
         } else {
@@ -876,7 +876,7 @@ contract TroveManagerLiquidations is
                 activePoolCached,
                 defaultPoolCached,
                 vars.price,
-                vars.EUSDInStabPool,
+                vars.USDEInStabPool,
                 _troveArray
             );
         }
@@ -887,7 +887,7 @@ contract TroveManagerLiquidations is
         );
 
         vars.collaterals = collateralManagerCached.getCollateralSupport();
-        // Move liquidated collateral and EUSD to the appropriate pools
+        // Move liquidated collateral and USDE to the appropriate pools
         stabilityPoolCached.offset(
             totals.totalDebtToOffset,
             vars.collaterals,
@@ -949,14 +949,14 @@ contract TroveManagerLiquidations is
             vars.liquidatedDebt,
             vars.liquidatedColls,
             totals.totalCollGasCompensations,
-            totals.totalEUSDGasCompensation
+            totals.totalUSDEGasCompensation
         );
 
         // Send gas compensation to caller
         _sendGasCompensation(
             activePoolCached,
             _liquidator,
-            totals.totalEUSDGasCompensation,
+            totals.totalUSDEGasCompensation,
             totals.totalCollGasCompensations
         );
     }
@@ -970,13 +970,13 @@ contract TroveManagerLiquidations is
         IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _price,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         address[] memory _troveArray
     ) internal returns (DataTypes.LiquidationTotals memory totals) {
         LocalVariables_LiquidationSequence memory vars;
         DataTypes.LiquidationValues memory singleLiquidation;
 
-        vars.remainingEUSDInStabPool = _EUSDInStabPool;
+        vars.remainingUSDEInStabPool = _USDEInStabPool;
         vars.backToNormalMode = false;
         vars.entireSystemDebt = getEntireSystemDebt();
         (vars.collaterals, vars.entireSystemColls) = getEntireSystemColl();
@@ -998,7 +998,7 @@ contract TroveManagerLiquidations is
 
             if (!vars.backToNormalMode) {
                 // Skip this trove if ICR is greater than MCR and Stability Pool is empty
-                if (vars.ICR >= mcr && vars.remainingEUSDInStabPool == 0) {
+                if (vars.ICR >= mcr && vars.remainingUSDEInStabPool == 0) {
                     continue;
                 }
 
@@ -1012,13 +1012,13 @@ contract TroveManagerLiquidations is
                     _defaultPool,
                     vars.user,
                     vars.ICR,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     TCR,
                     _price
                 );
 
                 // Update aggregate trackers
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
                 vars.entireSystemDebt = vars.entireSystemDebt.sub(
@@ -1057,10 +1057,10 @@ contract TroveManagerLiquidations is
                     _activePool,
                     _defaultPool,
                     vars.user,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     _price
                 );
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
 
@@ -1077,13 +1077,13 @@ contract TroveManagerLiquidations is
         IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _price,
-        uint256 _EUSDInStabPool,
+        uint256 _USDEInStabPool,
         address[] memory _troveArray
     ) internal returns (DataTypes.LiquidationTotals memory totals) {
         LocalVariables_LiquidationSequence memory vars;
         DataTypes.LiquidationValues memory singleLiquidation;
 
-        vars.remainingEUSDInStabPool = _EUSDInStabPool;
+        vars.remainingUSDEInStabPool = _USDEInStabPool;
 
         uint256 mcr = MCR();
         for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
@@ -1095,11 +1095,11 @@ contract TroveManagerLiquidations is
                     _activePool,
                     _defaultPool,
                     vars.user,
-                    vars.remainingEUSDInStabPool,
+                    vars.remainingUSDEInStabPool,
                     _price
                 );
 
-                vars.remainingEUSDInStabPool = vars.remainingEUSDInStabPool.sub(
+                vars.remainingUSDEInStabPool = vars.remainingUSDEInStabPool.sub(
                     singleLiquidation.debtToOffset
                 );
 
@@ -1123,9 +1123,9 @@ contract TroveManagerLiquidations is
             singleLiquidation.collGasCompensations
         );
 
-        newTotals.totalEUSDGasCompensation = oldTotals
-            .totalEUSDGasCompensation
-            .add(singleLiquidation.EUSDGasCompensation);
+        newTotals.totalUSDEGasCompensation = oldTotals
+            .totalUSDEGasCompensation
+            .add(singleLiquidation.USDEGasCompensation);
 
         newTotals.totalDebtInSequence = oldTotals.totalDebtInSequence.add(
             singleLiquidation.entireTroveDebt
@@ -1164,11 +1164,11 @@ contract TroveManagerLiquidations is
     function _sendGasCompensation(
         IActivePool _activePool,
         address _liquidator,
-        uint256 _EUSD,
+        uint256 _USDE,
         uint256[] memory _collAmounts
     ) internal {
-        if (_EUSD > 0) {
-            eusdToken.returnFromPool(gasPoolAddress, _liquidator, _EUSD);
+        if (_USDE > 0) {
+            usdeToken.returnFromPool(gasPoolAddress, _liquidator, _USDE);
         }
 
         _activePool.sendCollateral(
@@ -1207,8 +1207,8 @@ contract TroveManagerLiquidations is
         return collateralManager.getMCR();
     }
 
-    function EUSD_GAS_COMPENSATION() internal view returns (uint256) {
-        return collateralManager.getEUSDGasCompensation();
+    function USDE_GAS_COMPENSATION() internal view returns (uint256) {
+        return collateralManager.getUSDEGasCompensation();
     }
 
     function _checkRecoveryMode(uint256 _price) internal view returns (bool) {

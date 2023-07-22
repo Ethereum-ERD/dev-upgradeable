@@ -50,15 +50,15 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
 
     /* getRedemptionHints() - Helper function for finding the right hints to pass to redeemCollateral().
      *
-     * It simulates a redemption of `_EUSDamount` to figure out where the redemption sequence will start and what state the final Trove
+     * It simulates a redemption of `_USDEamount` to figure out where the redemption sequence will start and what state the final Trove
      * of the sequence will end up in.
      *
      * Returns three hints:
      *  - `firstRedemptionHint` is the address of the first Trove with ICR >= MCR (i.e. the first Trove that will be redeemed).
      *  - `partialRedemptionHintNICR` is the final nominal ICR of the last Trove of the sequence after being hit by partial redemption,
      *     or zero in case of no partial redemption.
-     *  - `truncatedEUSDamount` is the maximum amount that can be redeemed out of the the provided `_EUSDamount`. This can be lower than
-     *    `_EUSDamount` when redeeming the full amount would leave the last Trove of the redemption sequence with less net debt than the
+     *  - `truncatedUSDEamount` is the maximum amount that can be redeemed out of the the provided `_USDEamount`. This can be lower than
+     *    `_USDEamount` when redeeming the full amount would leave the last Trove of the redemption sequence with less net debt than the
      *    minimum allowed value (i.e. MIN_NET_DEBT).
      *
      * The number of Troves to consider for redemption can be capped by passing a non-zero value as `_maxIterations`, while passing zero
@@ -66,7 +66,7 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
      */
 
     function getRedemptionHints(
-        uint256 _EUSDamount,
+        uint256 _USDEamount,
         uint256 _price,
         uint256 _maxIterations
     )
@@ -75,12 +75,12 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
         returns (
             address firstRedemptionHint,
             uint256 partialRedemptionHintICR,
-            uint256 truncatedEUSDamount
+            uint256 truncatedUSDEamount
         )
     {
         ISortedTroves sortedTrovesCached = sortedTroves;
 
-        uint256 remainingEUSD = _EUSDamount;
+        uint256 remainingUSDE = _USDEamount;
         address currentTroveuser = sortedTrovesCached.getLast();
         uint256 price = _price;
         uint256 mcr = collateralManager.getMCR();
@@ -98,24 +98,24 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
             _maxIterations = type(uint256).max;
         }
 
-        uint256 gas = collateralManager.getEUSDGasCompensation();
+        uint256 gas = collateralManager.getUSDEGasCompensation();
         while (
             currentTroveuser != address(0) &&
-            remainingEUSD > 0 &&
+            remainingUSDE > 0 &&
             _maxIterations-- > 0
         ) {
             (
                 uint256[] memory colls,
                 address[] memory collaterals,
-                uint256 currEUSDDebt
+                uint256 currUSDEDebt
             ) = troveManager.getCurrentTroveAmounts(currentTroveuser);
-            uint256 netEUSDDebt = currEUSDDebt.sub(gas);
-            if (netEUSDDebt > remainingEUSD) {
+            uint256 netUSDEDebt = currUSDEDebt.sub(gas);
+            if (netUSDEDebt > remainingUSDE) {
                 uint256 minNetDebt = collateralManager.getMinNetDebt();
-                if (netEUSDDebt > minNetDebt) {
-                    uint256 maxRedeemableEUSD = ERDMath._min(
-                        remainingEUSD,
-                        netEUSDDebt.sub(minNetDebt)
+                if (netUSDEDebt > minNetDebt) {
+                    uint256 maxRedeemableUSDE = ERDMath._min(
+                        remainingUSDE,
+                        netUSDEDebt.sub(minNetDebt)
                     );
                     {
                         (uint256 currValue, ) = collateralManager.getValue(
@@ -123,11 +123,11 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
                             colls,
                             price
                         );
-                        currValue = currValue.sub(maxRedeemableEUSD);
-                        netEUSDDebt = netEUSDDebt.sub(maxRedeemableEUSD);
+                        currValue = currValue.sub(maxRedeemableUSDE);
+                        netUSDEDebt = netUSDEDebt.sub(maxRedeemableUSDE);
 
                         uint256 compositeDebt = _getCompositeDebt(
-                            netEUSDDebt,
+                            netUSDEDebt,
                             gas
                         );
                         partialRedemptionHintICR = ERDMath._computeCR(
@@ -136,11 +136,11 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
                         );
                     }
 
-                    remainingEUSD = remainingEUSD.sub(maxRedeemableEUSD);
+                    remainingUSDE = remainingUSDE.sub(maxRedeemableUSDE);
                 }
                 break;
             } else {
-                remainingEUSD = remainingEUSD.sub(netEUSDDebt);
+                remainingUSDE = remainingUSDE.sub(netUSDEDebt);
             }
 
             currentTroveuser = sortedTrovesCached.getPrev(currentTroveuser);
@@ -149,7 +149,7 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
             }
         }
 
-        truncatedEUSDamount = _EUSDamount.sub(remainingEUSD);
+        truncatedUSDEamount = _USDEamount.sub(remainingUSDE);
     }
 
     /* getApproxHint() - return address of a Trove that is, on average, (length / numTrials) positions away in the 

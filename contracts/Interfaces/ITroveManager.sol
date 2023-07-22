@@ -19,7 +19,7 @@ interface ITroveManager is IERDBase {
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerLiquidationsAddress,
         address _troveManagerRedemptionsAddress,
@@ -31,7 +31,7 @@ interface ITroveManager is IERDBase {
 
     function stabilityPool() external view returns (IStabilityPool);
 
-    // function eusdToken() external view returns (IEUSDToken);
+    // function usdeToken() external view returns (IUSDEToken);
 
     function getCollateralSupport() external view returns (address[] memory);
 
@@ -55,7 +55,7 @@ interface ITroveManager is IERDBase {
     function batchLiquidateTroves(address[] calldata _troveArray) external;
 
     function redeemCollateral(
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -83,7 +83,7 @@ interface ITroveManager is IERDBase {
         view
         returns (uint256[] memory, uint256[] memory, address[] memory);
 
-    function getPendingEUSDDebtReward(
+    function getPendingUSDEDebtReward(
         address _borrower
     ) external view returns (uint256);
 
@@ -119,10 +119,10 @@ interface ITroveManager is IERDBase {
 
     function getBorrowingRateWithDecay() external view returns (uint256);
 
-    function getBorrowingFee(uint256 EUSDDebt) external view returns (uint256);
+    function getBorrowingFee(uint256 USDEDebt) external view returns (uint256);
 
     function getBorrowingFeeWithDecay(
-        uint256 _EUSDDebt
+        uint256 _USDEDebt
     ) external view returns (uint256);
 
     function decayBaseRateFromBorrowing() external;
@@ -157,7 +157,7 @@ interface ITroveManager is IERDBase {
         address _collateral
     ) external view returns (uint256);
 
-    function getRewardSnapshotEUSD(
+    function getRewardSnapshotUSDE(
         address _borrower,
         address _collateral
     ) external view returns (uint256);
@@ -187,7 +187,7 @@ interface ITroveManager is IERDBase {
     function movePendingTroveRewardsToActivePool(
         IActivePool activePool,
         IDefaultPool defaultPool,
-        uint256 _EUSD,
+        uint256 _USDE,
         uint256[] memory collAmounts
     ) external;
 
@@ -216,7 +216,7 @@ interface ITroveManager is IERDBase {
 
     function getCCR() external view returns (uint256);
 
-    function getEUSDGasCompensation() external view returns (uint256);
+    function getUSDEGasCompensation() external view returns (uint256);
 
     function getTroveData() external view returns (DataTypes.TroveData memory);
 }

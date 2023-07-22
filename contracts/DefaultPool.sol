@@ -13,10 +13,10 @@ import "./Dependencies/ERDMath.sol";
 import "./Errors.sol";
 
 /*
- * The Default Pool holds the collateral and EUSD debt (but not EUSD tokens) from liquidations that have been redistributed
+ * The Default Pool holds the collateral and USDE debt (but not USDE tokens) from liquidations that have been redistributed
  * to active troves but not yet "applied", i.e. not yet recorded on a recipient active trove's struct.
  *
- * When a trove makes an operation that applies its pending collateral and EUSD debt, its pending collateral and EUSD debt is moved
+ * When a trove makes an operation that applies its pending collateral and USDE debt, its pending collateral and USDE debt is moved
  * from the Default Pool to the Active Pool.
  */
 contract DefaultPool is OwnableUpgradeable, IDefaultPool {
@@ -29,7 +29,7 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
     address public troveManagerAddress;
     address public activePoolAddress;
 
-    uint256 internal EUSDDebt; // debt
+    uint256 internal USDEDebt; // debt
 
     // --- Dependency setters ---
     function initialize() public initializer {
@@ -85,8 +85,8 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
         return IERC20Upgradeable(_collateral).balanceOf(address(this));
     }
 
-    function getEUSDDebt() external view override returns (uint256) {
-        return EUSDDebt;
+    function getUSDEDebt() external view override returns (uint256) {
+        return USDEDebt;
     }
 
     // --- Pool functionality ---
@@ -123,17 +123,17 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
         emit CollateralSent(activePool, _amounts);
     }
 
-    function increaseEUSDDebt(uint256 _amount) external override {
+    function increaseUSDEDebt(uint256 _amount) external override {
         _requireCallerIsTroveManager();
-        EUSDDebt = EUSDDebt.add(_amount);
-        emit DefaultPoolEUSDDebtUpdated(EUSDDebt);
+        USDEDebt = USDEDebt.add(_amount);
+        emit DefaultPoolUSDEDebtUpdated(USDEDebt);
     }
 
-    function decreaseEUSDDebt(uint256 _amount) external override {
+    function decreaseUSDEDebt(uint256 _amount) external override {
         _requireCallerIsTroveManager();
-        uint256 amount = _amount < EUSDDebt ? _amount : EUSDDebt;
-        EUSDDebt = EUSDDebt.sub(amount);
-        emit DefaultPoolEUSDDebtUpdated(EUSDDebt);
+        uint256 amount = _amount < USDEDebt ? _amount : USDEDebt;
+        USDEDebt = USDEDebt.sub(amount);
+        emit DefaultPoolUSDEDebtUpdated(USDEDebt);
     }
 
     // --- 'require' functions ---

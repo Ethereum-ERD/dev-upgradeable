@@ -5,17 +5,17 @@ pragma solidity 0.8.18;
 import "./IPool.sol";
 
 /*
- * The Stability Pool holds EUSD tokens deposited by Stability Pool depositors.
+ * The Stability Pool holds USDE tokens deposited by Stability Pool depositors.
  *
- * When a trove is liquidated, then depending on system conditions, some of its EUSD debt gets offset with
- * EUSD in the Stability Pool:  that is, the offset debt evaporates, and an equal amount of EUSD tokens in the Stability Pool is burned.
+ * When a trove is liquidated, then depending on system conditions, some of its USDE debt gets offset with
+ * USDE in the Stability Pool:  that is, the offset debt evaporates, and an equal amount of USDE tokens in the Stability Pool is burned.
  *
- * Thus, a liquidation causes each depositor to receive a EUSD loss, in proportion to their deposit as a share of total deposits.
+ * Thus, a liquidation causes each depositor to receive a USDE loss, in proportion to their deposit as a share of total deposits.
  * They also receive an ETH/wrapperETH gain, as the ETH/wrapperETH collateral of the liquidated trove is distributed among Stability depositors,
  * in the same proportion.
  *
  * When a liquidation occurs, it depletes every deposit by the same fraction: for example, a liquidation that depletes 40%
- * of the total EUSD in the Stability Pool, depletes 40% of each deposit.
+ * of the total USDE in the Stability Pool, depletes 40% of each deposit.
  *
  * A deposit that has experienced a series of liquidations is termed a "compounded deposit": each liquidation depletes the deposit,
  * multiplying it by some factor in range ]0,1[
@@ -46,7 +46,7 @@ interface IStabilityPool is IPool {
         address _collateral,
         uint256 _newBalance
     );
-    event StabilityPoolEUSDBalanceUpdated(uint256 _newBalance);
+    event StabilityPoolUSDEBalanceUpdated(uint256 _newBalance);
 
     event P_Updated(uint256 _P);
     event S_Updated(uint256[] _S, uint128 _epoch, uint128 _scale);
@@ -78,7 +78,7 @@ interface IStabilityPool is IPool {
     event CollGainWithdrawn(
         address indexed _depositor,
         uint256[] _collAmounts,
-        uint256 _EUSDLoss
+        uint256 _USDELoss
     );
     event GainPaidToDepositor(address indexed _depositor, uint256 _GAIN);
     event GainPaidToFrontEnd(address indexed _frontEnd, uint256 _GAIN);
@@ -98,7 +98,7 @@ interface IStabilityPool is IPool {
         address _collateralManagerAddress,
         address _troveManagerLiquidationsAddress,
         address _activePoolAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _priceFeedAddress,
         address _communityIssuanceAddress,
@@ -166,7 +166,7 @@ interface IStabilityPool is IPool {
      * Initial checks:
      * - Caller is TroveManager
      * ---
-     * Cancels out the specified debt against the EUSD contained in the Stability Pool (as far as possible)
+     * Cancels out the specified debt against the USDE contained in the Stability Pool (as far as possible)
      * and transfers the Trove's ETH/wrapperETH collateral from ActivePool to StabilityPool.
      * Only called by liquidation functions in the TroveManager.
      */
@@ -187,9 +187,9 @@ interface IStabilityPool is IPool {
     // function getCollateralAmount(address _collateral) external view returns (uint256);
 
     /*
-     * Returns EUSD held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
+     * Returns USDE held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
      */
-    function getTotalEUSDDeposits() external view returns (uint256);
+    function getTotalUSDEDeposits() external view returns (uint256);
 
     /*
      * Calculates the colalteral gain earned by the deposit since its last snapshots were taken.
@@ -201,7 +201,7 @@ interface IStabilityPool is IPool {
     /*
      * Return the user's compounded deposit.
      */
-    function getCompoundedEUSDDeposit(
+    function getCompoundedUSDEDeposit(
         address _depositor
     ) external view returns (uint256);
 

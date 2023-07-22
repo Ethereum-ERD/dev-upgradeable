@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 
 import "./ITroveManager.sol";
 import "./ICollateralManager.sol";
-import "./IEUSDToken.sol";
+import "./IUSDEToken.sol";
 import "./ICollSurplusPool.sol";
 import "./ISortedTroves.sol";
 
@@ -15,7 +15,7 @@ interface IBorrowerOperations {
         ITroveManager troveManager;
         ICollateralManager collateralManager;
         IActivePool activePool;
-        IEUSDToken eusdToken;
+        IUSDEToken usdeToken;
     }
 
     enum BorrowerOperation {
@@ -33,7 +33,7 @@ interface IBorrowerOperations {
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event EUSDTokenAddressChanged(address _eusdTokenAddress);
+    event USDETokenAddressChanged(address _usdeTokenAddress);
     event WETHAddressChanged(address _wethAddress);
     event TreasuryAddressChanged(address _treasuryAddress);
     event TroveDebtAddressChanged(address _troveDebtAddress);
@@ -47,7 +47,7 @@ interface IBorrowerOperations {
         uint256[] _amounts,
         BorrowerOperation operation
     );
-    event EUSDBorrowingFeePaid(address indexed _borrower, uint256 _EUSDFee);
+    event USDEBorrowingFeePaid(address indexed _borrower, uint256 _USDEFee);
 
     event Paused();
     event Unpaused();
@@ -64,14 +64,14 @@ interface IBorrowerOperations {
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _sortedTrovesAddress,
-        address _eusdTokenAddress
+        address _usdeTokenAddress
     ) external;
 
     function openTrove(
         address[] memory _collaterals,
         uint256[] memory _amounts,
         uint256 _maxFeePercentage,
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint
     ) external payable;
@@ -90,15 +90,15 @@ interface IBorrowerOperations {
         address _lowerHint
     ) external;
 
-    function withdrawEUSD(
-        uint256 _EUSDAmount,
+    function withdrawUSDE(
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint,
         uint256 _maxFeePercentage
     ) external;
 
-    function repayEUSD(
-        uint256 _EUSDAmount,
+    function repayUSDE(
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint
     ) external;
@@ -117,7 +117,7 @@ interface IBorrowerOperations {
         address[] memory _collsOut,
         uint256[] memory _amountsOut,
         uint256 _maxFeePercentage,
-        uint256 _EUSDChange,
+        uint256 _USDEChange,
         bool _isDebtIncrease,
         address _upperHint,
         address _lowerHint

@@ -30,10 +30,10 @@ contract CollateralManager is
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, Recovery Mode is triggered.
     uint256 public CCR;
 
-    // Amount of EUSD to be locked in gas pool on opening troves
-    uint256 public EUSD_GAS_COMPENSATION;
+    // Amount of USDE to be locked in gas pool on opening troves
+    uint256 public USDE_GAS_COMPENSATION;
 
-    // Minimum amount of net EUSD debt a trove must have
+    // Minimum amount of net USDE debt a trove must have
     uint256 public MIN_NET_DEBT;
 
     uint256 public BORROWING_FEE_FLOOR;
@@ -62,7 +62,7 @@ contract CollateralManager is
         BOOTSTRAP_PERIOD = 14 days;
         MCR = 11e17; // 110%
         CCR = 13e17; // 130%
-        EUSD_GAS_COMPENSATION = 200e18;
+        USDE_GAS_COMPENSATION = 200e18;
         MIN_NET_DEBT = 1800e18;
         BORROWING_FEE_FLOOR = (DECIMAL_PRECISION / 10000) * 25; // 0.25%
 
@@ -764,7 +764,7 @@ contract CollateralManager is
 
     function setGasCompensation(uint256 _gas) external override onlyOwner {
         assert(_gas <= MIN_NET_DEBT);
-        EUSD_GAS_COMPENSATION = _gas;
+        USDE_GAS_COMPENSATION = _gas;
     }
 
     function setMinDebt(uint256 _minDebt) external override onlyOwner {
@@ -815,8 +815,8 @@ contract CollateralManager is
         return MCR;
     }
 
-    function getEUSDGasCompensation() external view override returns (uint256) {
-        return EUSD_GAS_COMPENSATION;
+    function getUSDEGasCompensation() external view override returns (uint256) {
+        return USDE_GAS_COMPENSATION;
     }
 
     function getMinNetDebt() external view override returns (uint256) {

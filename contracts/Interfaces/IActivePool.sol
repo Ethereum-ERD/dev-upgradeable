@@ -6,7 +6,7 @@ import "./IPool.sol";
 
 interface IActivePool is IPool {
     // --- Events ---
-    event ActivePoolEUSDDebtUpdated(uint256 _EUSDDebt);
+    event ActivePoolUSDEDebtUpdated(uint256 _USDEDebt);
     event ActivePoolCollBalanceUpdated(
         address _collateral,
         uint256 _amount
@@ -24,9 +24,9 @@ interface IActivePool is IPool {
         uint256[] memory _colls
     ) external;
 
-    function increaseEUSDDebt(uint256 _amount) external;
+    function increaseUSDEDebt(uint256 _amount) external;
 
-    function decreaseEUSDDebt(uint256 _amount) external;
+    function decreaseUSDEDebt(uint256 _amount) external;
 
-    function getEUSDDebt() external view returns (uint256);
+    function getUSDEDebt() external view returns (uint256);
 }

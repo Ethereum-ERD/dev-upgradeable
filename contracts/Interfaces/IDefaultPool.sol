@@ -6,7 +6,7 @@ import "./IPool.sol";
 
 interface IDefaultPool is IPool {
     // --- Events ---
-    event DefaultPoolEUSDDebtUpdated(uint256 _EUSDDebt);
+    event DefaultPoolUSDEDebtUpdated(uint256 _USDEDebt);
     event DefaultPoolCollBalanceUpdated(
         address _collateral,
         uint256 _coll,
@@ -20,9 +20,9 @@ interface IDefaultPool is IPool {
         uint256[] memory _amounts
     ) external;
 
-    function increaseEUSDDebt(uint256 _amount) external;
+    function increaseUSDEDebt(uint256 _amount) external;
 
-    function decreaseEUSDDebt(uint256 _amount) external;
+    function decreaseUSDEDebt(uint256 _amount) external;
 
-    function getEUSDDebt() external view returns (uint256);
+    function getUSDEDebt() external view returns (uint256);
 }

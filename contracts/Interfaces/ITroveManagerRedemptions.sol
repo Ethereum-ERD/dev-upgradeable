@@ -16,7 +16,7 @@ interface ITroveManagerRedemptions is IERDBase {
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerAddress,
         address _collateralManagerAddress
@@ -27,7 +27,7 @@ interface ITroveManagerRedemptions is IERDBase {
     function getCollateralSupport() external view returns (address[] memory);
 
     function redeemCollateral(
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,

@@ -17,7 +17,7 @@ contract MultiTroveGetter is Initializable {
         uint256[] shares;
         uint256[] stakes;
         uint256[] snapshotColls;
-        uint256[] snapshotEUSDDebts;
+        uint256[] snapshotUSDEDebts;
     }
 
     TroveManager public troveManager; // XXX Troves missing from ITroveManager?
@@ -115,7 +115,7 @@ contract MultiTroveGetter is Initializable {
         );
         (data.stakes, , ) = troveManager.getTroveStakes(data.owner);
         data.snapshotColls = new uint256[](data.collaterals.length);
-        data.snapshotEUSDDebts = new uint256[](data.collaterals.length);
+        data.snapshotUSDEDebts = new uint256[](data.collaterals.length);
         uint256 collsLen = data.collaterals.length;
         for (uint256 i; i < collsLen; ++i) {
             address collateral = data.collaterals[i];
@@ -123,7 +123,7 @@ contract MultiTroveGetter is Initializable {
                 data.owner,
                 collateral
             );
-            data.snapshotEUSDDebts[i] = troveManager.getRewardSnapshotEUSD(
+            data.snapshotUSDEDebts[i] = troveManager.getRewardSnapshotUSDE(
                 data.owner,
                 collateral
             );

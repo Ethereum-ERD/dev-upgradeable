@@ -21,14 +21,14 @@ contract CollateralManagerTester is CollateralManager {
     }
 
     function getCompositeDebt(uint256 _debt) external view returns (uint256) {
-        return _getCompositeDebt(_debt, EUSD_GAS_COMPENSATION);
+        return _getCompositeDebt(_debt, USDE_GAS_COMPENSATION);
     }
 
 
     function getActualDebtFromComposite(
         uint256 _debtVal
     ) external view returns (uint256) {
-        return _getNetDebt(_debtVal, EUSD_GAS_COMPENSATION);
+        return _getNetDebt(_debtVal, USDE_GAS_COMPENSATION);
     }
 
     // Return the amount of collateral to be drawn from a trove's collateral and sent as gas compensation.

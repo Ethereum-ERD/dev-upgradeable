@@ -65,7 +65,7 @@ library Errors {
     string public constant BO_TROVE_ICR_MUST_GT_CCR = "19"; // 'Operation must leave trove with ICR >= CCR'
     string public constant BO_NOT_PERMIT_FOR_TCR_LT_CCR = "20"; // 'An operation that would result in TCR < CCR is not permitted'
     string public constant BO_TROVE_DEBT_MUST_GT_MIN = "21"; // 'Trove's net debt must be greater than minimum'
-    string public constant BO_USDE_INSUFFICIENT = "22"; // 'Caller doesnt have enough EUSD to make repayment'
+    string public constant BO_USDE_INSUFFICIENT = "22"; // 'Caller doesnt have enough USDE to make repayment'
     string public constant BO_MAX_FEE_EXCEED_100 = "23"; // 'Max fee percentage must less than or equal to 100%'
     string public constant BO_MAX_FEE_NOT_IN_RANGE = "24"; // 'Max fee percentage must be between 0.75% and 100%'
 
@@ -109,7 +109,7 @@ library Errors {
     string public constant TM_TROVE_NOT_EXIST_OR_CLOSED = "87"; //  'Trove does not exist or is closed'
 
     string public constant TMR_CANNOT_REDEEM = "88"; // 'Unable to redeem any amount'
-    string public constant TMR_REDEMPTION_AMOUNT_EXCEED_BALANCE = "89"; // 'Requested redemption amount must be <= user's EUSD token balance'
+    string public constant TMR_REDEMPTION_AMOUNT_EXCEED_BALANCE = "89"; // 'Requested redemption amount must be <= user's USDE token balance'
     string public constant TMR_AMOUNT_MUST_GT_ZERO = "90"; // 'Amount must be greater than zero'
     string public constant TMR_CANNOT_REDEEM_WHEN_TCR_LT_MCR = "91"; // 'Cannot redeem when TCR < MCR'
     string public constant TMR_REDEMPTION_NOT_ALLOWED = "92"; // 'Redemptions are not allowed during bootstrap phase'

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "../EUSDToken.sol";
+import "../USDEToken.sol";
 
-contract EUSDTokenTester is EUSDToken {
+contract USDETokenTester is USDEToken {
     bytes32 private immutable _PERMIT_TYPEHASH =
         0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
@@ -16,7 +16,7 @@ contract EUSDTokenTester is EUSDToken {
         address _treasuryAddress,
         address _liquidityIncentiveAddress
     ) {
-        EUSDToken.initialize(
+        USDEToken.initialize(
             _troveManagerAddress,
             _troveManagerLiquidatorAddress,
             _troveManagerRedemptionsAddress,

@@ -7,7 +7,7 @@ import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/IActivePool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IDefaultPool.sol";
-import "./Interfaces/IEUSDToken.sol";
+import "./Interfaces/IUSDEToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 
 library DataTypes {
@@ -59,14 +59,14 @@ library DataTypes {
         address troveDebtAddress;
         //address of the interest rate strategy
         address interestRateAddress;
-        //address of the EUSD token
-        address eusdTokenAddress;
+        //address of the USDE token
+        address usdeTokenAddress;
         uint256 factor;
     }
 
-    // Object containing the ETH/wrapperETH and EUSD snapshots for a given active trove
+    // Object containing the ETH/wrapperETH and USDE snapshots for a given active trove
     struct RewardSnapshot {
-        mapping(address => uint256) EUSDDebt;
+        mapping(address => uint256) USDEDebt;
         mapping(address => uint256) collShares;
     }
 
@@ -75,7 +75,7 @@ library DataTypes {
         ICollateralManager collateralManager;
         IActivePool activePool;
         IDefaultPool defaultPool;
-        IEUSDToken eusdToken;
+        IUSDEToken usdeToken;
         ISortedTroves sortedTroves;
         ICollSurplusPool collSurplusPool;
         address gasPoolAddress;
@@ -87,7 +87,7 @@ library DataTypes {
         uint256 entireTroveDebt;
         uint256[] entireTroveColls;
         uint256[] collGasCompensations;
-        uint256 EUSDGasCompensation;
+        uint256 USDEGasCompensation;
         uint256 debtToOffset;
         uint256[] collToSendToSPs;
         uint256 debtToRedistribute;
@@ -99,7 +99,7 @@ library DataTypes {
         uint256[] totalCollInSequences;
         uint256 totalDebtInSequence;
         uint256[] totalCollGasCompensations;
-        uint256 totalEUSDGasCompensation;
+        uint256 totalUSDEGasCompensation;
         uint256 totalDebtToOffset;
         uint256[] totalCollToSendToSPs;
         uint256 totalDebtToRedistribute;
@@ -110,19 +110,19 @@ library DataTypes {
     // --- Variable container structs for redemptions ---
 
     struct RedemptionTotals {
-        uint256 remainingEUSD;
-        uint256 totalEUSDToRedeem;
+        uint256 remainingUSDE;
+        uint256 totalUSDEToRedeem;
         uint256[] totalCollDrawns;
         uint256 collFee;
         uint256[] collFees;
         uint256[] collToSendToRedeemers;
         uint256 decayedBaseRate;
         uint256 price;
-        uint256 totalEUSDSupplyAtStart;
+        uint256 totalUSDESupplyAtStart;
     }
 
     struct SingleRedemptionValues {
-        uint256 EUSDLot;
+        uint256 USDELot;
         address[] collaterals;
         uint256[] collLots;
         uint256[] collRemaind;

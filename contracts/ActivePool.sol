@@ -13,9 +13,9 @@ import "./Interfaces/IWETH.sol";
 import "./Errors.sol";
 
 /*
- * The Active Pool holds the ETH & wrapper ETH collateral and EUSD debt (but not EUSD tokens) for all active troves.
+ * The Active Pool holds the ETH & wrapper ETH collateral and USDE debt (but not USDE tokens) for all active troves.
  *
- * When a trove is liquidated, it's collateral and EUSD debt are transferred from the Active Pool, to either the
+ * When a trove is liquidated, it's collateral and USDE debt are transferred from the Active Pool, to either the
  * Stability Pool, the Default Pool, or both, depending on the liquidation conditions.
  *
  */
@@ -38,7 +38,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     address public liquidityIncentiveAddress;
     address internal collSurplusPoolAddress;
     IWETH public WETH;
-    uint256 internal EUSDDebt;
+    uint256 internal USDEDebt;
 
     // --- Contract setters ---
     function initialize() public initializer {
@@ -135,8 +135,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     }
 
     // Debt that this pool holds.
-    function getEUSDDebt() external view override returns (uint256) {
-        return EUSDDebt;
+    function getUSDEDebt() external view override returns (uint256) {
+        return USDEDebt;
     }
 
     // --- Pool functionality ---
@@ -250,18 +250,18 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
             (_contractAddress == collSurplusPoolAddress));
     }
 
-    // Record EUSD Debt of this pool
-    function increaseEUSDDebt(uint256 _amount) external override {
+    // Record USDE Debt of this pool
+    function increaseUSDEDebt(uint256 _amount) external override {
         _requireCallerIsBOorTroveM();
-        EUSDDebt = EUSDDebt.add(_amount);
-        emit ActivePoolEUSDDebtUpdated(EUSDDebt);
+        USDEDebt = USDEDebt.add(_amount);
+        emit ActivePoolUSDEDebtUpdated(USDEDebt);
     }
 
-    function decreaseEUSDDebt(uint256 _amount) external override {
+    function decreaseUSDEDebt(uint256 _amount) external override {
         _requireCallerIsBOorTroveMorSP();
-        uint256 amount = _amount < EUSDDebt ? _amount : EUSDDebt;
-        EUSDDebt = EUSDDebt.sub(amount);
-        emit ActivePoolEUSDDebtUpdated(EUSDDebt);
+        uint256 amount = _amount < USDEDebt ? _amount : USDEDebt;
+        USDEDebt = USDEDebt.sub(amount);
+        emit ActivePoolUSDEDebtUpdated(USDEDebt);
     }
 
     // --- 'require' functions ---

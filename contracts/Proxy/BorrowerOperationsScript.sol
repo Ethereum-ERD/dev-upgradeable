@@ -14,7 +14,7 @@ contract BorrowerOperationsScript {
         address[] memory _colls,
         uint256[] memory _amounts,
         uint256 _maxFeePercentage,
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint
     ) external payable {
@@ -22,7 +22,7 @@ contract BorrowerOperationsScript {
             _colls,
             _amounts,
             _maxFeePercentage,
-            _EUSDAmount,
+            _USDEAmount,
             _upperHint,
             _lowerHint
         );
@@ -56,13 +56,13 @@ contract BorrowerOperationsScript {
         );
     }
 
-    function withdrawEUSD(
+    function withdrawUSDE(
         uint256 _amount,
         address _upperHint,
         address _lowerHint,
         uint256 _maxFee
     ) external {
-        borrowerOperations.withdrawEUSD(
+        borrowerOperations.withdrawUSDE(
             _amount,
             _upperHint,
             _lowerHint,
@@ -70,12 +70,12 @@ contract BorrowerOperationsScript {
         );
     }
 
-    function repayEUSD(
+    function repayUSDE(
         uint256 _amount,
         address _upperHint,
         address _lowerHint
     ) external {
-        borrowerOperations.repayEUSD(_amount, _upperHint, _lowerHint);
+        borrowerOperations.repayUSDE(_amount, _upperHint, _lowerHint);
     }
 
     function closeTrove() external {
@@ -88,7 +88,7 @@ contract BorrowerOperationsScript {
         address[] memory _collsOut,
         uint256[] memory _amountsOut,
         uint256 _maxFeePercentage,
-        uint256 _EUSDChange,
+        uint256 _USDEChange,
         bool _isDebtIncrease,
         address _upperHint,
         address _lowerHint
@@ -99,7 +99,7 @@ contract BorrowerOperationsScript {
             _collsOut,
             _amountsOut,
             _maxFeePercentage,
-            _EUSDChange,
+            _USDEChange,
             _isDebtIncrease,
             _upperHint,
             _lowerHint

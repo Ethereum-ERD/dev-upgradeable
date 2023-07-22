@@ -13,7 +13,7 @@ contract TroveManagerScript {
     }
 
     function redeemCollateral(
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -22,7 +22,7 @@ contract TroveManagerScript {
         uint256 _maxFeePercentage
     ) external {
         troveManager.redeemCollateral(
-            _EUSDAmount,
+            _USDEAmount,
             _firstRedemptionHint,
             _upperPartialRedemptionHint,
             _lowerPartialRedemptionHint,

@@ -7,25 +7,25 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "./Dependencies/ERDMath.sol";
-import "./Interfaces/IEUSDToken.sol";
+import "./Interfaces/IUSDEToken.sol";
 
 /*
  *
- * --- Functionality added specific to the EUSDToken ---
+ * --- Functionality added specific to the USDEToken ---
  *
  * 1) Transfer protection: blacklist of addresses that are invalid recipients (i.e. core ERD contracts) in external
- * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending EUSD directly to a ERD
+ * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending USDE directly to a ERD
  * core contract, when they should rather call the right function.
  *
- * 2) sendToPool() and returnFromPool(): functions callable only ERD core contracts, which move EUSD tokens between ERD <-> user.
+ * 2) sendToPool() and returnFromPool(): functions callable only ERD core contracts, which move USDE tokens between ERD <-> user.
  */
 
-contract EUSDToken is ERC20Upgradeable, IEUSDToken {
+contract USDEToken is ERC20Upgradeable, IUSDEToken {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
 
-    string internal constant _NAME = "EUSD Stablecoin";
-    string internal constant _SYMBOL = "EUSD";
+    string internal constant _NAME = "USDE Stablecoin";
+    string internal constant _SYMBOL = "USDE";
     string internal constant _VERSION = "1";
     uint8 internal constant _DECIMALS = 18;
 
@@ -217,7 +217,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         bytes32 r,
         bytes32 s
     ) external override {
-        require(deadline >= block.timestamp, "EUSD: expired deadline");
+        require(deadline >= block.timestamp, "USDE: expired deadline");
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -235,7 +235,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
             )
         );
         address recoveredAddress = ECDSAUpgradeable.recover(digest, v, r, s);
-        require(recoveredAddress == owner, "EUSD: invalid signature");
+        require(recoveredAddress == owner, "USDE: invalid signature");
         _approve(owner, spender, amount);
     }
 
@@ -269,26 +269,26 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "EUSD: Contract check error");
+        require(_contract.isContract(), "USDE: Contract check error");
     }
 
     function _requireValidRecipient(address _recipient) internal view {
         require(
             _recipient != address(0) && _recipient != address(this),
-            "EUSD: Cannot transfer tokens directly to the EUSD token contract or the zero address"
+            "USDE: Cannot transfer tokens directly to the USDE token contract or the zero address"
         );
         require(
             _recipient != stabilityPoolAddress &&
                 _recipient != troveManagerAddress &&
                 _recipient != borrowerOperationsAddress,
-            "EUSD: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
+            "USDE: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
         );
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
         require(
             msg.sender == borrowerOperationsAddress,
-            "EUSDToken: Caller is not BorrowerOperations"
+            "USDEToken: Caller is not BorrowerOperations"
         );
     }
 
@@ -296,7 +296,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         require(
             msg.sender == troveManagerAddress ||
                 msg.sender == borrowerOperationsAddress,
-            "EUSD: Caller is not TroveManager or BO"
+            "USDE: Caller is not TroveManager or BO"
         );
     }
 
@@ -306,14 +306,14 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
                 msg.sender == troveManagerAddress ||
                 msg.sender == stabilityPoolAddress ||
                 msg.sender == troveManagerRedemptionsAddress,
-            "EUSD: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
+            "USDE: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
     function _requireCallerIsStabilityPool() internal view {
         require(
             msg.sender == stabilityPoolAddress,
-            "EUSD: Caller is not the StabilityPool"
+            "USDE: Caller is not the StabilityPool"
         );
     }
 
@@ -321,7 +321,7 @@ contract EUSDToken is ERC20Upgradeable, IEUSDToken {
         require(
             msg.sender == troveManagerLiquidationsAddress ||
                 msg.sender == stabilityPoolAddress,
-            "EUSD: Caller is neither TroveManager nor StabilityPool"
+            "USDE: Caller is neither TroveManager nor StabilityPool"
         );
     }
 

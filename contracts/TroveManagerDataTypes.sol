@@ -13,7 +13,7 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
         address _newBorrowerOperationsAddress
     );
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
-    event EUSDTokenAddressChanged(address _newEUSDTokenAddress);
+    event USDETokenAddressChanged(address _newUSDETokenAddress);
     event ActivePoolAddressChanged(address _activePoolAddress);
     event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
@@ -39,12 +39,12 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
         uint256 _liquidatedDebt,
         uint256[] _liquidatedColls,
         uint256[] _collGasCompensations,
-        uint256 _EUSDGasCompensation
+        uint256 _USDEGasCompensation
     );
 
     event Redemption(
-        uint256 _attemptedEUSDAmount,
-        uint256 _actualEUSDAmount,
+        uint256 _attemptedUSDEAmount,
+        uint256 _actualUSDEAmount,
         address[] _collaterals,
         uint256[] _collSents,
         uint256[] _collFees
@@ -71,10 +71,10 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
         uint256[] _totalStakesSnapshot,
         uint256[] _totalCollateralSnapshot
     );
-    event LTermsUpdated(
+    event ETermsUpdated(
         address _collateral,
-        uint256 _L_Coll,
-        uint256 _L_EUSDDebt
+        uint256 _E_Coll,
+        uint256 _E_USDEDebt
     );
     event TroveSnapshotsUpdated(uint256 _unix);
     event TroveIndexUpdated(address _borrower, uint256 _newIndex);

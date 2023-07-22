@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../Dependencies/ERDMath.sol";
-import "../Interfaces/IEUSDToken.sol";
+import "../Interfaces/IUSDEToken.sol";
 import "../Interfaces/IStabilityPool.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "./BorrowerOperationsScript.sol";
@@ -18,12 +18,12 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
     ICollateralManager immutable collateralManager;
     IStabilityPool immutable stabilityPool;
     IPriceFeed immutable priceFeed;
-    IERC20Upgradeable immutable eusdToken;
+    IERC20Upgradeable immutable usdeToken;
 
     constructor(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _collateralManagerAddress
     )
         BorrowerOperationsScript(
@@ -42,13 +42,13 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
         IPriceFeed priceFeedCached = troveManagerCached.priceFeed();
         priceFeed = priceFeedCached;
 
-        IEUSDToken eusdTokenCached = IEUSDToken(_eusdTokenAddress);
-        eusdToken = IERC20Upgradeable(eusdTokenCached);
+        IUSDEToken usdeTokenCached = IUSDEToken(_usdeTokenAddress);
+        usdeToken = IERC20Upgradeable(usdeTokenCached);
     }
 
     struct LocalVariables_troveParams {
         uint maxFee;
-        uint EUSDAmount;
+        uint USDEAmount;
         address upperHint;
         address lowerHint;
         address[] colls;
@@ -57,10 +57,10 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
         uint[] amountsIn;
     }
 
-    function claimCollateralAndOpenTrove(uint _maxFee, uint _EUSDAmount, address _upperHint, address _lowerHint) external payable {
+    function claimCollateralAndOpenTrove(uint _maxFee, uint _USDEAmount, address _upperHint, address _lowerHint) external payable {
         LocalVariables_troveParams memory vars;
         vars.maxFee = _maxFee;
-        vars.EUSDAmount = _EUSDAmount;
+        vars.USDEAmount = _USDEAmount;
         vars.lowerHint = _lowerHint;
         vars.upperHint = _upperHint;
         address[] memory collaterals = troveManager.getCollateralSupport();
@@ -90,7 +90,7 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
         uint totalCollateral = balanceAfter.sub(balanceBefore).add(msg.value);
 
         // Open trove with obtained collateral, plus collateral sent by user
-        borrowerOperations.openTrove{ value: totalCollateral }(vars.colls, vars.amountsIn, vars.maxFee, vars.EUSDAmount, vars.upperHint, vars.lowerHint);
+        borrowerOperations.openTrove{ value: totalCollateral }(vars.colls, vars.amountsIn, vars.maxFee, vars.USDEAmount, vars.upperHint, vars.lowerHint);
     }
 
     function claimSPRewardsAndRecycle(uint _maxFee, address _upperHint, address _lowerHint) external {
@@ -120,30 +120,30 @@ contract BorrowerWrappersScript is BorrowerOperationsScript, ETHTransferScript {
 
         vars.amountsIn = ERDMath._subArray(vars.balancesAfter, vars.balancesBefore);
 
-        // Add claimed ETH to trove, get more EUSD and stake it into the Stability Pool
+        // Add claimed ETH to trove, get more USDE and stake it into the Stability Pool
         if (claimedCollateral != 0 || ERDMath._arrayIsNonzero(vars.amountsIn)) {
             _requireUserHasTrove(address(this));
 
-            uint EUSDAmount = _getNetEUSDAmount(claimedCollateral, vars.colls, vars.amountsIn);
+            uint USDEAmount = _getNetUSDEAmount(claimedCollateral, vars.colls, vars.amountsIn);
             borrowerOperations.addColl{ value: claimedCollateral }(vars.colls, vars.amountsIn, vars.upperHint, vars.lowerHint);
-            // Provide withdrawn EUSD to Stability Pool
-            if (EUSDAmount != 0) {
-                borrowerOperations.withdrawEUSD(vars.EUSDAmount, vars.upperHint, vars.lowerHint, vars.maxFee);
-                stabilityPool.provideToSP(EUSDAmount, address(0));
+            // Provide withdrawn USDE to Stability Pool
+            if (USDEAmount != 0) {
+                borrowerOperations.withdrawUSDE(vars.USDEAmount, vars.upperHint, vars.lowerHint, vars.maxFee);
+                stabilityPool.provideToSP(USDEAmount, address(0));
             }
         }
     }
 
-    function _getNetEUSDAmount(uint _ETH, address[] memory _colls, uint[] memory _amounts) internal returns (uint) {
+    function _getNetUSDEAmount(uint _ETH, address[] memory _colls, uint[] memory _amounts) internal returns (uint) {
         uint price = priceFeed.fetchPrice();
         collateralManager.priceUpdate();
         uint ICR = troveManager.getCurrentICR(address(this), price);
         (uint value, ) = collateralManager.getValue(_colls, _amounts, price);
         uint collateralValue = value.mul(ERDMath.DECIMAL_PRECISION).add(_ETH.mul(price));
 
-        uint EUSDAmount = collateralValue.div(ICR);
+        uint USDEAmount = collateralValue.div(ICR);
         uint borrowingRate = troveManager.getBorrowingRateWithDecay();
-        uint netDebt = EUSDAmount.mul(ERDMath.DECIMAL_PRECISION).div(ERDMath.DECIMAL_PRECISION.add(borrowingRate));
+        uint netDebt = USDEAmount.mul(ERDMath.DECIMAL_PRECISION).div(ERDMath.DECIMAL_PRECISION.add(borrowingRate));
 
         return netDebt;
     }

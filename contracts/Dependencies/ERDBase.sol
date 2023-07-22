@@ -7,7 +7,7 @@ import "./ERDMath.sol";
 import "../Interfaces/IActivePool.sol";
 import "../Interfaces/ICollateralManager.sol";
 import "../Interfaces/IDefaultPool.sol";
-import "../Interfaces/IEUSDToken.sol";
+import "../Interfaces/IUSDEToken.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/ITroveDebt.sol";
 import "../Interfaces/IERDBase.sol";
@@ -29,7 +29,7 @@ contract ERDBase is BaseMath, IERDBase {
     ICollateralManager public collateralManager;
 
     IDefaultPool public defaultPool;
-    IEUSDToken public eusdToken;
+    IUSDEToken public usdeToken;
     ITroveDebt public troveDebt;
 
     IPriceFeed public override priceFeed;
@@ -109,9 +109,9 @@ contract ERDBase is BaseMath, IERDBase {
         returns (uint256 entireSystemDebt)
     {
         uint activeDebt = troveDebt.totalSupply();
-        uint closedDebt = defaultPool.getEUSDDebt();
-        uint gasEUSD = eusdToken.balanceOf(gasPoolAddress);
-        return activeDebt.add(closedDebt).add(gasEUSD);
+        uint closedDebt = defaultPool.getUSDEDebt();
+        uint gasUSDE = usdeToken.balanceOf(gasPoolAddress);
+        return activeDebt.add(closedDebt).add(gasUSDE);
     }
 
     function _getTCR(

@@ -4,24 +4,24 @@ pragma solidity 0.8.18;
 import "../TroveManager.sol";
 import "../BorrowerOperations.sol";
 import "../StabilityPool.sol";
-import "../EUSDToken.sol";
+import "../USDEToken.sol";
 
 contract EchidnaProxy {
     TroveManager troveManager;
     BorrowerOperations borrowerOperations;
     StabilityPool stabilityPool;
-    EUSDToken eusdToken;
+    USDEToken usdeToken;
 
     constructor(
         TroveManager _troveManager,
         BorrowerOperations _borrowerOperations,
         StabilityPool _stabilityPool,
-        EUSDToken _eusdToken
+        USDEToken _usdeToken
     ) {
         troveManager = _troveManager;
         borrowerOperations = _borrowerOperations;
         stabilityPool = _stabilityPool;
-        eusdToken = _eusdToken;
+        usdeToken = _usdeToken;
     }
 
     receive() external payable {
@@ -43,7 +43,7 @@ contract EchidnaProxy {
     }
 
     function redeemCollateralPrx(
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -52,7 +52,7 @@ contract EchidnaProxy {
         uint256 _maxFee
     ) external {
         troveManager.redeemCollateral(
-            _EUSDAmount,
+            _USDEAmount,
             _firstRedemptionHint,
             _upperPartialRedemptionHint,
             _lowerPartialRedemptionHint,
@@ -66,7 +66,7 @@ contract EchidnaProxy {
     function openTrovePrx(
         uint256 _ETH,
         uint256 _maxFeePercentage,
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint,
         address[] memory _colls,
@@ -76,7 +76,7 @@ contract EchidnaProxy {
             _colls,
             _amounts,
             _maxFeePercentage,
-            _EUSDAmount,
+            _USDEAmount,
             _upperHint,
             _lowerHint
         );
@@ -111,13 +111,13 @@ contract EchidnaProxy {
         );
     }
 
-    function withdrawEUSDPrx(
+    function withdrawUSDEPrx(
         uint256 _amount,
         address _upperHint,
         address _lowerHint,
         uint256 _maxFee
     ) external {
-        borrowerOperations.withdrawEUSD(
+        borrowerOperations.withdrawUSDE(
             _amount,
             _upperHint,
             _lowerHint,
@@ -125,12 +125,12 @@ contract EchidnaProxy {
         );
     }
 
-    function repayEUSDPrx(
+    function repayUSDEPrx(
         uint256 _amount,
         address _upperHint,
         address _lowerHint
     ) external {
-        borrowerOperations.repayEUSD(_amount, _upperHint, _lowerHint);
+        borrowerOperations.repayUSDE(_amount, _upperHint, _lowerHint);
     }
 
     function closeTrovePrx() external {
@@ -143,7 +143,7 @@ contract EchidnaProxy {
         uint256[] memory _amountsIn,
         address[] memory _collsOut,
         uint256[] memory _amountsOut,
-        uint256 _EUSDChange,
+        uint256 _USDEChange,
         bool _isDebtIncrease,
         address _upperHint,
         address _lowerHint,
@@ -155,7 +155,7 @@ contract EchidnaProxy {
             _collsOut,
             _amountsOut,
             _maxFeePercentage,
-            _EUSDChange,
+            _USDEChange,
             _isDebtIncrease,
             _upperHint,
             _lowerHint
@@ -171,20 +171,20 @@ contract EchidnaProxy {
         stabilityPool.withdrawFromSP(_amount);
     }
 
-    // EUSD Token
+    // USDE Token
 
     function transferPrx(
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        return eusdToken.transfer(recipient, amount);
+        return usdeToken.transfer(recipient, amount);
     }
 
     function approvePrx(
         address spender,
         uint256 amount
     ) external returns (bool) {
-        return eusdToken.increaseAllowance(spender, amount);
+        return usdeToken.increaseAllowance(spender, amount);
     }
 
     function transferFromPrx(
@@ -192,21 +192,21 @@ contract EchidnaProxy {
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        return eusdToken.transferFrom(sender, recipient, amount);
+        return usdeToken.transferFrom(sender, recipient, amount);
     }
 
     function increaseAllowancePrx(
         address spender,
         uint256 addedValue
     ) external returns (bool) {
-        require(eusdToken.approve(spender, 0));
-        return eusdToken.increaseAllowance(spender, addedValue);
+        require(usdeToken.approve(spender, 0));
+        return usdeToken.increaseAllowance(spender, addedValue);
     }
 
     function decreaseAllowancePrx(
         address spender,
         uint256 subtractedValue
     ) external returns (bool) {
-        return eusdToken.decreaseAllowance(spender, subtractedValue);
+        return usdeToken.decreaseAllowance(spender, subtractedValue);
     }
 }

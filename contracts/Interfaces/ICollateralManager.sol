@@ -190,7 +190,7 @@ interface ICollateralManager {
 
     function getCCR() external view returns (uint256);
 
-    function getEUSDGasCompensation() external view returns (uint256);
+    function getUSDEGasCompensation() external view returns (uint256);
 
     function getMinNetDebt() external view returns (uint256);
 

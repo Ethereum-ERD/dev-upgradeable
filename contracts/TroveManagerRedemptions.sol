@@ -52,7 +52,7 @@ contract TroveManagerRedemptions is
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerAddress,
         address _collateralManagerAddress
@@ -64,7 +64,7 @@ contract TroveManagerRedemptions is
         _requireIsContract(_gasPoolAddress);
         _requireIsContract(_collSurplusPoolAddress);
         _requireIsContract(_priceFeedAddress);
-        _requireIsContract(_eusdTokenAddress);
+        _requireIsContract(_usdeTokenAddress);
         _requireIsContract(_sortedTrovesAddress);
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_collateralManagerAddress);
@@ -76,7 +76,7 @@ contract TroveManagerRedemptions is
         gasPoolAddress = _gasPoolAddress;
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
-        eusdToken = IEUSDToken(_eusdTokenAddress);
+        usdeToken = IUSDEToken(_usdeTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         troveManager = ITroveManager(_troveManagerAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
@@ -90,7 +90,7 @@ contract TroveManagerRedemptions is
         emit GasPoolAddressChanged(_gasPoolAddress);
         emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
-        emit EUSDTokenAddressChanged(_eusdTokenAddress);
+        emit USDETokenAddressChanged(_usdeTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
         emit CollateralManagerAddressChanged(_collateralManagerAddress);
@@ -117,11 +117,11 @@ contract TroveManagerRedemptions is
 
     // --- Redemption functions ---
 
-    // Redeem as much collateral as possible from _borrower's Trove in exchange for EUSD up to _maxEUSDamount
+    // Redeem as much collateral as possible from _borrower's Trove in exchange for USDE up to _maxUSDEamount
     function _redeemCollateralFromTrove(
         DataTypes.ContractsCache memory _contractsCache,
         address _borrower,
-        uint256 _maxEUSDamount,
+        uint256 _maxUSDEamount,
         uint256 _price,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -145,9 +145,9 @@ contract TroveManagerRedemptions is
             debt = contractsCache.troveManager.getTroveDebt(borrower);
             // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
 
-            singleRedemption.EUSDLot = ERDMath._min(
-                _maxEUSDamount,
-                debt.sub(EUSD_GAS_COMPENSATION())
+            singleRedemption.USDELot = ERDMath._min(
+                _maxUSDEamount,
+                debt.sub(USDE_GAS_COMPENSATION())
             );
 
             // Get the collLot of equivalent value in USD
@@ -155,7 +155,7 @@ contract TroveManagerRedemptions is
                 singleRedemption.collLots,
                 singleRedemption.collRemaind
             ) = _calculateCollLot(
-                singleRedemption.EUSDLot,
+                singleRedemption.USDELot,
                 collAssets,
                 colls,
                 price
@@ -163,15 +163,15 @@ contract TroveManagerRedemptions is
         }
         uint256[] memory collRemainds = singleRedemption.collRemaind;
 
-        // Decrease the debt and collateral of the current Trove according to the EUSD lot and corresponding collateral to send
-        uint256 newDebt = debt.sub(singleRedemption.EUSDLot);
+        // Decrease the debt and collateral of the current Trove according to the USDE lot and corresponding collateral to send
+        uint256 newDebt = debt.sub(singleRedemption.USDELot);
         (uint256 newValue, ) = contractsCache.collateralManager.getValue(
             collAssets,
             collRemainds,
             price
         );
 
-        uint256 gas = EUSD_GAS_COMPENSATION();
+        uint256 gas = USDE_GAS_COMPENSATION();
         if (newDebt == gas) {
             // No debt left in the Trove (except for the liquidation reserve), therefore the trove gets closed
             troveManager.removeStake(borrower);
@@ -210,8 +210,8 @@ contract TroveManagerRedemptions is
                 upperPartialRedemptionHint,
                 lowerPartialRedemptionHint
             );
-            uint256 EUSDLot = singleRedemption.EUSDLot;
-            contractsCache.troveManager.decreaseTroveDebt(borrower, EUSDLot);
+            uint256 USDELot = singleRedemption.USDELot;
+            contractsCache.troveManager.decreaseTroveDebt(borrower, USDELot);
             uint256[] memory shares = contractsCache
                 .collateralManager
                 .resetEToken(borrower, collAssets, collRemainds);
@@ -230,18 +230,18 @@ contract TroveManagerRedemptions is
     }
 
     function _calculateCollLot(
-        uint256 _EUSDLot,
+        uint256 _USDELot,
         address[] memory _collaterals,
         uint256[] memory _colls,
         uint256 _price
     ) internal view returns (uint256[] memory, uint256[] memory) {
-        uint256 EUSDLot = _EUSDLot;
+        uint256 USDELot = _USDELot;
         uint256 collLen = _colls.length;
         uint256[] memory colls = new uint256[](collLen);
         uint256[] memory remaindColls = new uint256[](collLen);
         (uint256 totalValue, uint256[] memory values) = collateralManager
             .getValue(_collaterals, _colls, _price);
-        bool flag = totalValue < EUSDLot;
+        bool flag = totalValue < USDELot;
         if (flag) {
             for (uint256 i = collLen - 1; i >= 0; i--) {
                 colls[i] = _colls[i];
@@ -255,24 +255,24 @@ contract TroveManagerRedemptions is
                 uint256 value = values[i];
                 uint256 coll = _colls[i];
                 if (value != 0) {
-                    if (EUSDLot == 0) {
+                    if (USDELot == 0) {
                         remaindColls[i] = coll;
                         if (i == 0) {
                             break;
                         }
                         continue;
                     }
-                    if (value < EUSDLot) {
+                    if (value < USDELot) {
                         colls[i] = coll;
-                        EUSDLot = EUSDLot.sub(value);
+                        USDELot = USDELot.sub(value);
                         // trove.colls[collateral] = 0;
                         remaindColls[i] = 0;
                     } else {
-                        uint256 portion = EUSDLot.mul(_100pct).div(value);
+                        uint256 portion = USDELot.mul(_100pct).div(value);
                         uint256 offset = coll.mul(portion).div(_100pct);
                         colls[i] = offset;
                         remaindColls[i] = coll.sub(offset);
-                        EUSDLot = 0;
+                        USDELot = 0;
                     }
                 }
                 if (i == 0) {
@@ -285,20 +285,20 @@ contract TroveManagerRedemptions is
 
     /*
      * Called when a full redemption occurs, and closes the trove.
-     * The redeemer swaps (debt - liquidation reserve) EUSD for (debt - liquidation reserve) worth of ETH, so the EUSD liquidation reserve left corresponds to the remaining debt.
-     * In order to close the trove, the EUSD liquidation reserve is burned, and the corresponding debt is removed from the active pool.
+     * The redeemer swaps (debt - liquidation reserve) USDE for (debt - liquidation reserve) worth of ETH, so the USDE liquidation reserve left corresponds to the remaining debt.
+     * In order to close the trove, the USDE liquidation reserve is burned, and the corresponding debt is removed from the active pool.
      * The debt recorded on the trove's struct is zero'd elswhere, in _closeTrove.
      * Any surplus collateral left in the trove, is sent to the Coll surplus pool, and can be later claimed by the borrower.
      */
     function _redeemCloseTrove(
         DataTypes.ContractsCache memory _contractsCache,
         address _borrower,
-        uint256 _EUSD,
+        uint256 _USDE,
         uint256[] memory _collAmounts
     ) internal {
-        _contractsCache.eusdToken.burn(gasPoolAddress, _EUSD);
-        // Update Active Pool EUSD, and send collateral to account
-        _contractsCache.activePool.decreaseEUSDDebt(_EUSD);
+        _contractsCache.usdeToken.burn(gasPoolAddress, _USDE);
+        // Update Active Pool USDE, and send collateral to account
+        _contractsCache.activePool.decreaseUSDEDebt(_USDE);
         // send collateral from Active Pool to CollSurplus Pool
         _contractsCache.collSurplusPool.accountSurplus(_borrower, _collAmounts);
         _contractsCache.activePool.sendCollateral(
@@ -327,7 +327,7 @@ contract TroveManagerRedemptions is
             nextTrove == address(0) || _getCurrentICR(nextTrove, _price) < mcr;
     }
 
-    /* Send _EUSDamount EUSD to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
+    /* Send _USDEamount USDE to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
      * request.  Applies pending rewards to a Trove before reducing its debt and coll.
      *
      * Note that if _amount is very large, this function can run out of gas, specially if traversed troves are small. This can be easily avoided by
@@ -345,11 +345,11 @@ contract TroveManagerRedemptions is
      *
      * If another transaction modifies the list between calling getRedemptionHints() and passing the hints to redeemCollateral(), it
      * is very likely that the last (partially) redeemed Trove would end up with a different ICR than what the hint is for. In this case the
-     * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining EUSD amount, which they can attempt
+     * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining USDE amount, which they can attempt
      * to redeem later.
      */
     function redeemCollateral(
-        uint256 _EUSDamount,
+        uint256 _USDEamount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -365,7 +365,7 @@ contract TroveManagerRedemptions is
                 collateralManager,
                 activePool,
                 defaultPool,
-                eusdToken,
+                usdeToken,
                 sortedTroves,
                 collSurplusPool,
                 gasPoolAddress
@@ -374,28 +374,28 @@ contract TroveManagerRedemptions is
         address upperPartialRedemptionHint = _upperPartialRedemptionHint;
         address lowerPartialRedemptionHint = _lowerPartialRedemptionHint;
         uint256 partialRedemptionHintICR = _partialRedemptionHintICR;
-        uint256 EUSDamount = _EUSDamount;
+        uint256 USDEamount = _USDEamount;
 
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAfterBootstrapPeriod();
         totals.price = priceFeed.fetchPrice();
         contractsCache.collateralManager.priceUpdate();
         _requireTCRoverMCR(totals.price);
-        _requireAmountGreaterThanZero(EUSDamount);
-        _requireEUSDBalanceCoversRedemption(
-            contractsCache.eusdToken,
+        _requireAmountGreaterThanZero(USDEamount);
+        _requireUSDEBalanceCoversRedemption(
+            contractsCache.usdeToken,
             _redeemer,
-            EUSDamount
+            USDEamount
         );
 
-        totals.totalEUSDSupplyAtStart = getEntireSystemDebt();
-        // Confirm redeemer's balance is less than total EUSD supply
+        totals.totalUSDESupplyAtStart = getEntireSystemDebt();
+        // Confirm redeemer's balance is less than total USDE supply
         assert(
-            contractsCache.eusdToken.balanceOf(_redeemer) <=
-                totals.totalEUSDSupplyAtStart
+            contractsCache.usdeToken.balanceOf(_redeemer) <=
+                totals.totalUSDESupplyAtStart
         );
 
-        totals.remainingEUSD = EUSDamount;
+        totals.remainingUSDE = USDEamount;
         address currentBorrower;
 
         if (
@@ -419,7 +419,7 @@ contract TroveManagerRedemptions is
                 );
             }
         }
-        // Loop through the Troves starting from the one with lowest collateral ratio until _amount of EUSD is exchanged for collateral
+        // Loop through the Troves starting from the one with lowest collateral ratio until _amount of USDE is exchanged for collateral
         if (_maxIterations == 0) {
             // _maxIterations = uint256(-1);
             _maxIterations = type(uint256).max;
@@ -427,7 +427,7 @@ contract TroveManagerRedemptions is
         address[] memory collaterals = getCollateralSupport();
         while (
             currentBorrower != address(0) &&
-            totals.remainingEUSD > 0 &&
+            totals.remainingUSDE > 0 &&
             _maxIterations > 0
         ) {
             _maxIterations--;
@@ -442,7 +442,7 @@ contract TroveManagerRedemptions is
                 memory singleRedemption = _redeemCollateralFromTrove(
                     contractsCache,
                     currentBorrower,
-                    totals.remainingEUSD,
+                    totals.remainingUSDE,
                     totals.price,
                     upperPartialRedemptionHint,
                     lowerPartialRedemptionHint,
@@ -451,16 +451,16 @@ contract TroveManagerRedemptions is
 
             if (singleRedemption.cancelledPartial) break; // Partial redemption was cancelled (out-of-date hint, or new net debt < minimum), therefore we could not redeem from the last Trove
 
-            totals.totalEUSDToRedeem = totals.totalEUSDToRedeem.add(
-                singleRedemption.EUSDLot
+            totals.totalUSDEToRedeem = totals.totalUSDEToRedeem.add(
+                singleRedemption.USDELot
             );
             totals.totalCollDrawns = ERDMath._addArray(
                 totals.totalCollDrawns,
                 singleRedemption.collLots
             );
 
-            totals.remainingEUSD = totals.remainingEUSD.sub(
-                singleRedemption.EUSDLot
+            totals.remainingUSDE = totals.remainingUSDE.sub(
+                singleRedemption.USDELot
             );
             currentBorrower = nextUserToCheck;
         }
@@ -474,10 +474,10 @@ contract TroveManagerRedemptions is
             .getValue(collaterals, totals.totalCollDrawns, totals.price);
 
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
-        // Use the saved total EUSD supply value, from before it was reduced by the redemption.
+        // Use the saved total USDE supply value, from before it was reduced by the redemption.
         _updateBaseRateFromRedemption(
             totalCollDrawnValue,
-            totals.totalEUSDSupplyAtStart
+            totals.totalUSDESupplyAtStart
         );
 
         // Calculate the collateral fee
@@ -506,17 +506,17 @@ contract TroveManagerRedemptions is
         );
 
         emit Redemption(
-            EUSDamount,
-            totals.totalEUSDToRedeem,
+            USDEamount,
+            totals.totalUSDEToRedeem,
             collaterals,
             totals.totalCollDrawns,
             totals.collFees
         );
 
-        // Burn the total EUSD that is cancelled with debt, and send the redeemed collateral to msg.sender
-        contractsCache.eusdToken.burn(_redeemer, totals.totalEUSDToRedeem);
-        // Update Active Pool EUSD, and send collateral to account
-        contractsCache.activePool.decreaseEUSDDebt(totals.totalEUSDToRedeem);
+        // Burn the total USDE that is cancelled with debt, and send the redeemed collateral to msg.sender
+        contractsCache.usdeToken.burn(_redeemer, totals.totalUSDEToRedeem);
+        // Update Active Pool USDE, and send collateral to account
+        contractsCache.activePool.decreaseUSDEDebt(totals.totalUSDEToRedeem);
         contractsCache.activePool.sendCollateral(
             _redeemer,
             getCollateralSupport(),
@@ -538,23 +538,23 @@ contract TroveManagerRedemptions is
 
     /*
      * This function has two impacts on the baseRate state variable:
-     * 1) decays the baseRate based on time passed since last redemption or EUSD borrowing operation.
+     * 1) decays the baseRate based on time passed since last redemption or USDE borrowing operation.
      * then,
      * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
      */
     function _updateBaseRateFromRedemption(
         uint256 _collDrawnValue,
-        uint256 _totalEUSDSupply
+        uint256 _totalUSDESupply
     ) internal returns (uint256) {
         uint256 decayedBaseRate = troveManager.calcDecayedBaseRate();
-        /* Convert the drawn collateral back to EUSD at face value rate (1 EUSD:1 USD), in order to get
+        /* Convert the drawn collateral back to USDE at face value rate (1 USDE:1 USD), in order to get
          * the fraction of total supply that was redeemed at face value. */
-        uint256 redeemedEUSDFraction = _collDrawnValue
+        uint256 redeemedUSDEFraction = _collDrawnValue
             .mul(DECIMAL_PRECISION)
-            .div(_totalEUSDSupply);
+            .div(_totalUSDESupply);
 
         uint256 newBaseRate = decayedBaseRate.add(
-            redeemedEUSDFraction.div(BETA)
+            redeemedUSDEFraction.div(BETA)
         );
         newBaseRate = ERDMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
         troveManager.updateBaseRate(newBaseRate);
@@ -603,8 +603,8 @@ contract TroveManagerRedemptions is
         return collateralManager.getMCR();
     }
 
-    function EUSD_GAS_COMPENSATION() internal view returns (uint256) {
-        return collateralManager.getEUSDGasCompensation();
+    function USDE_GAS_COMPENSATION() internal view returns (uint256) {
+        return collateralManager.getUSDEGasCompensation();
     }
 
     // --- 'require' wrapper functions ---
@@ -617,13 +617,13 @@ contract TroveManagerRedemptions is
         require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
     }
 
-    function _requireEUSDBalanceCoversRedemption(
-        IEUSDToken _eusdToken,
+    function _requireUSDEBalanceCoversRedemption(
+        IUSDEToken _usdeToken,
         address _redeemer,
         uint256 _amount
     ) internal view {
         require(
-            _eusdToken.balanceOf(_redeemer) >= _amount,
+            _usdeToken.balanceOf(_redeemer) >= _amount,
             Errors.TMR_REDEMPTION_AMOUNT_EXCEED_BALANCE
         );
     }

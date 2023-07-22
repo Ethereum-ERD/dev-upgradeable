@@ -52,7 +52,7 @@ contract BorrowerOperations is
         address[] collsOut;
         uint256[] amountsOut;
         uint256[] sharesOut;
-        uint256 EUSDChange;
+        uint256 USDEChange;
         bool isDebtIncrease;
         address upperHint;
         address lowerHint;
@@ -71,7 +71,7 @@ contract BorrowerOperations is
         uint256 oldICR;
         uint256 newICR;
         uint256 newTCR;
-        uint256 EUSDFee;
+        uint256 USDEFee;
         uint256 newDebt;
         uint256 valueIn;
         uint256 valueOut;
@@ -82,7 +82,7 @@ contract BorrowerOperations is
 
     struct LocalVariables_openTrove {
         uint256 price;
-        uint256 EUSDFee;
+        uint256 USDEFee;
         uint256 netShare;
         uint256 netDebt;
         uint256 compositeDebt;
@@ -109,7 +109,7 @@ contract BorrowerOperations is
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _sortedTrovesAddress,
-        address _eusdTokenAddress
+        address _usdeTokenAddress
     ) external override onlyOwner {
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_collateralManagerAddress);
@@ -120,7 +120,7 @@ contract BorrowerOperations is
         _requireIsContract(_collSurplusPoolAddress);
         _requireIsContract(_priceFeedAddress);
         _requireIsContract(_sortedTrovesAddress);
-        _requireIsContract(_eusdTokenAddress);
+        _requireIsContract(_usdeTokenAddress);
 
         troveManager = ITroveManager(_troveManagerAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
@@ -131,7 +131,7 @@ contract BorrowerOperations is
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        eusdToken = IEUSDToken(_eusdTokenAddress);
+        usdeToken = IUSDEToken(_usdeTokenAddress);
 
         emit TroveManagerAddressChanged(_troveManagerAddress);
         emit CollateralManagerAddressChanged(_collateralManagerAddress);
@@ -142,7 +142,7 @@ contract BorrowerOperations is
         emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
-        emit EUSDTokenAddressChanged(_eusdTokenAddress);
+        emit USDETokenAddressChanged(_usdeTokenAddress);
     }
 
     function init(
@@ -169,7 +169,7 @@ contract BorrowerOperations is
         address[] memory _colls,
         uint256[] memory _amounts,
         uint256 _maxFeePercentage,
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint
     ) external payable override nonReentrant {
@@ -189,7 +189,7 @@ contract BorrowerOperations is
             troveManager,
             collateralManager,
             activePool,
-            eusdToken
+            usdeToken
         );
 
         // Update all collateral price
@@ -215,22 +215,22 @@ contract BorrowerOperations is
 
         _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
 
-        vars.EUSDFee;
-        vars.netDebt = _EUSDAmount;
+        vars.USDEFee;
+        vars.netDebt = _USDEAmount;
 
         // Different borrowing fee for different mode
-        vars.EUSDFee = _triggerBorrowingFee(
+        vars.USDEFee = _triggerBorrowingFee(
             contractsCache.troveManager,
-            contractsCache.eusdToken,
-            _EUSDAmount,
+            contractsCache.usdeToken,
+            _USDEAmount,
             _maxFeePercentage,
             isRecoveryMode
         );
-        vars.netDebt = vars.netDebt.add(vars.EUSDFee);
+        vars.netDebt = vars.netDebt.add(vars.USDEFee);
         _requireAtLeastMinNetDebt(vars.netDebt);
 
-        // ICR is based on the composite debt, i.e. the requested EUSD amount + EUSD borrowing fee + EUSD gas comp.
-        uint256 gas = EUSD_GAS_COMPENSATION();
+        // ICR is based on the composite debt, i.e. the requested USDE amount + USDE borrowing fee + USDE gas comp.
+        uint256 gas = USDE_GAS_COMPENSATION();
         vars.compositeDebt = _getCompositeDebt(vars.netDebt, gas);
         assert(vars.compositeDebt > 0);
 
@@ -263,18 +263,18 @@ contract BorrowerOperations is
         );
         emit TroveCreated(msg.sender, vars.arrayIndex);
 
-        // Move the collateral to the Active Pool, and mint the EUSDAmount to the borrower
-        _withdrawEUSD(
+        // Move the collateral to the Active Pool, and mint the USDEAmount to the borrower
+        _withdrawUSDE(
             contractsCache.activePool,
-            contractsCache.eusdToken,
+            contractsCache.usdeToken,
             msg.sender,
-            _EUSDAmount,
+            _USDEAmount,
             vars.netDebt
         );
-        // Move the EUSD gas compensation to the Gas Pool
-        _withdrawEUSD(
+        // Move the USDE gas compensation to the Gas Pool
+        _withdrawUSDE(
             contractsCache.activePool,
-            contractsCache.eusdToken,
+            contractsCache.usdeToken,
             gasPoolAddress,
             gas,
             gas
@@ -288,7 +288,7 @@ contract BorrowerOperations is
             vars.netColls,
             BorrowerOperation.openTrove
         );
-        emit EUSDBorrowingFeePaid(msg.sender, vars.EUSDFee);
+        emit USDEBorrowingFeePaid(msg.sender, vars.USDEFee);
     }
 
     function _adjustArray(
@@ -398,16 +398,16 @@ contract BorrowerOperations is
         _adjustTrove(params);
     }
 
-    // Withdraw EUSD tokens from a trove: mint new EUSD tokens to the owner, and increase the trove's debt accordingly
-    function withdrawEUSD(
-        uint256 _EUSDAmount,
+    // Withdraw USDE tokens from a trove: mint new USDE tokens to the owner, and increase the trove's debt accordingly
+    function withdrawUSDE(
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint,
         uint256 _maxFeePercentage
     ) external override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
-        params.EUSDChange = _EUSDAmount;
+        params.USDEChange = _USDEAmount;
         params.maxFeePercentage = _maxFeePercentage;
         params.upperHint = _upperHint;
         params.lowerHint = _lowerHint;
@@ -415,15 +415,15 @@ contract BorrowerOperations is
         _adjustTrove(params);
     }
 
-    // Repay EUSD tokens to a Trove: Burn the repaid EUSD tokens, and reduce the trove's debt accordingly
-    function repayEUSD(
-        uint256 _EUSDAmount,
+    // Repay USDE tokens to a Trove: Burn the repaid USDE tokens, and reduce the trove's debt accordingly
+    function repayUSDE(
+        uint256 _USDEAmount,
         address _upperHint,
         address _lowerHint
     ) external override nonReentrant {
         AdjustTrove_Params memory params;
         params.borrower = msg.sender;
-        params.EUSDChange = _EUSDAmount;
+        params.USDEChange = _USDEAmount;
         params.upperHint = _upperHint;
         params.lowerHint = _lowerHint;
         params.isDebtIncrease = false;
@@ -467,7 +467,7 @@ contract BorrowerOperations is
         address[] memory _collsOut,
         uint256[] memory _amountsOut,
         uint256 _maxFeePercentage,
-        uint256 _EUSDChange,
+        uint256 _USDEChange,
         bool _isDebtIncrease,
         address _upperHint,
         address _lowerHint
@@ -509,7 +509,7 @@ contract BorrowerOperations is
             collsOut: _collsOut,
             amountsOut: _amountsOut,
             sharesOut: adjustSharesOut,
-            EUSDChange: _EUSDChange,
+            USDEChange: _USDEChange,
             isDebtIncrease: _isDebtIncrease,
             upperHint: _upperHint,
             lowerHint: _lowerHint,
@@ -531,7 +531,7 @@ contract BorrowerOperations is
             troveManager,
             collateralManager,
             activePool,
-            eusdToken
+            usdeToken
         );
         LocalVariables_adjustTrove memory vars;
 
@@ -545,12 +545,12 @@ contract BorrowerOperations is
                 params.maxFeePercentage,
                 isRecoveryMode
             );
-            require(params.EUSDChange > 0, Errors.BO_DEBT_INCREASE_ZERO);
+            require(params.USDEChange > 0, Errors.BO_DEBT_INCREASE_ZERO);
         }
         _requireNonZeroAdjustment(
             params.amountsIn,
             params.amountsOut,
-            params.EUSDChange
+            params.USDEChange
         );
         _requireTroveisActive(contractsCache.troveManager, params.borrower);
         // Confirm the operation is either a borrower adjusting their own trove, or a pure collateral transfer from the Stability Pool to a trove
@@ -558,7 +558,7 @@ contract BorrowerOperations is
             msg.sender == params.borrower ||
                 (msg.sender == stabilityPoolAddress &&
                     params.amountsIn.length > 0 /* TODO:  necessary? */ &&
-                    params.EUSDChange == 0)
+                    params.USDEChange == 0)
         );
 
         contractsCache.troveManager.applyPendingRewards(params.borrower);
@@ -587,18 +587,18 @@ contract BorrowerOperations is
             vars.price
         );
 
-        vars.netDebtChange = params.EUSDChange;
+        vars.netDebtChange = params.USDEChange;
 
         // If the adjustment incorporates a debt increase and system is in Normal Mode, then trigger a borrowing fee
         if (params.isDebtIncrease) {
-            vars.EUSDFee = _triggerBorrowingFee(
+            vars.USDEFee = _triggerBorrowingFee(
                 contractsCache.troveManager,
-                contractsCache.eusdToken,
-                params.EUSDChange,
+                contractsCache.usdeToken,
+                params.USDEChange,
                 params.maxFeePercentage,
                 isRecoveryMode
             );
-            vars.netDebtChange = vars.netDebtChange.add(vars.EUSDFee); // The raw debt change includes the fee
+            vars.netDebtChange = vars.netDebtChange.add(vars.USDEFee); // The raw debt change includes the fee
         }
 
         vars.debt = contractsCache.troveManager.getTroveDebt(params.borrower);
@@ -627,20 +627,20 @@ contract BorrowerOperations is
             vars
         );
 
-        // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough EUSD
-        if (!params.isDebtIncrease && params.EUSDChange > 0) {
+        // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough USDE
+        if (!params.isDebtIncrease && params.USDEChange > 0) {
             _requireAtLeastMinNetDebt(
-                _getNetDebt(vars.debt, EUSD_GAS_COMPENSATION()).sub(
+                _getNetDebt(vars.debt, USDE_GAS_COMPENSATION()).sub(
                     vars.netDebtChange
                 )
             );
-            // _requireValidEUSDRepayment(vars.debt, vars.netDebtChange);
+            // _requireValidUSDERepayment(vars.debt, vars.netDebtChange);
             require(
-                vars.netDebtChange <= vars.debt.sub(EUSD_GAS_COMPENSATION()),
+                vars.netDebtChange <= vars.debt.sub(USDE_GAS_COMPENSATION()),
                 Errors.BO_REPAID_AMOUNT_LARGER_DEBT
             );
-            _requireSufficientEUSDBalance(
-                contractsCache.eusdToken,
+            _requireSufficientUSDEBalance(
+                contractsCache.usdeToken,
                 params.borrower,
                 vars.netDebtChange
             );
@@ -674,16 +674,16 @@ contract BorrowerOperations is
             vars.colls,
             BorrowerOperation.adjustTrove
         );
-        emit EUSDBorrowingFeePaid(msg.sender, vars.EUSDFee);
+        emit USDEBorrowingFeePaid(msg.sender, vars.USDEFee);
 
-        // Use the unmodified _EUSDChange here, as we don't send the fee to the user
+        // Use the unmodified _USDEChange here, as we don't send the fee to the user
         _moveTokensAndCollateralfromAdjustment(
             contractsCache.activePool,
-            contractsCache.eusdToken,
+            contractsCache.usdeToken,
             msg.sender,
             params.collsOut,
             params.amountsOut,
-            params.EUSDChange,
+            params.USDEChange,
             params.isDebtIncrease,
             vars.netDebtChange
         );
@@ -694,7 +694,7 @@ contract BorrowerOperations is
         ITroveManager troveManagerCached = troveManager;
         ICollateralManager collateralManagerCached = collateralManager;
         IActivePool activePoolCached = activePool;
-        IEUSDToken eusdTokenCached = eusdToken;
+        IUSDEToken usdeTokenCached = usdeToken;
 
         _requireTroveisActive(troveManagerCached, msg.sender);
         uint256 price = priceFeed.fetchPrice();
@@ -715,9 +715,9 @@ contract BorrowerOperations is
         collateralManager.clearEToken(msg.sender, DataTypes.Status.active);
         uint256 debt = troveManagerCached.getTroveDebt(msg.sender);
 
-        uint256 gas = EUSD_GAS_COMPENSATION();
-        _requireSufficientEUSDBalance(
-            eusdTokenCached,
+        uint256 gas = USDE_GAS_COMPENSATION();
+        _requireSufficientUSDEBalance(
+            usdeTokenCached,
             msg.sender,
             debt.sub(gas)
         );
@@ -737,14 +737,14 @@ contract BorrowerOperations is
             BorrowerOperation.closeTrove
         );
 
-        // Burn the repaid EUSD from the user's balance and the gas compensation from the Gas Pool
-        _repayEUSD(
+        // Burn the repaid USDE from the user's balance and the gas compensation from the Gas Pool
+        _repayUSDE(
             activePoolCached,
-            eusdTokenCached,
+            usdeTokenCached,
             msg.sender,
             debt.sub(gas)
         );
-        _repayEUSD(activePoolCached, eusdTokenCached, gasPoolAddress, gas);
+        _repayUSDE(activePoolCached, usdeTokenCached, gasPoolAddress, gas);
 
         // Send the collateral back to the user
         activePoolCached.sendCollateral(msg.sender, collaterals, collAmounts);
@@ -828,26 +828,26 @@ contract BorrowerOperations is
 
     function _triggerBorrowingFee(
         ITroveManager _troveManager,
-        IEUSDToken _eusdToken,
-        uint256 _EUSDAmount,
+        IUSDEToken _usdeToken,
+        uint256 _USDEAmount,
         uint256 _maxFeePercentage,
         bool _isRecoveryMode
     ) internal returns (uint256) {
-        uint256 EUSDFee;
+        uint256 USDEFee;
         if (!_isRecoveryMode) {
             _troveManager.decayBaseRateFromBorrowing(); // decay the baseRate state variable
-            EUSDFee = _troveManager.getBorrowingFee(_EUSDAmount);
+            USDEFee = _troveManager.getBorrowingFee(_USDEAmount);
         } else {
             uint256 rate = collateralManager.getRecoveryFee();
-            EUSDFee = rate.mul(_EUSDAmount).div(DECIMAL_PRECISION);
+            USDEFee = rate.mul(_USDEAmount).div(DECIMAL_PRECISION);
         }
 
-        _requireUserAcceptsFee(EUSDFee, _EUSDAmount, _maxFeePercentage);
+        _requireUserAcceptsFee(USDEFee, _USDEAmount, _maxFeePercentage);
 
         // Send fee to treasury contract
-        _eusdToken.mintToTreasury(EUSDFee, _troveManager.getFactor());
+        _usdeToken.mintToTreasury(USDEFee, _troveManager.getFactor());
 
-        return EUSDFee;
+        return USDEFee;
     }
 
     // Update trove's coll and debt based on whether they increase or decrease
@@ -866,49 +866,49 @@ contract BorrowerOperations is
 
     function _moveTokensAndCollateralfromAdjustment(
         IActivePool _activePool,
-        IEUSDToken _eusdToken,
+        IUSDEToken _usdeToken,
         address _borrower,
         address[] memory _collaterals,
         uint256[] memory _amountsOut,
-        uint256 _EUSDChange,
+        uint256 _USDEChange,
         bool _isDebtIncrease,
         uint256 _netDebtChange
     ) internal {
         if (_isDebtIncrease) {
-            _withdrawEUSD(
+            _withdrawUSDE(
                 _activePool,
-                _eusdToken,
+                _usdeToken,
                 _borrower,
-                _EUSDChange,
+                _USDEChange,
                 _netDebtChange
             );
         } else {
-            _repayEUSD(_activePool, _eusdToken, _borrower, _EUSDChange);
+            _repayUSDE(_activePool, _usdeToken, _borrower, _USDEChange);
         }
         _activePool.sendCollateral(_borrower, _collaterals, _amountsOut);
     }
 
-    // Issue the specified amount of EUSD to _account and increases the total active debt (_netDebtIncrease potentially includes a EUSDFee)
-    function _withdrawEUSD(
+    // Issue the specified amount of USDE to _account and increases the total active debt (_netDebtIncrease potentially includes a USDEFee)
+    function _withdrawUSDE(
         IActivePool _activePool,
-        IEUSDToken _eusdToken,
+        IUSDEToken _usdeToken,
         address _account,
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         uint256 _netDebtIncrease
     ) internal {
-        _activePool.increaseEUSDDebt(_netDebtIncrease);
-        _eusdToken.mint(_account, _EUSDAmount);
+        _activePool.increaseUSDEDebt(_netDebtIncrease);
+        _usdeToken.mint(_account, _USDEAmount);
     }
 
-    // Burn the specified amount of EUSD from _account and decreases the total active debt
-    function _repayEUSD(
+    // Burn the specified amount of USDE from _account and decreases the total active debt
+    function _repayUSDE(
         IActivePool _activePool,
-        IEUSDToken _eusdToken,
+        IUSDEToken _usdeToken,
         address _account,
-        uint256 _EUSD
+        uint256 _USDE
     ) internal {
-        _activePool.decreaseEUSDDebt(_EUSD);
-        _eusdToken.burn(_account, _EUSD);
+        _activePool.decreaseUSDEDebt(_USDE);
+        _usdeToken.burn(_account, _USDE);
     }
 
     function _removeZero(
@@ -1033,12 +1033,12 @@ contract BorrowerOperations is
     function _requireNonZeroAdjustment(
         uint256[] memory _amountsIn,
         uint256[] memory _amountsOut,
-        uint256 _EUSDChange
+        uint256 _USDEChange
     ) internal pure {
         require(
             ERDMath._arrayIsNonzero(_amountsIn) ||
                 ERDMath._arrayIsNonzero(_amountsOut) ||
-                _EUSDChange != 0,
+                _USDEChange != 0,
             Errors.BO_MUST_CHANGE_FOR_COLL_OR_DEBT
         );
     }
@@ -1117,13 +1117,13 @@ contract BorrowerOperations is
         );
     }
 
-    function _requireSufficientEUSDBalance(
-        IEUSDToken _eusdToken,
+    function _requireSufficientUSDEBalance(
+        IUSDEToken _usdeToken,
         address _borrower,
         uint256 _debtRepayment
     ) internal view {
         require(
-            _eusdToken.balanceOf(_borrower) >= _debtRepayment,
+            _usdeToken.balanceOf(_borrower) >= _debtRepayment,
             Errors.BO_USDE_INSUFFICIENT
         );
     }
@@ -1173,14 +1173,14 @@ contract BorrowerOperations is
     function getCompositeDebt(
         uint256 _debt
     ) external view override returns (uint256) {
-        return _getCompositeDebt(_debt, EUSD_GAS_COMPENSATION());
+        return _getCompositeDebt(_debt, USDE_GAS_COMPENSATION());
     }
 
     function CCR() internal view returns (uint256) {
         return collateralManager.getCCR();
     }
 
-    function EUSD_GAS_COMPENSATION() public view returns (uint256) {
-        return collateralManager.getEUSDGasCompensation();
+    function USDE_GAS_COMPENSATION() public view returns (uint256) {
+        return collateralManager.getUSDEGasCompensation();
     }
 }

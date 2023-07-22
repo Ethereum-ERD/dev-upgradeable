@@ -5,14 +5,14 @@ pragma solidity 0.8.18;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 
-interface IEUSDToken is IERC20Upgradeable, IERC20PermitUpgradeable {
+interface IUSDEToken is IERC20Upgradeable, IERC20PermitUpgradeable {
     // --- Events ---
 
     // event TroveManagerAddressChanged(address _troveManagerAddress);
     // event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
     // event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
 
-    event EUSDTokenBalanceUpdated(address _user, uint256 _amount);
+    event USDETokenBalanceUpdated(address _user, uint256 _amount);
 
     // --- Functions ---
 

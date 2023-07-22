@@ -12,7 +12,7 @@ import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ICollateralManager.sol";
-import "./Interfaces/IEUSDToken.sol";
+import "./Interfaces/IUSDEToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ICommunityIssuance.sol";
 import "./Interfaces/IWETH.sol";
@@ -21,17 +21,17 @@ import "./Dependencies/ERDSafeMath128.sol";
 import "./Errors.sol";
 
 /*
- * The Stability Pool holds EUSD tokens deposited by Stability Pool depositors.
+ * The Stability Pool holds USDE tokens deposited by Stability Pool depositors.
  *
- * When a trove is liquidated, then depending on system conditions, some of its EUSD debt gets offset with
- * EUSD in the Stability Pool:  that is, the offset debt evaporates, and an equal amount of EUSD tokens in the Stability Pool is burned.
+ * When a trove is liquidated, then depending on system conditions, some of its USDE debt gets offset with
+ * USDE in the Stability Pool:  that is, the offset debt evaporates, and an equal amount of USDE tokens in the Stability Pool is burned.
  *
- * Thus, a liquidation causes each depositor to receive a EUSD loss, in proportion to their deposit as a share of total deposits.
+ * Thus, a liquidation causes each depositor to receive a USDE loss, in proportion to their deposit as a share of total deposits.
  * They also receive an ETH/wrapperETH gain, as the ETH/wrapperETH collateral of the liquidated trove is distributed among Stability depositors,
  * in the same proportion.
  *
  * When a liquidation occurs, it depletes every deposit by the same fraction: for example, a liquidation that depletes 40%
- * of the total EUSD in the Stability Pool, depletes 40% of each deposit.
+ * of the total USDE in the Stability Pool, depletes 40% of each deposit.
  *
  * A deposit that has experienced a series of liquidations is termed a "compounded deposit": each liquidation depletes the deposit,
  * multiplying it by some factor in range ]0,1[
@@ -93,7 +93,7 @@ import "./Errors.sol";
  *
  * Otherwise, we then compare the current scale to the deposit's scale snapshot. If they're equal, the compounded deposit is given by d_t * P/P_t.
  * If it spans one scale change, it is given by d_t * P/(P_t * 1e9). If it spans more than one scale change, we define the compounded deposit
- * as 0, since it is now less than 1e-9'th of its initial value (e.g. a deposit of 1 billion EUSD has depleted to < 1 EUSD).
+ * as 0, since it is now less than 1e-9'th of its initial value (e.g. a deposit of 1 billion USDE has depleted to < 1 USDE).
  *
  *
  *  --- TRACKING DEPOSITOR'S ETH/wrapperETH GAIN OVER SCALE CHANGES AND EPOCHS ---
@@ -175,8 +175,8 @@ contract StabilityPool is
 
     IWETH public WETH;
 
-    // Tracker for EUSD held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
-    uint256 internal totalEUSDDeposits;
+    // Tracker for USDE held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
+    uint256 internal totalUSDEDeposits;
 
     mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
     mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
@@ -186,7 +186,7 @@ contract StabilityPool is
     mapping(address => Snapshots) public frontEndSnapshots; // front end address -> snapshots struct
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
-     * after a series of liquidations have occurred, each of which cancel some EUSD debt with the deposit.
+     * after a series of liquidations have occurred, each of which cancel some USDE debt with the deposit.
      *
      * During its lifetime, a deposit's value evolves from d_t to d_t * P / P_t , where P_t
      * is the snapshot of P taken at the instant the deposit was made. 18-digit decimal.
@@ -225,7 +225,7 @@ contract StabilityPool is
     uint256 public lastGainError;
     // Error trackers for the error correction in the offset calculation
     mapping(address => uint256) public lastCollError_Offset;
-    uint256 public lastEUSDLossError_Offset;
+    uint256 public lastUSDELossError_Offset;
 
     bool internal paused;
 
@@ -246,7 +246,7 @@ contract StabilityPool is
         address _collateralManagerAddress,
         address _troveManagerLiquidationsAddress,
         address _activePoolAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _priceFeedAddress,
         address _communityIssuanceAddress,
@@ -257,7 +257,7 @@ contract StabilityPool is
         _requireIsContract(_collateralManagerAddress);
         _requireIsContract(_troveManagerLiquidationsAddress);
         _requireIsContract(_activePoolAddress);
-        _requireIsContract(_eusdTokenAddress);
+        _requireIsContract(_usdeTokenAddress);
         _requireIsContract(_sortedTrovesAddress);
         _requireIsContract(_priceFeedAddress);
         _requireIsContract(_communityIssuanceAddress);
@@ -268,7 +268,7 @@ contract StabilityPool is
         collateralManager = ICollateralManager(_collateralManagerAddress);
         troveManagerLiquidationsAddress = _troveManagerLiquidationsAddress;
         activePool = IActivePool(_activePoolAddress);
-        eusdToken = IEUSDToken(_eusdTokenAddress);
+        usdeToken = IUSDEToken(_usdeTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
@@ -282,7 +282,7 @@ contract StabilityPool is
             _troveManagerLiquidationsAddress
         );
         emit ActivePoolAddressChanged(_activePoolAddress);
-        emit EUSDTokenAddressChanged(_eusdTokenAddress);
+        emit USDETokenAddressChanged(_usdeTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit CommunityIssuanceAddressChanged(_communityIssuanceAddress);
@@ -321,8 +321,8 @@ contract StabilityPool is
         return IERC20Upgradeable(_collateral).balanceOf(address(this));
     }
 
-    function getTotalEUSDDeposits() external view override returns (uint256) {
-        return totalEUSDDeposits;
+    function getTotalUSDEDeposits() external view override returns (uint256) {
+        return totalUSDEDeposits;
     }
 
     // --- External Depositor Functions ---
@@ -354,8 +354,8 @@ contract StabilityPool is
             address[] memory collaterals,
             uint256[] memory depositorCollateralGains
         ) = getDepositorCollateralGain(msg.sender);
-        uint256 compoundedEUSDDeposit = getCompoundedEUSDDeposit(msg.sender);
-        uint256 EUSDLoss = initialDeposit.sub(compoundedEUSDDeposit); // Needed only for event log
+        uint256 compoundedUSDEDeposit = getCompoundedUSDEDeposit(msg.sender);
+        uint256 USDELoss = initialDeposit.sub(compoundedUSDEDeposit); // Needed only for event log
 
         // First pay out any gains or maybe nothing
         address frontEnd = deposits[msg.sender].frontEndTag;
@@ -367,13 +367,13 @@ contract StabilityPool is
         _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
         emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
 
-        _sendEUSDtoStabilityPool(msg.sender, _amount);
+        _sendUSDEtoStabilityPool(msg.sender, _amount);
 
-        uint256 newDeposit = compoundedEUSDDeposit.add(_amount);
+        uint256 newDeposit = compoundedUSDEDeposit.add(_amount);
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, EUSDLoss); // EUSD Loss required for event log
+        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, USDELoss); // USDE Loss required for event log
 
         _sendCollateralGainToDepositor(collaterals, depositorCollateralGains);
     }
@@ -403,26 +403,26 @@ contract StabilityPool is
             address[] memory collaterals,
             uint256[] memory depositorCollateralGains
         ) = getDepositorCollateralGain(msg.sender);
-        uint256 compoundedEUSDDeposit = getCompoundedEUSDDeposit(msg.sender);
-        uint256 EUSDtoWithdraw = ERDMath._min(_amount, compoundedEUSDDeposit);
-        uint256 EUSDLoss = initialDeposit.sub(compoundedEUSDDeposit); // Needed only for event log
+        uint256 compoundedUSDEDeposit = getCompoundedUSDEDeposit(msg.sender);
+        uint256 USDEtoWithdraw = ERDMath._min(_amount, compoundedUSDEDeposit);
+        uint256 USDELoss = initialDeposit.sub(compoundedUSDEDeposit); // Needed only for event log
 
         // First pay out any gains or maybe nothing
         address frontEnd = deposits[msg.sender].frontEndTag;
         _payOutGains(communityIssuanceCached, msg.sender, frontEnd);
         // Update front end stake
         uint256 compoundedFrontEndStake = getCompoundedFrontEndStake(frontEnd);
-        uint256 newFrontEndStake = compoundedFrontEndStake.sub(EUSDtoWithdraw);
+        uint256 newFrontEndStake = compoundedFrontEndStake.sub(USDEtoWithdraw);
         _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
         emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
-        _sendEUSDToDepositor(msg.sender, EUSDtoWithdraw);
+        _sendUSDEToDepositor(msg.sender, USDEtoWithdraw);
 
         // Update deposit
-        uint256 newDeposit = compoundedEUSDDeposit.sub(EUSDtoWithdraw);
+        uint256 newDeposit = compoundedUSDEDeposit.sub(USDEtoWithdraw);
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, EUSDLoss); // EUSD Loss required for event log
+        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, USDELoss); // USDE Loss required for event log
 
         _sendCollateralGainToDepositor(collaterals, depositorCollateralGains);
     }
@@ -452,8 +452,8 @@ contract StabilityPool is
             uint256[] memory depositorCollateralGains
         ) = getDepositorCollateralGain(msg.sender);
 
-        uint256 compoundedEUSDDeposit = getCompoundedEUSDDeposit(msg.sender);
-        uint256 EUSDLoss = initialDeposit.sub(compoundedEUSDDeposit); // Needed only for event log
+        uint256 compoundedUSDEDeposit = getCompoundedUSDEDeposit(msg.sender);
+        uint256 USDELoss = initialDeposit.sub(compoundedUSDEDeposit); // Needed only for event log
 
         // First pay out any gains or maybe nothing
         address frontEnd = deposits[msg.sender].frontEndTag;
@@ -465,13 +465,13 @@ contract StabilityPool is
         _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
         emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
 
-        _updateDepositAndSnapshots(msg.sender, compoundedEUSDDeposit);
+        _updateDepositAndSnapshots(msg.sender, compoundedUSDEDeposit);
 
         /* Emit events before transferring collateral gain to Trove.
          This lets the event log make more sense (i.e. so it appears that first the collateral gain is withdrawn
         and then it is deposited into the Trove, not the other way around). */
-        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, EUSDLoss);
-        emit UserDepositChanged(msg.sender, compoundedEUSDDeposit);
+        emit CollGainWithdrawn(msg.sender, depositorCollateralGains, USDELoss);
+        emit UserDepositChanged(msg.sender, compoundedUSDEDeposit);
 
         borrowerOperations.moveCollGainToTrove(
             msg.sender,
@@ -492,18 +492,18 @@ contract StabilityPool is
     }
 
     function _updateG(uint256 _issuance) internal {
-        uint256 totalEUSD = totalEUSDDeposits; // cached to save an SLOAD
+        uint256 totalUSDE = totalUSDEDeposits; // cached to save an SLOAD
         /*
          * When total deposits is 0, G is not updated. In this case, the gain issued can not be obtained by later
          * depositors - it is missed out on, and remains in the balanceof the CommunityIssuance contract.
          *
          */
-        if (totalEUSD == 0 || _issuance == 0) {
+        if (totalUSDE == 0 || _issuance == 0) {
             return;
         }
 
         uint256 gainPerUnitStaked;
-        gainPerUnitStaked = _computeGainPerUnitStaked(_issuance, totalEUSD);
+        gainPerUnitStaked = _computeGainPerUnitStaked(_issuance, totalUSDE);
 
         uint256 marginalGain = gainPerUnitStaked.mul(P);
         epochToScaleToG[currentEpoch][currentScale] = epochToScaleToG[
@@ -519,7 +519,7 @@ contract StabilityPool is
 
     function _computeGainPerUnitStaked(
         uint256 _issuance,
-        uint256 _totalEUSDDeposits
+        uint256 _totalUSDEDeposits
     ) internal returns (uint256) {
         /*
          * Calculate the Gain-per-unit staked.  Division uses a "feedback" error correction, to keep the
@@ -536,9 +536,9 @@ contract StabilityPool is
             lastGainError
         );
 
-        uint256 gainPerUnitStaked = gainNumerator.div(_totalEUSDDeposits);
+        uint256 gainPerUnitStaked = gainNumerator.div(_totalUSDEDeposits);
         lastGainError = gainNumerator.sub(
-            gainPerUnitStaked.mul(_totalEUSDDeposits)
+            gainPerUnitStaked.mul(_totalUSDEDeposits)
         );
 
         return gainPerUnitStaked;
@@ -547,7 +547,7 @@ contract StabilityPool is
     // --- Liquidation functions ---
 
     /*
-     * Cancels out the specified debt against the EUSD contained in the Stability Pool (as far as possible)
+     * Cancels out the specified debt against the USDE contained in the Stability Pool (as far as possible)
      * and transfers the Trove's ETH/wrapperETH collateral from ActivePool to StabilityPool.
      * Only called by liquidation functions in the TroveManager.
      */
@@ -557,8 +557,8 @@ contract StabilityPool is
         uint256[] memory _collToAdd
     ) external override whenNotPaused nonReentrant {
         _requireCallerIsTroveML();
-        uint256 totalEUSD = totalEUSDDeposits; // cached to save an SLOAD
-        if (totalEUSD == 0 || _debtToOffset == 0) {
+        uint256 totalUSDE = totalUSDEDeposits; // cached to save an SLOAD
+        if (totalUSDE == 0 || _debtToOffset == 0) {
             return;
         }
 
@@ -566,18 +566,18 @@ contract StabilityPool is
 
         (
             uint256[] memory collGainPerUnitStakeds,
-            uint256 EUSDLossPerUnitStaked
+            uint256 USDELossPerUnitStaked
         ) = _computeRewardsPerUnitStaked(
                 _collaterals,
                 _collToAdd,
                 _debtToOffset,
-                totalEUSD
+                totalUSDE
             );
 
         _updateRewardSumAndProduct(
             _collaterals,
             collGainPerUnitStakeds,
-            EUSDLossPerUnitStaked
+            USDELossPerUnitStaked
         ); // updates S and P
 
         _moveOffsetCollAndDebt(_collaterals, _collToAdd, _debtToOffset);
@@ -626,16 +626,16 @@ contract StabilityPool is
         address[] memory _collaterals,
         uint256[] memory _collToAdd,
         uint256 _debtToOffset,
-        uint256 _totalEUSDDeposits
+        uint256 _totalUSDEDeposits
     )
         internal
         returns (
             uint256[] memory collGainPerUnitStakeds,
-            uint256 EUSDLossPerUnitStaked
+            uint256 USDELossPerUnitStaked
         )
     {
         /*
-         * Compute the EUSD and ETH/wrapperETH rewards. Uses a "feedback" error correction, to keep
+         * Compute the USDE and ETH/wrapperETH rewards. Uses a "feedback" error correction, to keep
          * the cumulative error in the P and S state variables low:
          *
          * 1) Form numerators which compensate for the floor division errors that occurred the last time this
@@ -650,23 +650,23 @@ contract StabilityPool is
         collGainPerUnitStakeds = new uint256[](collateralsLen);
         uint256 currentP = P;
 
-        assert(_debtToOffset <= _totalEUSDDeposits);
-        if (_debtToOffset == _totalEUSDDeposits) {
-            EUSDLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
-            lastEUSDLossError_Offset = 0;
+        assert(_debtToOffset <= _totalUSDEDeposits);
+        if (_debtToOffset == _totalUSDEDeposits) {
+            USDELossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
+            lastUSDELossError_Offset = 0;
         } else {
-            uint256 EUSDLossNumerator = _debtToOffset
+            uint256 USDELossNumerator = _debtToOffset
                 .mul(DECIMAL_PRECISION)
-                .sub(lastEUSDLossError_Offset);
+                .sub(lastUSDELossError_Offset);
             /*
-             * Add 1 to make error in quotient positive. We want "slightly too much" EUSD loss,
-             * which ensures the error in any given compoundedEUSDDeposit favors the Stability Pool.
+             * Add 1 to make error in quotient positive. We want "slightly too much" USDE loss,
+             * which ensures the error in any given compoundedUSDEDeposit favors the Stability Pool.
              */
-            EUSDLossPerUnitStaked = (EUSDLossNumerator.div(_totalEUSDDeposits))
+            USDELossPerUnitStaked = (USDELossNumerator.div(_totalUSDEDeposits))
                 .add(1);
-            lastEUSDLossError_Offset = (
-                EUSDLossPerUnitStaked.mul(_totalEUSDDeposits)
-            ).sub(EUSDLossNumerator);
+            lastUSDELossError_Offset = (
+                USDELossPerUnitStaked.mul(_totalUSDEDeposits)
+            ).sub(USDELossNumerator);
         }
 
         address collateral;
@@ -681,11 +681,11 @@ contract StabilityPool is
             );
 
             collGainPerUnitStakeds[i] = collNumerators[i].mul(currentP).div(
-                _totalEUSDDeposits
+                _totalUSDEDeposits
             );
 
             lastCollError_Offset[collateral] = collNumerators[i].sub(
-                collGainPerUnitStakeds[i].mul(_totalEUSDDeposits).div(currentP)
+                collGainPerUnitStakeds[i].mul(_totalUSDEDeposits).div(currentP)
             );
 
             unchecked {
@@ -698,21 +698,21 @@ contract StabilityPool is
     function _updateRewardSumAndProduct(
         address[] memory _collaterals,
         uint256[] memory _collGainPerUnitStakeds,
-        uint256 _EUSDLossPerUnitStaked
+        uint256 _USDELossPerUnitStaked
     ) internal {
         uint256 currentP = P;
         uint256 newP;
 
         require(
-            _EUSDLossPerUnitStaked <= DECIMAL_PRECISION,
+            _USDELossPerUnitStaked <= DECIMAL_PRECISION,
             Errors.SP_USDE_LOSS_LT_1
         );
         /*
-         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool EUSD in the liquidation.
-         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - EUSDLossPerUnitStaked)
+         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool USDE in the liquidation.
+         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - USDELossPerUnitStaked)
          */
         uint256 newProductFactor = uint256(DECIMAL_PRECISION).sub(
-            _EUSDLossPerUnitStaked
+            _USDELossPerUnitStaked
         );
 
         uint128 currentScaleCached = currentScale;
@@ -778,12 +778,12 @@ contract StabilityPool is
     ) internal {
         IActivePool activePoolCached = activePool;
 
-        // Cancel the liquidated EUSD debt with the EUSD in the stability pool
-        activePoolCached.decreaseEUSDDebt(_debtToOffset);
-        _decreaseEUSD(_debtToOffset);
+        // Cancel the liquidated USDE debt with the USDE in the stability pool
+        activePoolCached.decreaseUSDEDebt(_debtToOffset);
+        _decreaseUSDE(_debtToOffset);
 
         // Burn the debt that was successfully offset
-        eusdToken.burn(address(this), _debtToOffset);
+        usdeToken.burn(address(this), _debtToOffset);
 
         activePoolCached.sendCollateral(
             address(this),
@@ -792,10 +792,10 @@ contract StabilityPool is
         );
     }
 
-    function _decreaseEUSD(uint256 _amount) internal {
-        uint256 newTotalEUSDDeposits = totalEUSDDeposits.sub(_amount);
-        totalEUSDDeposits = newTotalEUSDDeposits;
-        emit StabilityPoolEUSDBalanceUpdated(newTotalEUSDDeposits);
+    function _decreaseUSDE(uint256 _amount) internal {
+        uint256 newTotalUSDEDeposits = totalUSDEDeposits.sub(_amount);
+        totalUSDEDeposits = newTotalUSDEDeposits;
+        emit StabilityPoolUSDEBalanceUpdated(newTotalUSDEDeposits);
     }
 
     // --- Reward calculator functions for depositor and front end ---
@@ -967,7 +967,7 @@ contract StabilityPool is
      * Return the user's compounded deposit. Given by the formula:  d = d0 * P/P(0)
      * where P(0) is the depositor's snapshot of the product P, taken when they last updated their deposit.
      */
-    function getCompoundedEUSDDeposit(
+    function getCompoundedUSDEDeposit(
         address _depositor
     ) public view override returns (uint256) {
         uint256 initialDeposit = deposits[_depositor].initialValue;
@@ -1040,8 +1040,8 @@ contract StabilityPool is
             compoundedStake = 0;
         }
 
-        if (compoundedStake > totalEUSDDeposits) {
-            compoundedStake = totalEUSDDeposits;
+        if (compoundedStake > totalUSDEDeposits) {
+            compoundedStake = totalUSDEDeposits;
         }
 
         /*
@@ -1060,17 +1060,17 @@ contract StabilityPool is
         return compoundedStake;
     }
 
-    // --- Sender functions for EUSD deposit, collateral gains and other gains ---
+    // --- Sender functions for USDE deposit, collateral gains and other gains ---
 
-    // Transfer the EUSD tokens from the user to the Stability Pool's address, and update its recorded EUSD
-    function _sendEUSDtoStabilityPool(
+    // Transfer the USDE tokens from the user to the Stability Pool's address, and update its recorded USDE
+    function _sendUSDEtoStabilityPool(
         address _address,
         uint256 _amount
     ) internal {
-        eusdToken.sendToPool(_address, address(this), _amount);
-        uint256 newTotalEUSDDeposits = totalEUSDDeposits.add(_amount);
-        totalEUSDDeposits = newTotalEUSDDeposits;
-        emit StabilityPoolEUSDBalanceUpdated(newTotalEUSDDeposits);
+        usdeToken.sendToPool(_address, address(this), _amount);
+        uint256 newTotalUSDEDeposits = totalUSDEDeposits.add(_amount);
+        totalUSDEDeposits = newTotalUSDEDeposits;
+        emit StabilityPoolUSDEBalanceUpdated(newTotalUSDEDeposits);
     }
 
     function _sendCollateralGainToDepositor(
@@ -1119,17 +1119,17 @@ contract StabilityPool is
         }
     }
 
-    // Send EUSD to user and decrease EUSD in Pool
-    function _sendEUSDToDepositor(
+    // Send USDE to user and decrease USDE in Pool
+    function _sendUSDEToDepositor(
         address _depositor,
-        uint256 EUSDWithdrawal
+        uint256 USDEWithdrawal
     ) internal {
-        if (EUSDWithdrawal == 0) {
+        if (USDEWithdrawal == 0) {
             return;
         }
 
-        eusdToken.returnFromPool(address(this), _depositor, EUSDWithdrawal);
-        _decreaseEUSD(EUSDWithdrawal);
+        usdeToken.returnFromPool(address(this), _depositor, USDEWithdrawal);
+        _decreaseUSDE(USDEWithdrawal);
     }
 
     // --- External Front End functions ---

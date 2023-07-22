@@ -16,7 +16,7 @@ interface ITroveManagerLiquidations is IERDBase {
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerAddress,
         address _collateralManagerAddress

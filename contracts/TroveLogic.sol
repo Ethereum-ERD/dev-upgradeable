@@ -7,7 +7,7 @@ import "./Errors.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveDebt.sol";
 import "./Interfaces/ITroveInterestRateStrategy.sol";
-import "./Interfaces/IEUSDToken.sol";
+import "./Interfaces/IUSDEToken.sol";
 import "./Dependencies/ERDMath.sol";
 import "./Dependencies/WadRayMath.sol";
 
@@ -94,7 +94,7 @@ library TroveLogic {
 
     /**
      * @dev Mints part of the repaid interest to the treasury as a function of the troveFactor for the
-     * EUSD.
+     * USDE.
      * @param trove The trove to be updated
      * @param scaledDebt The current scaled total debt
      * @param previousBorrowIndex The borrow index before the last accumulation of the interest
@@ -120,7 +120,7 @@ library TroveLogic {
         vars.amountToMint = vars.totalDebtAccrued;
 
         if (vars.amountToMint != 0) {
-            IEUSDToken(trove.eusdTokenAddress).mintToTreasury(
+            IUSDEToken(trove.usdeTokenAddress).mintToTreasury(
                 vars.amountToMint,
                 trove.factor
             );

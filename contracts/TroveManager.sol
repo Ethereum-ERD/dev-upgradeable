@@ -51,7 +51,7 @@ contract TroveManager is
 
     uint256 public baseRate;
 
-    // The timestamp of the latest fee operation (redemption or new EUSD issuance)
+    // The timestamp of the latest fee operation (redemption or new USDE issuance)
     uint256 public lastFeeOperationTime;
 
     mapping(address => DataTypes.Trove) public Troves;
@@ -67,15 +67,15 @@ contract TroveManager is
     mapping(address => uint256) public totalCollateralSnapshot;
 
     /*
-     * L_Coll and L_EUSDDebt track the sums of accumulated liquidation rewards per unit staked. During its lifetime, each stake earns:
+     * E_Coll and E_USDEDebt track the sums of accumulated liquidation rewards per unit staked. During its lifetime, each stake earns:
      *
-     * An collateral gain of ( stake * [L_Coll[collateral] - L_Coll[collateral](0)] )
-     * A EUSDDebt increase  of ( stake * [L_EUSDDebt[collateral] - L_EUSDDebt[collateral](0)] )
+     * An collateral gain of ( stake * [E_Coll[collateral] - E_Coll[collateral](0)] )
+     * A USDEDebt increase  of ( stake * [E_USDEDebt[collateral] - E_USDEDebt[collateral](0)] )
      *
-     * Where L_Coll[collateral](0) and L_EUSDDebt[collateral](0) are snapshots of L_Coll[collateral] and L_EUSDDebt[collateral] for the active Trove taken at the instant the stake was made
+     * Where E_Coll[collateral](0) and E_USDEDebt[collateral](0) are snapshots of E_Coll[collateral] and E_USDEDebt[collateral] for the active Trove taken at the instant the stake was made
      */
-    mapping(address => uint256) public L_Coll;
-    mapping(address => uint256) public L_EUSDDebt;
+    mapping(address => uint256) public E_Coll;
+    mapping(address => uint256) public E_USDEDebt;
 
     // Map addresses with active troves to their RewardSnapshot
     mapping(address => DataTypes.RewardSnapshot) rewardSnapshots;
@@ -85,7 +85,7 @@ contract TroveManager is
 
     // Error trackers for the trove redistribution calculation
     mapping(address => uint256) public lastCollError_Redistribution;
-    mapping(address => uint256) public lastEUSDDebtError_Redistribution;
+    mapping(address => uint256) public lastUSDEDebtError_Redistribution;
 
     bool internal paused;
 
@@ -121,7 +121,7 @@ contract TroveManager is
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
-        address _eusdTokenAddress,
+        address _usdeTokenAddress,
         address _sortedTrovesAddress,
         address _troveManagerLiquidationsAddress,
         address _troveManagerRedemptionsAddress,
@@ -134,7 +134,7 @@ contract TroveManager is
         _requireIsContract(_gasPoolAddress);
         _requireIsContract(_collSurplusPoolAddress);
         _requireIsContract(_priceFeedAddress);
-        _requireIsContract(_eusdTokenAddress);
+        _requireIsContract(_usdeTokenAddress);
         _requireIsContract(_sortedTrovesAddress);
         _requireIsContract(_troveManagerLiquidationsAddress);
         _requireIsContract(_troveManagerRedemptionsAddress);
@@ -147,8 +147,8 @@ contract TroveManager is
         gasPoolAddress = _gasPoolAddress;
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
-        eusdToken = IEUSDToken(_eusdTokenAddress);
-        troveData.eusdTokenAddress = _eusdTokenAddress;
+        usdeToken = IUSDEToken(_usdeTokenAddress);
+        troveData.usdeTokenAddress = _usdeTokenAddress;
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
 
         troveManagerLiquidations = ITroveManagerLiquidations(
@@ -167,7 +167,7 @@ contract TroveManager is
         emit GasPoolAddressChanged(_gasPoolAddress);
         emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
-        emit EUSDTokenAddressChanged(_eusdTokenAddress);
+        emit USDETokenAddressChanged(_usdeTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit TroveManagerLiquidationsAddressChanged(
             _troveManagerLiquidationsAddress
@@ -232,14 +232,14 @@ contract TroveManager is
     function movePendingTroveRewardsToActivePool(
         IActivePool _activePool,
         IDefaultPool _defaultPool,
-        uint256 _EUSD,
+        uint256 _USDE,
         uint256[] memory _collAmounts
     ) external override {
         _requireCallerIsTML();
         _movePendingTroveRewardsToActivePool(
             _activePool,
             _defaultPool,
-            _EUSD,
+            _USDE,
             _collAmounts,
             getCollateralSupport()
         );
@@ -248,20 +248,20 @@ contract TroveManager is
     function _movePendingTroveRewardsToActivePool(
         IActivePool _activePool,
         IDefaultPool _defaultPool,
-        uint256 _EUSD,
+        uint256 _USDE,
         uint256[] memory _collAmounts,
         address[] memory _collaterals
     ) internal {
-        _defaultPool.decreaseEUSDDebt(_EUSD);
-        _activePool.increaseEUSDDebt(_EUSD);
+        _defaultPool.decreaseUSDEDebt(_USDE);
+        _activePool.increaseUSDEDebt(_USDE);
         _defaultPool.sendCollateralToActivePool(_collaterals, _collAmounts);
     }
 
     // --- Redemption functions ---
 
-    // Redeem as much collateral as possible from _borrower's Trove in exchange for EUSD up to _maxEUSDamount
+    // Redeem as much collateral as possible from _borrower's Trove in exchange for USDE up to _maxUSDEamount
 
-    /* Send _EUSDamount EUSD to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
+    /* Send _USDEamount USDE to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
      * request.  Applies pending rewards to a Trove before reducing its debt and coll.
      *
      * Note that if _amount is very large, this function can run out of gas, specially if traversed troves are small. This can be easily avoided by
@@ -279,11 +279,11 @@ contract TroveManager is
      *
      * If another transaction modifies the list between calling getRedemptionHints() and passing the hints to redeemCollateral(), it
      * is very likely that the last (partially) redeemed Trove would end up with a different ICR than what the hint is for. In this case the
-     * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining EUSD amount, which they can attempt
+     * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining USDE amount, which they can attempt
      * to redeem later.
      */
     function redeemCollateral(
-        uint256 _EUSDAmount,
+        uint256 _USDEAmount,
         address _firstRedemptionHint,
         address _upperPartialRedemptionHint,
         address _lowerPartialRedemptionHint,
@@ -292,7 +292,7 @@ contract TroveManager is
         uint256 _maxFeePercentage
     ) external override whenNotPaused nonReentrant {
         troveManagerRedemptions.redeemCollateral(
-            _EUSDAmount,
+            _USDEAmount,
             _firstRedemptionHint,
             _upperPartialRedemptionHint,
             _lowerPartialRedemptionHint,
@@ -322,10 +322,10 @@ contract TroveManager is
         (
             uint256[] memory currentColls,
             address[] memory collaterals,
-            uint256 currentEUSDDebt
+            uint256 currentUSDEDebt
         ) = _getCurrentTroveAmounts(_borrower);
         (uint256 value, ) = _getValue(collaterals, currentColls, _price);
-        uint256 ICR = ERDMath._computeCR(value, currentEUSDDebt);
+        uint256 ICR = ERDMath._computeCR(value, currentUSDEDebt);
         return ICR;
     }
 
@@ -353,17 +353,17 @@ contract TroveManager is
         ) = getPendingCollReward(_borrower);
 
         (uint256[] memory currColls, , ) = getTroveColls(_borrower);
-        uint256 pendingEUSDDebtReward = getPendingEUSDDebtReward(_borrower);
+        uint256 pendingUSDEDebtReward = getPendingUSDEDebtReward(_borrower);
         uint256[] memory newColls = ERDMath._addArray(
             currColls,
             pendingCollRewards
         );
         uint256 oldDebt = troveDebt.balanceOf(_borrower).add(
-            getEUSDGasCompensation()
+            getUSDEGasCompensation()
         );
-        uint256 currentEUSDDebt = oldDebt.add(pendingEUSDDebtReward);
+        uint256 currentUSDEDebt = oldDebt.add(pendingUSDEDebtReward);
 
-        return (newColls, rewardAssets, currentEUSDDebt);
+        return (newColls, rewardAssets, currentUSDEDebt);
     }
 
     function applyPendingRewards(address _borrower) external override {
@@ -386,13 +386,13 @@ contract TroveManager is
                 _borrower,
                 collaterals
             );
-            uint256 pendingEUSDDebtReward = getPendingEUSDDebtReward(_borrower);
+            uint256 pendingUSDEDebtReward = getPendingUSDEDebtReward(_borrower);
 
             // Apply pending rewards to trove's state
             troveData.updateState();
             troveDebt.addDebt(
                 _borrower,
-                pendingEUSDDebtReward,
+                pendingUSDEDebtReward,
                 troveData.borrowIndex
             );
             uint256[] memory newShares = collateralManager.applyRewards(
@@ -408,14 +408,14 @@ contract TroveManager is
             _movePendingTroveRewardsToActivePool(
                 _activePool,
                 _defaultPool,
-                pendingEUSDDebtReward,
+                pendingUSDEDebtReward,
                 pendingCollRewards,
                 collaterals
             );
 
             emit TroveUpdated(
                 _borrower,
-                troveDebt.balanceOf(_borrower).add(getEUSDGasCompensation()),
+                troveDebt.balanceOf(_borrower).add(getUSDEGasCompensation()),
                 collaterals,
                 newShares,
                 DataTypes.TroveManagerOperation.applyPendingRewards
@@ -423,7 +423,7 @@ contract TroveManager is
         }
     }
 
-    // Update borrower's snapshots of L_Coll and L_EUSDDebt to reflect the current values
+    // Update borrower's snapshots of E_Coll and E_USDEDebt to reflect the current values
     function updateTroveRewardSnapshots(address _borrower) external override {
         _requireCallerIsBorrowerOperations();
         return _updateTroveRewardSnapshots(_borrower);
@@ -434,10 +434,10 @@ contract TroveManager is
         uint256 collLen = collaterals.length;
         for (uint256 i = 0; i < collLen; ) {
             address collateral = collaterals[i];
-            rewardSnapshots[_borrower].collShares[collateral] = L_Coll[
+            rewardSnapshots[_borrower].collShares[collateral] = E_Coll[
                 collateral
             ];
-            rewardSnapshots[_borrower].EUSDDebt[collateral] = L_EUSDDebt[
+            rewardSnapshots[_borrower].USDEDebt[collateral] = E_USDEDebt[
                 collateral
             ];
             unchecked {
@@ -480,7 +480,7 @@ contract TroveManager is
             uint256 snapshotCollReward = rewardSnapshots[_borrower].collShares[
                 collateral
             ];
-            uint256 rewardPerUnitStaked = L_Coll[collateral].sub(
+            uint256 rewardPerUnitStaked = E_Coll[collateral].sub(
                 snapshotCollReward
             );
             if (rewardPerUnitStaked == 0) {
@@ -506,23 +506,23 @@ contract TroveManager is
         return (pendingCollRewards, pendingShareRewards);
     }
 
-    // Get the borrower's pending accumulated EUSD reward, earned by their stake
-    function getPendingEUSDDebtReward(
+    // Get the borrower's pending accumulated USDE reward, earned by their stake
+    function getPendingUSDEDebtReward(
         address _borrower
     ) public view override returns (uint256) {
         if (Troves[_borrower].status != DataTypes.Status.active) {
             return 0;
         }
-        uint256 pendingEUSDDebtReward;
+        uint256 pendingUSDEDebtReward;
         address[] memory collaterals = getCollateralSupport();
         uint256 collLen = collaterals.length;
         for (uint256 i = 0; i < collLen; ) {
             address collateral = collaterals[i];
-            uint256 snapshotEUSDDebt = rewardSnapshots[_borrower].EUSDDebt[
+            uint256 snapshotUSDEDebt = rewardSnapshots[_borrower].USDEDebt[
                 collateral
             ];
-            uint256 rewardPerUnitStaked = L_EUSDDebt[collateral].sub(
-                snapshotEUSDDebt
+            uint256 rewardPerUnitStaked = E_USDEDebt[collateral].sub(
+                snapshotUSDEDebt
             );
             if (rewardPerUnitStaked == 0) {
                 unchecked {
@@ -533,16 +533,16 @@ contract TroveManager is
 
             uint256 stake = Troves[_borrower].stakes[collateral];
 
-            uint256 assetEUSDReward = stake.mul(rewardPerUnitStaked).div(
+            uint256 assetUSDEReward = stake.mul(rewardPerUnitStaked).div(
                 DECIMAL_PRECISION
             );
-            pendingEUSDDebtReward = pendingEUSDDebtReward.add(assetEUSDReward);
+            pendingUSDEDebtReward = pendingUSDEDebtReward.add(assetUSDEReward);
             unchecked {
                 i++;
             }
         }
 
-        return pendingEUSDDebtReward;
+        return pendingUSDEDebtReward;
     }
 
     function hasPendingRewards(
@@ -569,7 +569,7 @@ contract TroveManager is
             address collateral = collaterals[i];
             if (
                 rewardSnapshots[_borrower].collShares[collateral] <
-                L_Coll[collateral]
+                E_Coll[collateral]
             ) {
                 return (true, collaterals);
             }
@@ -599,7 +599,7 @@ contract TroveManager is
             return (0, new uint256[](0), 0, new uint256[](0), new address[](0));
         }
         uint256 debt = troveDebt.balanceOf(_borrower).add(
-            getEUSDGasCompensation()
+            getUSDEGasCompensation()
         );
         (
             uint256[] memory amounts,
@@ -607,17 +607,17 @@ contract TroveManager is
             address[] memory collaterals
         ) = getTroveColls(_borrower);
 
-        uint256 pendingEUSDDebtReward = getPendingEUSDDebtReward(_borrower);
+        uint256 pendingUSDEDebtReward = getPendingUSDEDebtReward(_borrower);
         (uint256[] memory pendingCollRewards, , ) = getPendingCollReward(
             _borrower
         );
 
-        debt = debt.add(pendingEUSDDebtReward);
+        debt = debt.add(pendingUSDEDebtReward);
         uint256[] memory colls = ERDMath._addArray(amounts, pendingCollRewards);
         return (
             debt,
             colls,
-            pendingEUSDDebtReward,
+            pendingUSDEDebtReward,
             pendingCollRewards,
             collaterals
         );
@@ -713,7 +713,7 @@ contract TroveManager is
 
         /*
          * Add distributed coll and debt rewards-per-unit-staked to the running totals. Division uses a "feedback"
-         * error correction, to keep the cumulative error low in the running totals L_Coll and L_EUSDDebt:
+         * error correction, to keep the cumulative error low in the running totals E_Coll and E_USDEDebt:
          *
          * 1) Form numerators which compensate for the floor division errors that occurred the last time this
          * function was called.
@@ -733,12 +733,12 @@ contract TroveManager is
             uint256 collNumerator = share.mul(DECIMAL_PRECISION).add(
                 lastCollError_Redistribution[collateral]
             );
-            uint256 EUSDDebtNumerator = _proratedDebtForCollaterals[i]
+            uint256 USDEDebtNumerator = _proratedDebtForCollaterals[i]
                 .mul(DECIMAL_PRECISION)
-                .add(lastEUSDDebtError_Redistribution[collateral]);
+                .add(lastUSDEDebtError_Redistribution[collateral]);
             if (stake != 0) {
                 uint256 collRewardPerUnitStaked = collNumerator.div(stake);
-                uint256 EUSDDebtRewardPerUnitStaked = EUSDDebtNumerator.div(
+                uint256 USDEDebtRewardPerUnitStaked = USDEDebtNumerator.div(
                     stake
                 );
 
@@ -746,20 +746,20 @@ contract TroveManager is
                 lastCollError_Redistribution[collateral] = collNumerator.sub(
                     collRewardPerUnitStaked.mul(stake)
                 );
-                lastEUSDDebtError_Redistribution[collateral] = EUSDDebtNumerator
-                    .sub(EUSDDebtRewardPerUnitStaked.mul(stake));
+                lastUSDEDebtError_Redistribution[collateral] = USDEDebtNumerator
+                    .sub(USDEDebtRewardPerUnitStaked.mul(stake));
 
                 // Add per-unit-staked terms to the running totals
-                L_Coll[collateral] = L_Coll[collateral].add(
+                E_Coll[collateral] = E_Coll[collateral].add(
                     collRewardPerUnitStaked
                 );
-                L_EUSDDebt[collateral] = L_EUSDDebt[collateral].add(
-                    EUSDDebtRewardPerUnitStaked
+                E_USDEDebt[collateral] = E_USDEDebt[collateral].add(
+                    USDEDebtRewardPerUnitStaked
                 );
-                emit LTermsUpdated(
+                emit ETermsUpdated(
                     collateral,
-                    L_Coll[collateral],
-                    L_EUSDDebt[collateral]
+                    E_Coll[collateral],
+                    E_USDEDebt[collateral]
                 );
             }
             unchecked {
@@ -768,8 +768,8 @@ contract TroveManager is
         }
 
         // Transfer coll and debt from ActivePool to DefaultPool
-        _activePool.decreaseEUSDDebt(_debt);
-        _defaultPool.increaseEUSDDebt(_debt);
+        _activePool.decreaseUSDEDebt(_debt);
+        _defaultPool.increaseUSDEDebt(_debt);
         _activePool.sendCollateral(address(_defaultPool), _collaterals, _colls);
     }
 
@@ -820,7 +820,7 @@ contract TroveManager is
         for (uint256 i = 0; i < collLend; ) {
             address collateral = collaterals[i];
             rewardSnapshots[_borrower].collShares[collateral] = 0;
-            rewardSnapshots[_borrower].EUSDDebt[collateral] = 0;
+            rewardSnapshots[_borrower].USDEDebt[collateral] = 0;
             unchecked {
                 i++;
             }
@@ -885,8 +885,8 @@ contract TroveManager is
     function _addTroveOwnerToArray(
         address _borrower
     ) internal returns (uint128 index) {
-        /* Max array size is 2**128 - 1, i.e. ~3e30 troves. No risk of overflow, since troves have minimum EUSD
-        debt of liquidation reserve plus MIN_NET_DEBT. 3e30 EUSD dwarfs the value of all wealth in the world ( which is < 1e15 USD). */
+        /* Max array size is 2**128 - 1, i.e. ~3e30 troves. No risk of overflow, since troves have minimum USDE
+        debt of liquidation reserve plus MIN_NET_DEBT. 3e30 USDE dwarfs the value of all wealth in the world ( which is < 1e15 USD). */
 
         // Push the Troveowner to the array
         TroveOwners.push(_borrower);
@@ -1056,25 +1056,25 @@ contract TroveManager is
     }
 
     function getBorrowingFee(
-        uint256 _EUSDDebt
+        uint256 _USDEDebt
     ) external view override returns (uint256) {
-        return _calcBorrowingFee(getBorrowingRate(), _EUSDDebt);
+        return _calcBorrowingFee(getBorrowingRate(), _USDEDebt);
     }
 
     function getBorrowingFeeWithDecay(
-        uint256 _EUSDDebt
+        uint256 _USDEDebt
     ) external view override returns (uint256) {
-        return _calcBorrowingFee(getBorrowingRateWithDecay(), _EUSDDebt);
+        return _calcBorrowingFee(getBorrowingRateWithDecay(), _USDEDebt);
     }
 
     function _calcBorrowingFee(
         uint256 _borrowingRate,
-        uint256 _EUSDDebt
+        uint256 _USDEDebt
     ) internal pure returns (uint256) {
-        return _borrowingRate.mul(_EUSDDebt).div(DECIMAL_PRECISION);
+        return _borrowingRate.mul(_USDEDebt).div(DECIMAL_PRECISION);
     }
 
-    // Updates the baseRate state variable based on time elapsed since the last redemption or EUSD borrowing operation.
+    // Updates the baseRate state variable based on time elapsed since the last redemption or USDE borrowing operation.
     function decayBaseRateFromBorrowing() external override {
         _requireCallerIsBorrowerOperations();
 
@@ -1176,7 +1176,7 @@ contract TroveManager is
         if (uint256(Troves[_borrower].status) != 1) {
             return 0;
         }
-        return troveDebt.balanceOf(_borrower).add(getEUSDGasCompensation());
+        return troveDebt.balanceOf(_borrower).add(getUSDEGasCompensation());
     }
 
     function getTroveColl(
@@ -1234,11 +1234,11 @@ contract TroveManager is
         return rewardSnapshots[_borrower].collShares[_collateral];
     }
 
-    function getRewardSnapshotEUSD(
+    function getRewardSnapshotUSDE(
         address _borrower,
         address _collateral
     ) external view override returns (uint256) {
-        return rewardSnapshots[_borrower].EUSDDebt[_collateral];
+        return rewardSnapshots[_borrower].USDEDebt[_collateral];
     }
 
     // --- Trove property setters, called by BorrowerOperations ---
@@ -1314,7 +1314,7 @@ contract TroveManager is
         return collateralManager.getCCR();
     }
 
-    function getEUSDGasCompensation() public view override returns (uint256) {
-        return collateralManager.getEUSDGasCompensation();
+    function getUSDEGasCompensation() public view override returns (uint256) {
+        return collateralManager.getUSDEGasCompensation();
     }
 }

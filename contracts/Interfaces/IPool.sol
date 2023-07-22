@@ -21,7 +21,7 @@ interface IPool {
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
-    event EUSDTokenAddressChanged(address _newEUSDTokenAddress);
+    event USDETokenAddressChanged(address _newUSDETokenAddress);
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event CommunityIssuanceAddressChanged(address _newCommunityIssuanceAddress);
