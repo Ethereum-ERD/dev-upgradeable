@@ -151,7 +151,8 @@ contract('newBorrowerOperations', async accounts => {
             for (let i = 1; i < validCollateral.length; i++) {
                 await collateralManager.removeCollateral(validCollateral[i])
                 assert.isFalse(await collateralManager.getIsSupport(validCollateral[i]), "Collateral is not be supported");
-                await assertRevert(collateralManager.removeCollateral(validCollateral[i]), "CollateralManager: Collateral not pause");
+                // Collateral not pause
+                await assertRevert(collateralManager.removeCollateral(validCollateral[i]), "31");
             }
 
         })
@@ -190,7 +191,8 @@ contract('newBorrowerOperations', async accounts => {
             const openTxAPromise = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, {
                 from: bob
             })
-            await assertRevert(openTxAPromise, "BorrowerOps: Collateral does not active or is paused")
+            // Collateral does not active or is paused
+            await assertRevert(openTxAPromise, "7")
 
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             // 1 ETH : 1 STETH
@@ -209,7 +211,8 @@ contract('newBorrowerOperations', async accounts => {
             const openTx_C = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), bob, bob, {
                 from: carol
             })
-            await assertRevert(openTx_C, "BorrowerOps: Collateral does not active or is paused")
+            // Collateral does not active or is paused
+            await assertRevert(openTx_C, "7")
 
             const tx_B = await borrowerOperations.adjustTrove([], [], [contracts.steth.address], [toBN(dec(1, 18))], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: bob
@@ -269,7 +272,7 @@ contract('newBorrowerOperations', async accounts => {
 
             let d_colls = [contracts.weth];
             let d_amounts = [d_wethToMint];
-
+            // ETH does not active or is paused
             await assertRevert(
                 openTrove({
                     ICR: toBN(dec(2, 18)),
@@ -278,17 +281,17 @@ contract('newBorrowerOperations', async accounts => {
                         value: d_wethToMint
                     }
                 }),
-                "BorrowerOps: ETH does not active or is paused"
+                "6"
             )
 
             const addedColl1 = toBN(dec(1, 'ether'))
-
+            // ETH does not active
             await assertRevert(
                 borrowerOperations.addColl([], [], alice, alice, {
                     from: alice,
                     value: addedColl1
                 }),
-                "BorrowerOps: ETH does not active"
+                "9"
             )
 
             await borrowerOperations.withdrawColl([contracts.weth.address], [addedColl1], carol, carol, {

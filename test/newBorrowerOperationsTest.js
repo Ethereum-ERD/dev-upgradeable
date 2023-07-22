@@ -103,7 +103,7 @@ contract('newBorrowerOperations', async accounts => {
             communityIssuance = ERDContracts.communityIssuance
 
             USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
-            MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
+            MIN_NET_DEBT = await collateralManager.getMinNetDebt()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             await priceFeedSTETH.setPrice(dec(1, 18))

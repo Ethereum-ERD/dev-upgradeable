@@ -102,7 +102,7 @@ contract('BorrowerOperations', async accounts => {
       communityIssuance = ERDContracts.communityIssuance
 
       USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
-      MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
+      MIN_NET_DEBT = await collateralManager.getMinNetDebt()
       BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
     })
 
@@ -129,12 +129,12 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue((await th.getCurrentICR(contracts, alice)).lt(toBN(dec(110, 16))))
 
       const collTopUp = toBN(dec(1, 18)) // 1 wei top up
-
+      // An operation that would result in ICR < MCR is not permitted
       await assertRevert(borrowerOperations.addColl([], [], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: alice,
           value: collTopUp
         }), //th.addColl(contracts, toBN(dec(collTopUp, 18), alice)),
-        "BorrowerOps: An operation that would result in ICR < MCR is not permitted")
+        "18")
     })
   }
   describe('Without proxy', async () => {

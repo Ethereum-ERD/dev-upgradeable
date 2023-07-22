@@ -78,15 +78,18 @@ contract('CollSurplusPool', async accounts => {
   })
 
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
-    await th.assertRevert(collSurplusPool.claimColl(A, { from: A }), 'CollSurplusPool: Caller is not Borrower Operations')
+    // Caller is not Borrower Operations
+    await th.assertRevert(collSurplusPool.claimColl(A, { from: A }), '201')
   })
 
   it("CollSurplusPool: claimColl(): Reverts if nothing to claim", async () => {
-    await th.assertRevert(borrowerOperations.claimCollateral({ from: A }), 'CollSurplusPool: No collateral available to claim')
+    // No collateral available to claim
+    await th.assertRevert(borrowerOperations.claimCollateral({ from: A }), '40')
   })
 
   it('CollSurplusPool: accountSurplus: reverts if caller is not Trove Manager', async () => {
-    await th.assertRevert(collSurplusPool.accountSurplus(A, [1]), 'CollSurplusPool: Caller is not TML nor TMR')
+    // Caller is not TML nor TMR
+    await th.assertRevert(collSurplusPool.accountSurplus(A, [1]), '207')
   })
 })
 

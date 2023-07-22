@@ -390,7 +390,7 @@ contract('StabilityPool', async accounts => {
       const alice_Snapshot_P_1 = alice_Snapshot_1.P.toString()
       assert.equal(alice_Snapshot_S_1, S_1)
       assert.equal(alice_Snapshot_P_1, P_1)
-      
+
       // Bob withdraws USDE and deposits to StabilityPool
       await openTrove({
         extraUSDEAmount: toBN(dec(1000, 18)),
@@ -1799,11 +1799,11 @@ contract('StabilityPool', async accounts => {
       txPromise_D = stabilityPool.provideToSP(0, ZERO_ADDRESS, {
         from: D
       })
-
-      await th.assertRevert(txPromise_A, 'StabilityPool: Amount must be non-zero')
-      await th.assertRevert(txPromise_B, 'StabilityPool: Amount must be non-zero')
-      await th.assertRevert(txPromise_C, 'StabilityPool: Amount must be non-zero')
-      await th.assertRevert(txPromise_D, 'StabilityPool: Amount must be non-zero')
+      // Amount must be non-zero
+      await th.assertRevert(txPromise_A, '75')
+      await th.assertRevert(txPromise_B, '75')
+      await th.assertRevert(txPromise_C, '75')
+      await th.assertRevert(txPromise_D, '75')
     })
 
     it("provideToSP(): reverts if user is a registered front end", async () => {
@@ -1857,9 +1857,10 @@ contract('StabilityPool', async accounts => {
       const txPromise_F = stabilityPool.provideToSP(dec(10, 18), F, {
         from: F
       })
-      await th.assertRevert(txPromise_C, "StabilityPool: must not already be a registered front end")
-      await th.assertRevert(txPromise_E, "StabilityPool: must not already be a registered front end")
-      await th.assertRevert(txPromise_F, "StabilityPool: must not already be a registered front end")
+      // must not already be a registered front end
+      await th.assertRevert(txPromise_C, "78")
+      await th.assertRevert(txPromise_E, "78")
+      await th.assertRevert(txPromise_F, "78")
 
       const txD = await stabilityPool.provideToSP(dec(10, 18), frontEnd_1, {
         from: D
@@ -1902,11 +1903,11 @@ contract('StabilityPool', async accounts => {
       const txPromise_F = stabilityPool.provideToSP(dec(10, 18), F, {
         from: F
       }) // passes itself
-
-      await th.assertRevert(txPromise_C, "StabilityPool: Tag must be a registered front end, or the zero address")
-      await th.assertRevert(txPromise_D, "StabilityPool: Tag must be a registered front end, or the zero address")
-      await th.assertRevert(txPromise_E, "StabilityPool: Tag must be a registered front end, or the zero address")
-      await th.assertRevert(txPromise_F, "StabilityPool: Tag must be a registered front end, or the zero address")
+      // Tag must be a registered front end, or the zero address
+      await th.assertRevert(txPromise_C, "79")
+      await th.assertRevert(txPromise_D, "79")
+      await th.assertRevert(txPromise_E, "79")
+      await th.assertRevert(txPromise_F, "79")
     })
 
     // --- withdrawFromSP ---
@@ -4038,7 +4039,8 @@ contract('StabilityPool', async accounts => {
       assert.equal(A_deposit, '0')
 
       // --- TEST ---
-      const expectedRevertMessage = "StabilityPool: User must have a non-zero deposit"
+      // User must have a non-zero deposit
+      const expectedRevertMessage = "73"
 
       // Further withdrawal attempt from A
       const withdrawalPromise_A = stabilityPool.withdrawFromSP(dec(10000, 18), {
@@ -4115,10 +4117,10 @@ contract('StabilityPool', async accounts => {
       const _2ndAttempt_C = stabilityPool.registerFrontEnd('99990098', {
         from: C
       })
-
-      await th.assertRevert(_2ndAttempt_A, "StabilityPool: must not already be a registered front end")
-      await th.assertRevert(_2ndAttempt_B, "StabilityPool: must not already be a registered front end")
-      await th.assertRevert(_2ndAttempt_C, "StabilityPool: must not already be a registered front end")
+      // must not already be a registered front end
+      await th.assertRevert(_2ndAttempt_A, "78")
+      await th.assertRevert(_2ndAttempt_B, "78")
+      await th.assertRevert(_2ndAttempt_C, "78")
     })
 
     it("registerFrontEnd(): reverts if the kickback rate >1", async () => {
@@ -4135,11 +4137,11 @@ contract('StabilityPool', async accounts => {
       const invalidKickbackTx_D = stabilityPool.registerFrontEnd(maxBytes32, {
         from: A
       })
-
-      await th.assertRevert(invalidKickbackTx_A, "StabilityPool: Kickback rate must be in range [0,1]")
-      await th.assertRevert(invalidKickbackTx_B, "StabilityPool: Kickback rate must be in range [0,1]")
-      await th.assertRevert(invalidKickbackTx_C, "StabilityPool: Kickback rate must be in range [0,1]")
-      await th.assertRevert(invalidKickbackTx_D, "StabilityPool: Kickback rate must be in range [0,1]")
+      // Kickback rate must be in range [0,1]
+      await th.assertRevert(invalidKickbackTx_A, "80")
+      await th.assertRevert(invalidKickbackTx_B, "80")
+      await th.assertRevert(invalidKickbackTx_C, "80")
+      await th.assertRevert(invalidKickbackTx_D, "80")
     })
 
     it("registerFrontEnd(): reverts if address has a non-zero deposit already", async () => {
@@ -4180,8 +4182,9 @@ contract('StabilityPool', async accounts => {
       const txPromise_E = stabilityPool.registerFrontEnd(dec(1, 18), {
         from: E
       })
-      await th.assertRevert(txPromise_C, "StabilityPool: User must have no deposit")
-      await th.assertRevert(txPromise_E, "StabilityPool: User must have no deposit")
+      // User must have no deposit
+      await th.assertRevert(txPromise_C, "74")
+      await th.assertRevert(txPromise_E, "74")
 
       // D, with no deposit, successfully registers a front end
       const txD = await stabilityPool.registerFrontEnd(dec(1, 18), {

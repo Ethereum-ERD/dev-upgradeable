@@ -238,8 +238,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
           from: alice
         })
       } catch (err) {
+        // "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool")
+        assert.include(err.message, "211")
       }
     })
 
@@ -252,8 +253,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // "Caller is neither BorrowerOperations nor TroveManager"
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is neither BorrowerOperations nor TroveManager")
+        assert.include(err.message, "208")
       }
     })
 
@@ -266,8 +268,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is neither BorrowerOperations nor TroveManager nor StabilityPool
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool")
+        assert.include(err.message, "211")
       }
     })
   })
@@ -282,8 +285,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is not the TroveManager
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is not the TroveManager")
+        assert.include(err.message, "204")
       }
     })
 
@@ -296,8 +300,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is not the TroveManager
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is not the TroveManager")
+        assert.include(err.message, "204")
       }
     })
 
@@ -310,8 +315,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is not the TroveManager
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is not the TroveManager")
+        assert.include(err.message, "204")
       }
     })
   })
@@ -328,8 +334,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
         assert.fail(txAlice)
       } catch (err) {
+        // Caller is not TroveManagerLiquidations
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is not TroveManagerLiquidations")
+        assert.include(err.message, "205")
       }
     })
 
@@ -343,7 +350,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
       const txAlice = usdeToken.mint(bob, 100, {
         from: alice
       })
-      await th.assertRevert(txAlice, "Caller is not BorrowerOperations")
+      await th.assertRevert(txAlice, "USDEToken: Caller is not BorrowerOperations")
     })
 
     // burn
@@ -370,7 +377,7 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
 
       } catch (err) {
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is not the StabilityPool")
+        assert.include(err.message, "USDE: Caller is not the StabilityPool")
       }
     })
 
@@ -400,8 +407,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is not the BorrowerOperations
         assert.include(err.message, "revert")
-        assert.include(err.message, " Caller is not the BorrowerOperations")
+        assert.include(err.message, "201")
       }
     })
 
@@ -415,8 +423,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is not the TroveManager
         assert.include(err.message, "revert")
-        assert.include(err.message, " Caller is not the TroveManager")
+        assert.include(err.message, "204")
       }
     })
 
@@ -430,8 +439,9 @@ contract('Access Control: ERD functions with the caller restricted to ERD contra
         })
 
       } catch (err) {
+        // Caller is neither BorrowerOperations nor TroveManagerRedemptions
         assert.include(err.message, "revert")
-        assert.include(err.message, "Caller is neither BO nor TroveM")
+        assert.include(err.message, "210")
       }
     })
   })

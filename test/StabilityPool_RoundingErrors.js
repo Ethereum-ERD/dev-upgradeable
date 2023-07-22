@@ -64,7 +64,7 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     communityIssuance = ERDContracts.communityIssuance
 
     USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
-    MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT()
+    MIN_NET_DEBT = await collateralManager.getMinNetDebt()
     BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
   })
 
