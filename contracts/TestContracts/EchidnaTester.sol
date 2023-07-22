@@ -197,6 +197,7 @@ contract EchidnaTester {
 
         collSurplusPool.setAddresses(
             address(borrowerOperations),
+            address(collateralManager),
             address(troveManager),
             address(troveManagerLiquidations),
             address(troveManagerRedemptions),
