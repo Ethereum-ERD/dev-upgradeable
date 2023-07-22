@@ -52,6 +52,14 @@ interface IBorrowerOperations {
     event Paused();
     event Unpaused();
 
+    event Referrer(
+        address indexed _referrer,
+        address _referee,
+        address[] _colls,
+        uint256[] _amounts,
+        uint256 _compositeDebt
+    );
+
     // --- Functions ---
 
     function setAddresses(
@@ -73,7 +81,8 @@ interface IBorrowerOperations {
         uint256 _maxFeePercentage,
         uint256 _USDEAmount,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external payable;
 
     function addColl(

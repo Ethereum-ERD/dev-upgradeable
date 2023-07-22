@@ -171,7 +171,8 @@ contract BorrowerOperations is
         uint256 _maxFeePercentage,
         uint256 _USDEAmount,
         address _upperHint,
-        address _lowerHint
+        address _lowerHint,
+        address _referrer
     ) external payable override nonReentrant {
         _requireNotPaused();
         _requireValidOpenTroveCollateral(_colls, _amounts, msg.value);
@@ -289,6 +290,13 @@ contract BorrowerOperations is
             BorrowerOperation.openTrove
         );
         emit USDEBorrowingFeePaid(msg.sender, vars.USDEFee);
+        emit Referrer(
+            _referrer,
+            msg.sender,
+            vars.collaterals,
+            vars.netColls,
+            vars.compositeDebt
+        );
     }
 
     function _adjustArray(
