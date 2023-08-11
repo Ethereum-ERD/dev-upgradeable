@@ -651,7 +651,7 @@ contract TroveManagerRedemptions is
         uint256 _maxFeePercentage
     ) internal view {
         require(
-            _maxFeePercentage >= collateralManager.getBorrowingFeeFloor() &&
+            _maxFeePercentage >= collateralManager.getRedemptionFeeFloor() &&
                 _maxFeePercentage <= DECIMAL_PRECISION,
             Errors.BO_MAX_FEE_NOT_IN_RANGE
         );
