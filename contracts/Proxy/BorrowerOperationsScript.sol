@@ -24,7 +24,8 @@ contract BorrowerOperationsScript {
             _maxFeePercentage,
             _USDEAmount,
             _upperHint,
-            _lowerHint
+            _lowerHint,
+            address(0)
         );
     }
 

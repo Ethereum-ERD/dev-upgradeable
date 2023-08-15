@@ -78,7 +78,8 @@ contract EchidnaProxy {
             _maxFeePercentage,
             _USDEAmount,
             _upperHint,
-            _lowerHint
+            _lowerHint,
+            address(0)
         );
     }
 

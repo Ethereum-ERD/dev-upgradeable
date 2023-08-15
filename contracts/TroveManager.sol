@@ -8,8 +8,6 @@ import "./Interfaces/ITroveManagerLiquidations.sol";
 import "./Interfaces/ITroveManagerRedemptions.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/ITroveDebt.sol";
-import "./Interfaces/IOracle.sol";
-import "./Interfaces/IEToken.sol";
 import "./TroveManagerDataTypes.sol";
 import "./TroveLogic.sol";
 import "./Dependencies/WadRayMath.sol";
@@ -860,9 +858,12 @@ contract TroveManager is
                 uint256 liquidatedColl = defaultPool.getCollateralAmount(
                     collateral
                 );
-                totalCollateralSnapshot[collateral] = activeColl
-                    .sub(remaind)
-                    .add(liquidatedColl);
+                uint256 remaindShare = collateralManager.getShare(collateral, remaind);
+                uint256 activeShare = collateralManager.getShare(collateral, activeColl);
+                uint256 liquidatedShare = collateralManager.getShare(collateral, liquidatedColl);
+                totalCollateralSnapshot[collateral] = activeShare
+                    .sub(remaindShare)
+                    .add(liquidatedShare);
             }
             stakesSnapshot[i] = totalStakesSnapshot[collateral];
             collateralsSnapshot[i] = totalCollateralSnapshot[collateral];
