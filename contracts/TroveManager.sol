@@ -388,11 +388,13 @@ contract TroveManager is
 
             // Apply pending rewards to trove's state
             troveData.updateState();
-            troveDebt.addDebt(
-                _borrower,
-                pendingUSDEDebtReward,
-                troveData.borrowIndex
-            );
+            if (pendingUSDEDebtReward > 0) {
+                troveDebt.addDebt(
+                    _borrower,
+                    pendingUSDEDebtReward,
+                    troveData.borrowIndex
+                );
+            }
             uint256[] memory newShares = collateralManager.applyRewards(
                 _borrower,
                 pendingCollRewards
@@ -858,9 +860,18 @@ contract TroveManager is
                 uint256 liquidatedColl = defaultPool.getCollateralAmount(
                     collateral
                 );
-                uint256 remaindShare = collateralManager.getShare(collateral, remaind);
-                uint256 activeShare = collateralManager.getShare(collateral, activeColl);
-                uint256 liquidatedShare = collateralManager.getShare(collateral, liquidatedColl);
+                uint256 remaindShare = collateralManager.getShare(
+                    collateral,
+                    remaind
+                );
+                uint256 activeShare = collateralManager.getShare(
+                    collateral,
+                    activeColl
+                );
+                uint256 liquidatedShare = collateralManager.getShare(
+                    collateral,
+                    liquidatedColl
+                );
                 totalCollateralSnapshot[collateral] = activeShare
                     .sub(remaindShare)
                     .add(liquidatedShare);

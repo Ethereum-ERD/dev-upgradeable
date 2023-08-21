@@ -527,75 +527,75 @@ contract('BorrowerOperations', async accounts => {
         "18") // An operation that would result in ICR < MCR is not permitted
     })
 
-    // // reverts when calling address does not have active trove  
-    // it("withdrawColl(): reverts when calling address does not have active trove", async () => {
-    //   await openTrove({
-    //     extraUSDEAmount: toBN(dec(10000, 18)),
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
-    //   await openTrove({
-    //     extraUSDEAmount: toBN(dec(10000, 18)),
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: bob
-    //     }
-    //   })
+    // reverts when calling address does not have active trove  
+    it("withdrawColl(): reverts when calling address does not have active trove", async () => {
+      await openTrove({
+        extraUSDEAmount: toBN(dec(10000, 18)),
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
+      await openTrove({
+        extraUSDEAmount: toBN(dec(10000, 18)),
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: bob
+        }
+      })
 
-    //   // Bob successfully withdraws some coll
-    //   const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'finney'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: bob
-    //   })
-    //   assert.isTrue(txBob.receipt.status)
-    //   // Carol with no active trove attempts to withdraw
-    //   try {
-    //     const txCarol = await borrowerOperations.withdrawColl([contracts.weth.address], [dec(100, 'ether')], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //       from: carol
-    //     })
-    //     assert.isFalse(txCarol.receipt.status)
-    //   } catch (err) {
-    //     assert.include(err.message, "revert")
-    //   }
-    // })
+      // Bob successfully withdraws some coll
+      const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'finney'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: bob
+      })
+      assert.isTrue(txBob.receipt.status)
+      // Carol with no active trove attempts to withdraw
+      try {
+        const txCarol = await borrowerOperations.withdrawColl([contracts.weth.address], [dec(100, 'ether')], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+          from: carol
+        })
+        assert.isFalse(txCarol.receipt.status)
+      } catch (err) {
+        assert.include(err.message, "revert")
+      }
+    })
 
-    // it("withdrawColl(): reverts when system is in Recovery Mode", async () => {
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: bob
-    //     }
-    //   })
+    it("withdrawColl(): reverts when system is in Recovery Mode", async () => {
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: bob
+        }
+      })
 
-    //   assert.isFalse(await th.checkRecoveryMode(contracts))
+      assert.isFalse(await th.checkRecoveryMode(contracts))
 
-    //   // Withdrawal possible when recoveryMode == false
-    //   const txAlice = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1000)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
-    //   assert.isTrue(txAlice.receipt.status)
+      // Withdrawal possible when recoveryMode == false
+      const txAlice = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1000)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
+      assert.isTrue(txAlice.receipt.status)
 
-    //   await priceFeed.setPrice('105000000000000000000')
+      await priceFeed.setPrice('105000000000000000000')
 
-    //   assert.isTrue(await th.checkRecoveryMode(contracts))
+      assert.isTrue(await th.checkRecoveryMode(contracts))
 
-    //   //Check withdrawal impossible when recoveryMode == true
-    //   try {
-    //     const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1000)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //       from: bob
-    //     })
-    //     assert.isFalse(txBob.receipt.status)
-    //   } catch (err) {
-    //     assert.include(err.message, "revert")
-    //   }
-    // })
+      //Check withdrawal impossible when recoveryMode == true
+      try {
+        const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1000)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+          from: bob
+        })
+        assert.isFalse(txBob.receipt.status)
+      } catch (err) {
+        assert.include(err.message, "revert")
+      }
+    })
 
     it("withdrawColl(): reverts when requested ETH withdrawal is > the trove's collateral", async () => {
       await openTrove({
@@ -638,68 +638,68 @@ contract('BorrowerOperations', async accounts => {
       }
     })
 
-    // it("withdrawColl(): reverts when withdrawal would bring the user's ICR < MCR", async () => {
-    //   await openTrove({
-    //     ICR: toBN(dec(10, 18)),
-    //     extraParams: {
-    //       from: whale
-    //     }
-    //   })
+    it("withdrawColl(): reverts when withdrawal would bring the user's ICR < MCR", async () => {
+      await openTrove({
+        ICR: toBN(dec(10, 18)),
+        extraParams: {
+          from: whale
+        }
+      })
 
-    //   await openTrove({
-    //     ICR: toBN(dec(11, 17)),
-    //     extraParams: {
-    //       from: bob
-    //     }
-    //   }) // 110% ICR
+      await openTrove({
+        ICR: toBN(dec(11, 17)),
+        extraParams: {
+          from: bob
+        }
+      }) // 110% ICR
 
-    //   // Bob attempts to withdraws 1 wei, Which would leave him with < 110% ICR.
+      // Bob attempts to withdraws 1 wei, Which would leave him with < 110% ICR.
 
-    //   try {
-    //     const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //       from: bob
-    //     })
-    //     assert.isFalse(txBob.receipt.status)
-    //   } catch (err) {
-    //     assert.include(err.message, "revert")
-    //   }
-    // })
+      try {
+        const txBob = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+          from: bob
+        })
+        assert.isFalse(txBob.receipt.status)
+      } catch (err) {
+        assert.include(err.message, "revert")
+      }
+    })
 
-    // it("withdrawColl(): reverts if system is in Recovery Mode", async () => {
-    //   // --- SETUP ---
+    it("withdrawColl(): reverts if system is in Recovery Mode", async () => {
+      // --- SETUP ---
 
-    //   // A and B open troves at 130% ICR
-    //   await openTrove({
-    //     ICR: toBN(dec(131, 17)),
-    //     extraParams: {
-    //       from: bob
-    //     }
-    //   })
-    //   await openTrove({
-    //     ICR: toBN(dec(131, 17)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
+      // A and B open troves at 130% ICR
+      await openTrove({
+        ICR: toBN(dec(131, 17)),
+        extraParams: {
+          from: bob
+        }
+      })
+      await openTrove({
+        ICR: toBN(dec(131, 17)),
+        extraParams: {
+          from: alice
+        }
+      })
 
-    //   const TCR = await th.getTCR(contracts)
-    //   // console.log(TCR)
-    //   assert.isTrue(TCR.gt(toBN(dec(130, 16))))
+      const TCR = await th.getTCR(contracts)
+      // console.log(TCR)
+      assert.isTrue(TCR.gt(toBN(dec(130, 16))))
 
-    //   // --- TEST ---
+      // --- TEST ---
 
-    //   // price drops to 1ETH:190USDE, reducing TCR below 130%
-    //   await priceFeed.setPrice('19000000000000000000');
-    //   // Alice tries to withdraw collateral during Recovery Mode
-    //   try {
-    //     const txData = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //       from: alice
-    //     })
-    //     assert.isFalse(txData.receipt.status)
-    //   } catch (err) {
-    //     assert.include(err.message, 'revert')
-    //   }
-    // })
+      // price drops to 1ETH:190USDE, reducing TCR below 130%
+      await priceFeed.setPrice('19000000000000000000');
+      // Alice tries to withdraw collateral during Recovery Mode
+      try {
+        const txData = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(1)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+          from: alice
+        })
+        assert.isFalse(txData.receipt.status)
+      } catch (err) {
+        assert.include(err.message, 'revert')
+      }
+    })
 
     it("withdrawColl(): doesn't allow a user to completely withdraw all collateral from their Trove (due to gas compensation)", async () => {
       await openTrove({
@@ -734,237 +734,237 @@ contract('BorrowerOperations', async accounts => {
       ) // An operation that would result in ICR < MCR is not permitted
     })
 
-    // it("withdrawColl(): leaves the Trove active when the user withdraws less than all the collateral", async () => {
-    //   // Open Trove 
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
+    it("withdrawColl(): leaves the Trove active when the user withdraws less than all the collateral", async () => {
+      // Open Trove 
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
 
-    //   // Check Trove is active
-    //   const status_Before = await troveManager.getTroveStatus(alice)
-    //   assert.equal(status_Before, 1)
-    //   assert.isTrue(await sortedTroves.contains(alice))
+      // Check Trove is active
+      const status_Before = await troveManager.getTroveStatus(alice)
+      assert.equal(status_Before, 1)
+      assert.isTrue(await sortedTroves.contains(alice))
 
-    //   // Withdraw some collateral
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(100, 'finney'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
+      // Withdraw some collateral
+      await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(100, 'finney'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
 
-    //   // Check Trove is still active
-    //   const status_After = await troveManager.getTroveStatus(alice)
-    //   assert.equal(status_After, 1)
-    //   assert.isTrue(await sortedTroves.contains(alice))
-    // })
+      // Check Trove is still active
+      const status_After = await troveManager.getTroveStatus(alice)
+      assert.equal(status_After, 1)
+      assert.isTrue(await sortedTroves.contains(alice))
+    })
 
-    // it("withdrawColl(): reduces the Trove's collateral by the correct amount", async () => {
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
-    //   const aliceCollBefore = (await getTroveEntireColl(alice))[0]
+    it("withdrawColl(): reduces the Trove's collateral by the correct amount", async () => {
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
+      const aliceCollBefore = (await getTroveEntireColl(alice))[0]
 
-    //   // Alice withdraws 1 ether
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
+      // Alice withdraws 1 ether
+      await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
 
-    //   // Check 1 ether remaining
-    //   const aliceCollAfter = (await getTroveEntireColl(alice))[0]
+      // Check 1 ether remaining
+      const aliceCollAfter = (await getTroveEntireColl(alice))[0]
 
-    //   assert.isTrue(toBN(aliceCollAfter).eq(toBN(aliceCollBefore).sub(toBN(dec(1, 'ether')))))
-    // })
+      assert.isTrue(toBN(aliceCollAfter).eq(toBN(aliceCollBefore).sub(toBN(dec(1, 'ether')))))
+    })
 
-    // it("withdrawColl(): reduces ActivePool ETH and raw ether by correct amount", async () => {
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
-    //   const aliceCollBefore = (await getTroveEntireColl(alice))[0]
+    it("withdrawColl(): reduces ActivePool ETH and raw ether by correct amount", async () => {
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
+      const aliceCollBefore = (await getTroveEntireColl(alice))[0]
 
-    //   // check before
-    //   const activePool_ETH_before = await activePool.getCollateralAmount(contracts.weth.address)
-    //   const activePool_RawEther_before = toBN(await contracts.weth.balanceOf(activePool.address))
+      // check before
+      const activePool_ETH_before = await activePool.getCollateralAmount(contracts.weth.address)
+      const activePool_RawEther_before = toBN(await contracts.weth.balanceOf(activePool.address))
 
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
+      await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
 
-    //   // check after
-    //   const activePool_ETH_After = await activePool.getCollateralAmount(contracts.weth.address)
-    //   const activePool_RawEther_After = toBN(await contracts.weth.balanceOf(activePool.address))
-    //   assert.isTrue(activePool_ETH_After.eq(activePool_ETH_before.sub(toBN(dec(1, 'ether')))))
-    //   assert.isTrue(activePool_RawEther_After.eq(activePool_RawEther_before.sub(toBN(dec(1, 'ether')))))
-    // })
+      // check after
+      const activePool_ETH_After = await activePool.getCollateralAmount(contracts.weth.address)
+      const activePool_RawEther_After = toBN(await contracts.weth.balanceOf(activePool.address))
+      assert.isTrue(activePool_ETH_After.eq(activePool_ETH_before.sub(toBN(dec(1, 'ether')))))
+      assert.isTrue(activePool_RawEther_After.eq(activePool_RawEther_before.sub(toBN(dec(1, 'ether')))))
+    })
 
-    // it("withdrawColl(): updates the stake and updates the total stakes", async () => {
-    //   //  Alice creates initial Trove with 2 ether
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice,
-    //       value: toBN(dec(5, 'ether'))
-    //     }
-    //   })
-    //   const aliceColl = (await getTroveEntireColl(alice))[0]
-    //   assert.isTrue(toBN(aliceColl).gt(toBN('0')))
+    it("withdrawColl(): updates the stake and updates the total stakes", async () => {
+      //  Alice creates initial Trove with 2 ether
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice,
+          value: toBN(dec(5, 'ether'))
+        }
+      })
+      const aliceColl = (await getTroveEntireColl(alice))[0]
+      assert.isTrue(toBN(aliceColl).gt(toBN('0')))
 
-    //   const alice_Stake_Before = await troveManager.getTroveStake(alice, contracts.weth.address)
-    //   const totalStakes_Before = (await troveManager.totalStakes(contracts.weth.address))
+      const alice_Stake_Before = await troveManager.getTroveStake(alice, contracts.weth.address)
+      const totalStakes_Before = (await troveManager.totalStakes(contracts.weth.address))
 
-    //   assert.isTrue(alice_Stake_Before.eq(aliceColl))
-    //   assert.isTrue(totalStakes_Before.eq(aliceColl))
+      assert.isTrue(alice_Stake_Before.eq(aliceColl))
+      assert.isTrue(totalStakes_Before.eq(aliceColl))
 
-    //   // Alice withdraws 1 ether
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
+      // Alice withdraws 1 ether
+      await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
 
-    //   // Check stake and total stakes get updated
-    //   const alice_Stake_After = await troveManager.getTroveStake(alice, contracts.weth.address)
-    //   const totalStakes_After = (await troveManager.totalStakes(contracts.weth.address))
+      // Check stake and total stakes get updated
+      const alice_Stake_After = await troveManager.getTroveStake(alice, contracts.weth.address)
+      const totalStakes_After = (await troveManager.totalStakes(contracts.weth.address))
 
-    //   assert.isTrue(alice_Stake_After.eq(alice_Stake_Before.sub(toBN(dec(1, 'ether')))))
-    //   assert.isTrue(totalStakes_After.eq(totalStakes_Before.sub(toBN(dec(1, 'ether')))))
-    // })
+      assert.isTrue(alice_Stake_After.eq(alice_Stake_Before.sub(toBN(dec(1, 'ether')))))
+      assert.isTrue(totalStakes_After.eq(totalStakes_Before.sub(toBN(dec(1, 'ether')))))
+    })
 
-    // it("withdrawColl(): sends the correct amount of ETH to the user", async () => {
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: alice
-    //     }
-    //   })
-    //   const aliceColl = await troveManager.getTroveColl(alice, contracts.weth.address)
-    //   const alice_ETHBalance_Before = toBN(await web3.eth.getBalance(alice))
-    //   let tx = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
-    //   let gasFee = th.getGasFee(tx)
+    it("withdrawColl(): sends the correct amount of ETH to the user", async () => {
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: alice
+        }
+      })
+      const aliceColl = await troveManager.getTroveColl(alice, contracts.weth.address)
+      const alice_ETHBalance_Before = toBN(await web3.eth.getBalance(alice))
+      let tx = await borrowerOperations.withdrawColl([contracts.weth.address], [toBN(dec(1, 'ether'))], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
+      let gasFee = th.getGasFee(tx)
 
-    //   const alice_ETHBalance_After = toBN(await web3.eth.getBalance(alice))
-    //   const balanceDiff = alice_ETHBalance_After.sub(alice_ETHBalance_Before).add(toBN(gasFee.toString()))
-    //   assert.isTrue(balanceDiff.eq(toBN(dec(1, 'ether'))))
-    // })
+      const alice_ETHBalance_After = toBN(await web3.eth.getBalance(alice))
+      const balanceDiff = alice_ETHBalance_After.sub(alice_ETHBalance_Before).add(toBN(gasFee.toString()))
+      assert.isTrue(balanceDiff.eq(toBN(dec(1, 'ether'))))
+    })
 
-    // it("withdrawColl(): applies pending rewards and updates user's E_Coll, E_USDEDebt snapshots", async () => {
-    //   // --- SETUP ---
-    //   // Alice adds 15 ether, Bob adds 5 ether, Carol adds 1 ether
-    //   await openTrove({
-    //     ICR: toBN(dec(10, 18)),
-    //     extraParams: {
-    //       from: whale
-    //     }
-    //   })
-    //   await openTrove({
-    //     ICR: toBN(dec(3, 18)),
-    //     extraParams: {
-    //       from: alice,
-    //       value: toBN(dec(100, 'ether'))
-    //     }
-    //   })
-    //   await openTrove({
-    //     ICR: toBN(dec(3, 18)),
-    //     extraParams: {
-    //       from: bob,
-    //       value: toBN(dec(100, 'ether'))
-    //     }
-    //   })
-    //   await openTrove({
-    //     ICR: toBN(dec(2, 18)),
-    //     extraParams: {
-    //       from: carol,
-    //       value: toBN(dec(10, 'ether'))
-    //     }
-    //   })
+    it("withdrawColl(): applies pending rewards and updates user's E_Coll, E_USDEDebt snapshots", async () => {
+      // --- SETUP ---
+      // Alice adds 15 ether, Bob adds 5 ether, Carol adds 1 ether
+      await openTrove({
+        ICR: toBN(dec(10, 18)),
+        extraParams: {
+          from: whale
+        }
+      })
+      await openTrove({
+        ICR: toBN(dec(3, 18)),
+        extraParams: {
+          from: alice,
+          value: toBN(dec(100, 'ether'))
+        }
+      })
+      await openTrove({
+        ICR: toBN(dec(3, 18)),
+        extraParams: {
+          from: bob,
+          value: toBN(dec(100, 'ether'))
+        }
+      })
+      await openTrove({
+        ICR: toBN(dec(2, 18)),
+        extraParams: {
+          from: carol,
+          value: toBN(dec(10, 'ether'))
+        }
+      })
 
-    //   const troveAmounts1 = await troveManager.getCurrentTroveAmounts(alice)
-    //   const troveAmounts2 = await troveManager.getCurrentTroveAmounts(bob)
-    //   const aliceCollBefore = troveAmounts1[0][0]
-    //   const aliceDebtBefore = troveAmounts1[2]
-    //   const bobCollBefore = troveAmounts2[0][0]
-    //   const bobDebtBefore = troveAmounts2[2]
+      const troveAmounts1 = await troveManager.getCurrentTroveAmounts(alice)
+      const troveAmounts2 = await troveManager.getCurrentTroveAmounts(bob)
+      const aliceCollBefore = troveAmounts1[0][0]
+      const aliceDebtBefore = troveAmounts1[2]
+      const bobCollBefore = troveAmounts2[0][0]
+      const bobDebtBefore = troveAmounts2[2]
 
-    //   // --- TEST ---
+      // --- TEST ---
 
-    //   // price drops to 1ETH:100USDE, reducing Carol's ICR below MCR
-    //   await priceFeed.setPrice('100000000000000000000');
+      // price drops to 1ETH:100USDE, reducing Carol's ICR below MCR
+      await priceFeed.setPrice('100000000000000000000');
 
-    //   // close Carol's Trove, liquidating her 1 ether and 180USDE.
-    //   await troveManager.liquidate(carol, {
-    //     from: owner
-    //   });
+      // close Carol's Trove, liquidating her 1 ether and 180USDE.
+      await troveManager.liquidate(carol, {
+        from: owner
+      });
 
-    //   const E_ETH = await troveManager.E_Coll(contracts.weth.address)
-    //   const E_USDEDebt = await troveManager.E_USDEDebt(contracts.weth.address)
+      const E_ETH = await troveManager.E_Coll(contracts.weth.address)
+      const E_USDEDebt = await troveManager.E_USDEDebt(contracts.weth.address)
 
-    //   const alice_ETHrewardSnapshot_Before = await troveManager.getRewardSnapshotColl(alice, contracts.weth.address)
-    //   const alice_USDEDebtRewardSnapshot_Before = await troveManager.getRewardSnapshotUSDE(alice, contracts.weth.address)
+      const alice_ETHrewardSnapshot_Before = await troveManager.getRewardSnapshotColl(alice, contracts.weth.address)
+      const alice_USDEDebtRewardSnapshot_Before = await troveManager.getRewardSnapshotUSDE(alice, contracts.weth.address)
 
-    //   const bob_ETHrewardSnapshot_Before = await troveManager.getRewardSnapshotColl(bob, contracts.weth.address)
-    //   const bob_USDEDebtRewardSnapshot_Before = await troveManager.getRewardSnapshotUSDE(bob, contracts.weth.address)
+      const bob_ETHrewardSnapshot_Before = await troveManager.getRewardSnapshotColl(bob, contracts.weth.address)
+      const bob_USDEDebtRewardSnapshot_Before = await troveManager.getRewardSnapshotUSDE(bob, contracts.weth.address)
 
-    //   assert.equal(alice_ETHrewardSnapshot_Before, 0)
-    //   assert.equal(alice_USDEDebtRewardSnapshot_Before, 0)
-    //   assert.equal(bob_ETHrewardSnapshot_Before, 0)
-    //   assert.equal(bob_USDEDebtRewardSnapshot_Before, 0)
+      assert.equal(alice_ETHrewardSnapshot_Before, 0)
+      assert.equal(alice_USDEDebtRewardSnapshot_Before, 0)
+      assert.equal(bob_ETHrewardSnapshot_Before, 0)
+      assert.equal(bob_USDEDebtRewardSnapshot_Before, 0)
 
-    //   // Check A and B have pending rewards
-    //   const pendingCollReward_A = (await troveManager.getPendingCollReward(alice))[0][0]
-    //   const pendingDebtReward_A = await troveManager.getPendingUSDEDebtReward(alice)
-    //   const pendingCollReward_B = (await troveManager.getPendingCollReward(bob))[0][0]
-    //   const pendingDebtReward_B = await troveManager.getPendingUSDEDebtReward(bob)
+      // Check A and B have pending rewards
+      const pendingCollReward_A = (await troveManager.getPendingCollReward(alice))[0][0]
+      const pendingDebtReward_A = await troveManager.getPendingUSDEDebtReward(alice)
+      const pendingCollReward_B = (await troveManager.getPendingCollReward(bob))[0][0]
+      const pendingDebtReward_B = await troveManager.getPendingUSDEDebtReward(bob)
 
-    //   for (reward of [pendingCollReward_A, pendingDebtReward_A, pendingCollReward_B, pendingDebtReward_B]) {
-    //     assert.isTrue(reward.gt(toBN('0')))
-    //   }
+      for (reward of [pendingCollReward_A, pendingDebtReward_A, pendingCollReward_B, pendingDebtReward_B]) {
+        assert.isTrue(reward.gt(toBN('0')))
+      }
 
-    //   // Alice and Bob withdraw from their Troves
-    //   const aliceCollWithdrawal = toBN(dec(5, 'ether'))
-    //   const bobCollWithdrawal = toBN(dec(1, 'ether'))
+      // Alice and Bob withdraw from their Troves
+      const aliceCollWithdrawal = toBN(dec(5, 'ether'))
+      const bobCollWithdrawal = toBN(dec(1, 'ether'))
 
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [aliceCollWithdrawal], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: alice
-    //   })
-    //   await borrowerOperations.withdrawColl([contracts.weth.address], [bobCollWithdrawal], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
-    //     from: bob
-    //   })
+      await borrowerOperations.withdrawColl([contracts.weth.address], [aliceCollWithdrawal], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: alice
+      })
+      await borrowerOperations.withdrawColl([contracts.weth.address], [bobCollWithdrawal], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+        from: bob
+      })
 
-    //   // Check that both alice and Bob have had pending rewards applied in addition to their top-ups. 
-    //   const troveAmounts3 = await troveManager.getCurrentTroveAmounts(alice)
-    //   const troveAmounts4 = await troveManager.getCurrentTroveAmounts(bob)
-    //   const aliceCollAfter = troveAmounts3[0][0]
-    //   const aliceDebtAfter = troveAmounts3[2]
-    //   const bobCollAfter = troveAmounts4[0][0]
-    //   const bobDebtAfter = troveAmounts4[2]
+      // Check that both alice and Bob have had pending rewards applied in addition to their top-ups. 
+      const troveAmounts3 = await troveManager.getCurrentTroveAmounts(alice)
+      const troveAmounts4 = await troveManager.getCurrentTroveAmounts(bob)
+      const aliceCollAfter = troveAmounts3[0][0]
+      const aliceDebtAfter = troveAmounts3[2]
+      const bobCollAfter = troveAmounts4[0][0]
+      const bobDebtAfter = troveAmounts4[2]
 
-    //   // Check rewards have been applied to troves
-    //   th.assertIsApproximatelyEqual(aliceCollAfter, aliceCollBefore.add(pendingCollReward_A).sub(aliceCollWithdrawal), 10000)
-    //   th.assertIsApproximatelyEqual(aliceDebtAfter, aliceDebtBefore.add(pendingDebtReward_A), toBN(dec(1, 13)))
-    //   th.assertIsApproximatelyEqual(bobCollAfter, bobCollBefore.add(pendingCollReward_B).sub(bobCollWithdrawal), 10000)
-    //   th.assertIsApproximatelyEqual(bobDebtAfter, bobDebtBefore.add(pendingDebtReward_B), toBN(dec(1, 13)))
+      // Check rewards have been applied to troves
+      th.assertIsApproximatelyEqual(aliceCollAfter, aliceCollBefore.add(pendingCollReward_A).sub(aliceCollWithdrawal), 10000)
+      th.assertIsApproximatelyEqual(aliceDebtAfter, aliceDebtBefore.add(pendingDebtReward_A), toBN(dec(1, 13)))
+      th.assertIsApproximatelyEqual(bobCollAfter, bobCollBefore.add(pendingCollReward_B).sub(bobCollWithdrawal), 10000)
+      th.assertIsApproximatelyEqual(bobDebtAfter, bobDebtBefore.add(pendingDebtReward_B), toBN(dec(1, 13)))
 
-    //   /* After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
-    //    to the latest values of E_ETH and E_USDEDebt */
-    //   const alice_ETHrewardSnapshot_After = await troveManager.getRewardSnapshotColl(alice, contracts.weth.address)
-    //   const alice_USDEDebtRewardSnapshot_After = await troveManager.getRewardSnapshotUSDE(alice, contracts.weth.address)
+      /* After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
+       to the latest values of E_ETH and E_USDEDebt */
+      const alice_ETHrewardSnapshot_After = await troveManager.getRewardSnapshotColl(alice, contracts.weth.address)
+      const alice_USDEDebtRewardSnapshot_After = await troveManager.getRewardSnapshotUSDE(alice, contracts.weth.address)
 
-    //   const bob_ETHrewardSnapshot_After = await troveManager.getRewardSnapshotColl(bob, contracts.weth.address)
-    //   const bob_USDEDebtRewardSnapshot_After = await troveManager.getRewardSnapshotUSDE(bob, contracts.weth.address)
+      const bob_ETHrewardSnapshot_After = await troveManager.getRewardSnapshotColl(bob, contracts.weth.address)
+      const bob_USDEDebtRewardSnapshot_After = await troveManager.getRewardSnapshotUSDE(bob, contracts.weth.address)
 
-    //   assert.isAtMost(th.getDifference(alice_ETHrewardSnapshot_After, E_ETH), 100)
-    //   assert.isAtMost(th.getDifference(alice_USDEDebtRewardSnapshot_After, E_USDEDebt), 100)
-    //   assert.isAtMost(th.getDifference(bob_ETHrewardSnapshot_After, E_ETH), 100)
-    //   assert.isAtMost(th.getDifference(bob_USDEDebtRewardSnapshot_After, E_USDEDebt), 100)
-    // })
+      assert.isAtMost(th.getDifference(alice_ETHrewardSnapshot_After, E_ETH), 100)
+      assert.isAtMost(th.getDifference(alice_USDEDebtRewardSnapshot_After, E_USDEDebt), 100)
+      assert.isAtMost(th.getDifference(bob_ETHrewardSnapshot_After, E_ETH), 100)
+      assert.isAtMost(th.getDifference(bob_USDEDebtRewardSnapshot_After, E_USDEDebt), 100)
+    })
 
-    // // --- withdrawUSDE() ---
+    // --- withdrawUSDE() ---
 
     it("withdrawUSDE(): reverts when withdrawal would leave trove with ICR < MCR", async () => {
       // alice creates a Trove and adds first collateral
