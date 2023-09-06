@@ -305,43 +305,41 @@ contract BorrowerOperations is
         uint256 _amount
     ) public view returns (address[] memory, uint256[] memory) {
         uint256 collLen = _collaterals.length;
-        if (collLen == 0 && _amount > 0) {
-            address[] memory collaterals = new address[](1);
-            uint256[] memory amounts = new uint256[](1);
-            collaterals[0] = address(WETH);
-            amounts[0] = _amount;
-            return (collaterals, amounts);
-        }
-        if (_amount > 0) {
-            address[] memory collaterals = new address[](collLen + 1);
-            uint256[] memory amounts = new uint256[](collLen + 1);
-            collaterals[0] = address(WETH);
-            amounts[0] = _amount;
-            address collateral;
-            bool hasWETH;
-            uint256 index;
-            for (uint256 i = 0; i < collLen; i++) {
-                collateral = _collaterals[i];
-                if (collateral != address(WETH)) {
-                    collaterals[i + 1] = collateral;
-                    amounts[i + 1] = _amounts[i];
-                } else {
-                    hasWETH = true;
-                    index = i;
-                    break;
-                }
-                // unchecked {
-                //     i++;
-                // }
-            }
-            if (hasWETH) {
-                _amounts[index] = _amounts[index].add(_amount);
-                return (_collaterals, _amounts);
-            } else {
-                return (collaterals, amounts);
-            }
-        } else {
+        if (_amount == 0) {
             return (_collaterals, _amounts);
+        } else {
+            if (collLen == 0) {
+                address[] memory collaterals = new address[](1);
+                uint256[] memory amounts = new uint256[](1);
+                collaterals[0] = address(WETH);
+                amounts[0] = _amount;
+                return (collaterals, amounts);
+            } else {
+                address[] memory collaterals = new address[](collLen + 1);
+                uint256[] memory amounts = new uint256[](collLen + 1);
+                collaterals[0] = address(WETH);
+                amounts[0] = _amount;
+                address collateral;
+                bool hasWETH;
+                uint256 index;
+                for (uint256 i = 0; i < collLen; i++) {
+                    collateral = _collaterals[i];
+                    if (collateral != address(WETH)) {
+                        collaterals[i + 1] = collateral;
+                        amounts[i + 1] = _amounts[i];
+                    } else {
+                        hasWETH = true;
+                        index = i;
+                        break;
+                    }
+                }
+                if (hasWETH) {
+                    _amounts[index] = _amounts[index].add(_amount);
+                    return (_collaterals, _amounts);
+                } else {
+                    return (collaterals, amounts);
+                }
+            }
         }
     }
 
