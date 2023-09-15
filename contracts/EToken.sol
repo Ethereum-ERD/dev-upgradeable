@@ -83,10 +83,9 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         override(IERC20Upgradeable, ERC20Upgradeable)
         returns (bool)
     {
-        uint256 share = getShare(_amount);
-        _requireValidAdjustment(msg.sender, _amount);
-        _transfer(msg.sender, _recipient, share);
-        return true;
+        _recipient;
+        _amount;
+        revert("TRANSFER_NOT_SUPPORTED");
     }
 
     function transferFrom(
@@ -99,10 +98,57 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         override(IERC20Upgradeable, ERC20Upgradeable)
         returns (bool)
     {
-        uint256 share = getAmount(_amount);
-        _requireValidAdjustment(_sender, _amount);
-        super.transferFrom(_sender, _recipient, share);
-        return true;
+        _sender;
+        _recipient;
+        _amount;
+        revert("TRANSFER_NOT_SUPPORTED");
+    }
+
+    function allowance(
+        address _owner,
+        address _spender
+    )
+        public
+        view
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (uint256)
+    {
+        _owner;
+        _spender;
+        revert("ALLOWANCE_NOT_SUPPORTED");
+    }
+
+    function approve(
+        address _spender,
+        uint256 _amount
+    )
+        public
+        virtual
+        override(IERC20Upgradeable, ERC20Upgradeable)
+        returns (bool)
+    {
+        _spender;
+        _amount;
+        revert("APPROVAL_NOT_SUPPORTED");
+    }
+
+    function increaseAllowance(
+        address _spender,
+        uint256 _addedValue
+    ) public virtual override(ERC20Upgradeable) returns (bool) {
+        _spender;
+        _addedValue;
+        revert("ALLOWANCE_NOT_SUPPORTED");
+    }
+
+    function decreaseAllowance(
+        address _spender,
+        uint256 _subtractedValue
+    ) public virtual override(ERC20Upgradeable) returns (bool) {
+        _spender;
+        _subtractedValue;
+        revert("ALLOWANCE_NOT_SUPPORTED");
     }
 
     function sharesOf(address _account) public view override returns (uint256) {
@@ -147,15 +193,5 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
 
     function _requireIsCollateralManager() internal view {
         require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
-    }
-
-    function _requireValidAdjustment(
-        address _sender,
-        uint256 _amount
-    ) internal {
-        require(
-            collateralManager.validAdjustment(_sender, tokenAddress, _amount),
-            Errors.ET_INVALID_ADJUSTMENT
-        );
     }
 }

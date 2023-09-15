@@ -116,12 +116,6 @@ interface ICollateralManager {
         view
         returns (address[] memory, uint256[] memory, uint256);
 
-    function validAdjustment(
-        address _account,
-        address _collateral,
-        uint256 _amount
-    ) external returns (bool);
-
     function adjustColls(
         uint256[] memory _initialAmounts,
         address[] memory _collsIn,

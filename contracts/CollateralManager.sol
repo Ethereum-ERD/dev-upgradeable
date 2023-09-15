@@ -605,35 +605,6 @@ contract CollateralManager is
         return (collateralSupport, amounts, totalValue);
     }
 
-    function validAdjustment(
-        address _account,
-        address _collateral,
-        uint256 _amount
-    ) external override returns (bool) {
-        bool active = troveManager.getTroveStatus(_account) == 1;
-        if (!active) {
-            return true;
-        }
-        uint256 price = priceFeed.fetchPrice();
-        IOracle(collateralParams[_collateral].oracle).fetchPrice();
-        uint256 totalDebt = getEntireSystemDebt();
-        (, , uint256 totalValue) = getEntireSystemColl(price);
-        bool isRecoveryMode = _checkRecoveryMode(totalValue, totalDebt, CCR);
-        if (isRecoveryMode) {
-            return false;
-        }
-        (uint256[] memory colls, , ) = getTroveColls(_account);
-        uint256 debt = troveManager.getTroveDebt(_account);
-        (uint256 currValue, ) = getValue(collateralSupport, colls, price);
-        uint256 value = _calcValue(_collateral, _amount, price);
-        uint256 newICR = ERDMath._computeCR(currValue.sub(value), debt);
-        if (newICR < MCR) {
-            return false;
-        }
-        uint256 newTCR = ERDMath._computeCR(totalValue.sub(value), totalDebt);
-        return newTCR >= CCR;
-    }
-
     // --- Getters ---
     function getCollateralSupport()
         external
