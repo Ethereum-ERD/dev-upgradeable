@@ -233,9 +233,11 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 _amount
     ) internal {
         IERC20Upgradeable(_collateral).safeTransfer(_to, _amount);
+        uint256 balance = IERC20Upgradeable(_collateral).balanceOf(address(this));
+        require(balance > 0, Errors.BALANCE_EQUAL_ZERO);
         emit ActivePoolCollBalanceUpdated(
             _collateral,
-            IERC20Upgradeable(_collateral).balanceOf(address(this))
+            balance
         );
         emit CollateralSent(_to, _collateral, _amount);
     }

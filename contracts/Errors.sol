@@ -29,6 +29,7 @@ library Errors {
     string public constant PROTOCOL_PAUSED = "101"; // 'Protocol paused'
     string public constant LENGTH_MISMATCH = "102"; // 'Length mismatch'
     string public constant SEND_ETH_FAILED = "103";
+    string public constant BALANCE_EQUAL_ZERO = "104";
 
     string public constant CALLER_NOT_AP = "200"; // 'Caller is not ActivePool'
     string public constant CALLER_NOT_BO = "201"; // 'Caller is not BorrowerOperations'
