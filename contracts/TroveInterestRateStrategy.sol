@@ -153,7 +153,10 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
                 
             }
         }
-
+        uint256 maxRate = baseBorrowRate.add(rateSlope1).add(rateSlope2);
+        if (vars.currentBorrowRate > maxRate) {
+            return maxRate;
+        }
         return vars.currentBorrowRate;
     }
 }
