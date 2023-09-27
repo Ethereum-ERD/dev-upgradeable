@@ -107,10 +107,10 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
     }
 
     struct CalcInterestRatesLocalVars {
-        uint256 totalDebt;
         uint256 currentBorrowRate;
         uint256 utilizationRate;
         uint256 TCR;
+        uint256 CCR;
     }
 
     /**
@@ -118,32 +118,24 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
      * @return The liquidity rate, and the variable borrow rate
      **/
     function calculateInterestRates() public view override returns (uint256) {
-        DataTypes.TroveData memory troveData = troveManager.getTroveData();
-
-        uint256 tcr = troveManager.getTCR(priceFeed.fetchPrice_view());
-        uint256 ccr = collateralManager.getCCR();
         CalcInterestRatesLocalVars memory vars;
-
-        //calculates the total debt locally using the scaled borrow amount instead
-        //of borrow amount(), as it's noticeably cheaper. Also, the index has been
-        //updated by the previous TroveLogic.updateState() call
-        vars.totalDebt = troveDebt.scaledTotalSupply().rayMul(troveData.borrowIndex);
+        vars.TCR = troveManager.getTCR(priceFeed.fetchPrice_view());
+        vars.CCR = collateralManager.getCCR();
+        
         vars.currentBorrowRate = 0;
 
-        vars.utilizationRate = vars.totalDebt == 0
-            ? 0
-            : ccr.wadDiv(tcr).wadToRay();
-            
-        uint256 optimalUtilizationRate = ccr.wadToRay().rayDiv(OCR);
+        vars.utilizationRate = vars.CCR.wadDiv(vars.TCR).wadToRay();
+
+        uint256 optimalUtilizationRate = vars.CCR.wadToRay().rayDiv(OCR);
         if (vars.utilizationRate >= WadRayMath.ray()) {
             vars.currentBorrowRate = baseBorrowRate;
         } else {
             if (vars.utilizationRate >= optimalUtilizationRate) {
                 vars.currentBorrowRate = baseBorrowRate.add(
-                    rateSlope1.rayMul((tcr.sub(ccr).wadToRay()).rayDiv(OCR.sub(ccr.wadToRay())))
+                    rateSlope1.rayMul((vars.TCR.sub(vars.CCR).wadToRay()).rayDiv(OCR.sub(vars.CCR.wadToRay())))
                 );
             } else {
-                uint256 remaindUtilizationRateRatio = tcr.wadToRay().rayDiv(
+                uint256 remaindUtilizationRateRatio = vars.TCR.wadToRay().rayDiv(
                     OCR
                 ) - WadRayMath.ray();
 
