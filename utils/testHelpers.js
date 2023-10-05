@@ -682,7 +682,7 @@ class TestHelper {
         lowerHint
       } = await this.getBorrowerOpsListHint(contracts, ETHAmount, totalDebt)
 
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmount, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmount, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: ETHAmount
       })
@@ -703,7 +703,7 @@ class TestHelper {
         lowerHint
       } = await this.getBorrowerOpsListHint(contracts, randCollAmount, totalDebt)
 
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmount, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmount, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: randCollAmount
       })
@@ -726,7 +726,7 @@ class TestHelper {
         lowerHint
       } = await this.getBorrowerOpsListHint(contracts, randCollAmount, totalDebt)
 
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, proportionalUSDE, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, proportionalUSDE, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: randCollAmount
       })
@@ -755,7 +755,7 @@ class TestHelper {
       } = await this.getBorrowerOpsListHint(contracts, randCollAmount, totalDebt)
 
       const feeFloor = this.dec(5, 16)
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, proportionalUSDE, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, proportionalUSDE, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: randCollAmount
       })
@@ -782,7 +782,7 @@ class TestHelper {
         lowerHint
       } = await this.getBorrowerOpsListHint(contracts, ETHAmount, totalDebt)
 
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, randUSDEAmount, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, randUSDEAmount, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: ETHAmount
       })
@@ -818,7 +818,7 @@ class TestHelper {
         lowerHint
       } = await this.getBorrowerOpsListHint(contracts, ETHAmount, totalDebt)
 
-      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmountWei, upperHint, lowerHint, {
+      const tx = await contracts.borrowerOperations.openTrove([], [], this._100pct, USDEAmountWei, upperHint, lowerHint, this.ZERO_ADDRESS, {
         from: account,
         value: ETHAmount
       })
@@ -901,7 +901,7 @@ class TestHelper {
 
     if (flag) {
       extraParams.value = collateral;
-      tx = await contracts.borrowerOperations.openTrove([], [], maxFeePercentage, usdeAmount, upperHint, lowerHint, extraParams)
+      tx = await contracts.borrowerOperations.openTrove([], [], maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, extraParams)
     } else {
       const tokenMintedSuccessfully = await this.addERC20(token, account, contracts.borrowerOperations.address, collateral, {
         from: account
@@ -909,12 +909,12 @@ class TestHelper {
       assert.isTrue(tokenMintedSuccessfully);
       // console.log("================== 2 ==================")
       extraParams.value = 0;
-      tx = await contracts.borrowerOperations.openTrove([token.address], [collateral], maxFeePercentage, usdeAmount, upperHint, lowerHint, extraParams)
+      tx = await contracts.borrowerOperations.openTrove([token.address], [collateral], maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, extraParams)
     }
     // console.log("totalSupply", (await contracts.troveDebt.totalSupply()).toString())
     // await contracts.weth.approve(contracts.borrowerOperations.address, collateral, extraParams);
     // console.log("USDE Amount (minDebt + extra USDE amount)", usdeAmount.toString())
-    // tx = await contracts.borrowerOperations.openTrove([token.address], [collateral], maxFeePercentage, usdeAmount, upperHint, lowerHint, extraParams)
+    // tx = await contracts.borrowerOperations.openTrove([token.address], [collateral], maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, extraParams)
 
     // mint weth for from account (in extra params) and approve borrowerOperations to use it
 
@@ -942,6 +942,7 @@ class TestHelper {
       [wtoken], [amount.toString()],
       this._100pct,
       this.toBN(this.dec(2000, 18)),
+      this.ZERO_ADDRESS,
       this.ZERO_ADDRESS,
       this.ZERO_ADDRESS, {
         from: signer
@@ -1006,7 +1007,7 @@ class TestHelper {
     // await contracts.weth.approve(contracts.borrowerOperations.address, collateralAmount, extraParams);
     // const approvedWETH = await contracts.weth.allowance(account, contracts.borrowerOperations.address)
     // // console.log("WETH APPROVED:", (approvedWETH.div(this.toBN(10 ** 18))).toNumber());
-    const tx = await contracts.borrowerOperations.openTrove([contracts.weth.address], [collateralAmount], maxFeePercentage, usdeAmount, upperHint, lowerHint, extraParams)
+    const tx = await contracts.borrowerOperations.openTrove([contracts.weth.address], [collateralAmount], maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, extraParams)
     return {
       usdeAmount,
       netDebt,
@@ -1176,7 +1177,7 @@ class TestHelper {
     }
     const newTotalVC = (await contracts.collateralManager.getValue(collsAddress, amounts))[0]
     let tx
-    tx = await contracts.borrowerOperations.openTrove(collsParamAddress, amountsParam, maxFeePercentage, usdeAmount, upperHint, lowerHint, {
+    tx = await contracts.borrowerOperations.openTrove(collsParamAddress, amountsParam, maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, {
       from: account,
       value: valueETH
     })
@@ -1313,7 +1314,7 @@ class TestHelper {
       })
     }
 
-    let tx = await contracts.borrowerOperations.openTrove(collsAddress, amounts, maxFeePercentage, usdeAmount, upperHint, lowerHint, {
+    let tx = await contracts.borrowerOperations.openTrove(collsAddress, amounts, maxFeePercentage, usdeAmount, upperHint, lowerHint, this.ZERO_ADDRESS, {
       from: from
     })
 
@@ -1999,7 +2000,7 @@ class TestHelper {
     for (const account of accounts) {
       const coll = web3.utils.toWei(amountFinney.toString(), 'finney')
 
-      await contracts.borrowerOperations.openTrove(this._100pct, '200000000000000000000', account, account, {
+      await contracts.borrowerOperations.openTrove(this._100pct, '200000000000000000000', account, account, this.ZERO_ADDRESS, {
         from: account,
         value: coll
       })
@@ -2489,7 +2490,7 @@ class TestHelper {
     for (const account of accounts) {
       const coll = web3.utils.toWei(amountFinney.toString(), 'finney')
 
-      await contracts.borrowerOperations.openTrove([], [], this._100pct, '200000000000000000000', account, account, {
+      await contracts.borrowerOperations.openTrove([], [], this._100pct, '200000000000000000000', account, account, this.ZERO_ADDRESS, {
         from: account,
         value: coll
       })

@@ -2553,7 +2553,7 @@ contract('StabilityPool', async accounts => {
       })
 
       // 1 defaulter opens trove
-      await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), defaulter_1, defaulter_1, {
+      await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), defaulter_1, defaulter_1, ZERO_ADDRESS, {
         from: defaulter_1,
         value: dec(100, 'ether')
       })
@@ -3353,7 +3353,7 @@ contract('StabilityPool', async accounts => {
         }
       })
 
-      await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), defaulter_1, defaulter_1, {
+      await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), defaulter_1, defaulter_1, ZERO_ADDRESS, {
         from: defaulter_1,
         value: dec(100, 'ether')
       })

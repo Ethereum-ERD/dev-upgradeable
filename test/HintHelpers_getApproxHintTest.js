@@ -50,7 +50,7 @@ contract('HintHelpers', async accounts => {
   const openTrove = async (account, index) => {
     const amountFinney = 2000 + index * 10
     const coll = web3.utils.toWei((amountFinney.toString()), 'finney')
-    await borrowerOperations.openTrove([], [], th._100pct, 0, account, account, {
+    await borrowerOperations.openTrove([], [], th._100pct, 0, account, account, th.ZERO_ADDRESS, {
       from: account,
       value: coll
     })

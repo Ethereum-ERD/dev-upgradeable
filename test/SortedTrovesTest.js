@@ -338,49 +338,49 @@ contract('SortedTroves', async accounts => {
     // infinte ICR (zero collateral) is not possible anymore, therefore, skipping
     it.skip("stays ordered after troves with 'infinite' ICR receive a redistribution", async () => {
       // make several troves with 0 debt and collateral, in random order
-      await borrowerOperations.openTrove([], [], th._100pct, 0, whale, whale, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, whale, whale, th.ZERO_ADDRESS, {
         from: whale,
         value: dec(50, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, A, A, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, A, A, th.ZERO_ADDRESS, {
         from: A,
         value: dec(1, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, B, B, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, B, B, th.ZERO_ADDRESS, {
         from: B,
         value: dec(37, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, C, C, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, C, C, th.ZERO_ADDRESS, {
         from: C,
         value: dec(5, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, D, D, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, D, D, th.ZERO_ADDRESS, {
         from: D,
         value: dec(4, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, E, E, {
+      await borrowerOperations.openTrove([], [], th._100pct, 0, E, E, th.ZERO_ADDRESS, {
         from: E,
         value: dec(19, 'ether')
       })
 
       // Make some troves with non-zero debt, in random order
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 19), F, F, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 19), F, F, th.ZERO_ADDRESS, {
         from: F,
         value: dec(1, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(3, 18), G, G, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(3, 18), G, G, th.ZERO_ADDRESS, {
         from: G,
         value: dec(37, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(2, 20), H, H, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(2, 20), H, H, th.ZERO_ADDRESS, {
         from: H,
         value: dec(5, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(17, 18), I, I, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(17, 18), I, I, th.ZERO_ADDRESS, {
         from: I,
         value: dec(4, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 21), J, J, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 21), J, J, th.ZERO_ADDRESS, {
         from: J,
         value: dec(1345, 'ether')
       })
@@ -390,7 +390,7 @@ contract('SortedTroves', async accounts => {
       // Check troves are ordered
       await assertSortedListIsOrdered(contracts)
 
-      await borrowerOperations.openTrove([], [], th._100pct, dec(100, 18), defaulter_1, defaulter_1, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(100, 18), defaulter_1, defaulter_1, th.ZERO_ADDRESS, {
         from: defaulter_1,
         value: dec(1, 'ether')
       })

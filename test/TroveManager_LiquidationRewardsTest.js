@@ -2937,6 +2937,231 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(200, 18))
   })
 
+  it("multi redistribution revert(): A open with ETH, B open with STETH, C open with both, liquidate C, then liquidate B", async () => {
+    let a_wethToMint = toBN(dec(400, 17));
+
+    let a_colls = [contracts.weth];
+    let a_amounts = [a_wethToMint];
+
+    const {
+      amounts: A_amounts
+    } = await th.openTroveWithColls(contracts, {
+      ICR: toBN(dec(400, 16)),
+      colls: a_colls,
+      amounts: a_amounts,
+      extraParams: {
+        from: alice
+      }
+    });
+
+    let b_stethToMint = toBN(dec(400, 17));
+
+    let b_colls = [contracts.steth];
+    let b_amounts = [b_stethToMint];
+
+    const {
+      amounts: B_amounts
+    } = await th.openTroveWithColls(contracts, {
+      ICR: toBN(dec(210, 16)),
+      colls: b_colls,
+      amounts: b_amounts,
+      extraParams: {
+        from: bob
+      }
+    });
+
+    let c_wethToMint = toBN(dec(100, 17));
+    let c_stethToMint = toBN(dec(100, 17));
+
+    let c_colls = [contracts.weth, contracts.steth];
+    let c_amounts = [c_wethToMint, c_stethToMint];
+
+
+    const {
+      amounts: C_amounts
+    } = await th.openTroveWithColls(contracts, {
+      ICR: toBN(dec(210, 16)),
+      colls: c_colls,
+      amounts: c_amounts,
+      extraParams: {
+        from: carol
+      }
+    });
+
+    // console.log('\n----------- ')
+    // console.log('With 2 colls: \n')
+
+    // let activePoolColl = await activePool.getTotalCollateral()
+    // let defaultPoolColl = await defaultPool.getTotalCollateral()
+    // let systemColl = await contracts.borrowerOperations.getEntireSystemColl()
+
+    // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
+    // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
+    // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
+    // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
+    // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
+    // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
+    // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
+    // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
+    // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system steth amount: ', (await contracts.steth.balanceOf(activePool.address)).add((await contracts.steth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system debt: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
+
+    // bobCTS = (await contracts.troveManager.getCurrentTroveAmounts(bob))
+    // console.log('bobICR: ', (await th.getCurrentICR(contracts, bob)).toString())
+    // console.log('bobVC: ', (await collateralManager.getTotalValue(bobCTS[1], bobCTS[0])).toString())
+    // console.log('bob ETH Amount:', bobCTS[0][0].toString())
+    // //console.log('bob STETH Amount:', bobCTS[0][1].toString())
+    // console.log('bobDebt: ', bobCTS[2].toString())
+
+    // aliceCTS = (await contracts.troveManager.getCurrentTroveAmounts(alice))
+    // console.log('aliceICR: ', (await th.getCurrentICR(contracts, alice)).toString())
+    // console.log('aliceVC: ', (await collateralManager.getTotalValue(aliceCTS[1], aliceCTS[0])).toString())
+    // console.log('alice ETH Amount:', aliceCTS[0][0].toString())
+    // //console.log('alice STETH Amount:', aliceCTS[0][1].toString())
+    // console.log('aliceDebt: ', aliceCTS[2].toString())
+
+    // carolCTS = (await contracts.troveManager.getCurrentTroveAmounts(carol))
+    // console.log('carolICR: ', (await th.getCurrentICR(contracts, carol)).toString())
+    // console.log('carolVC: ', (await collateralManager.getTotalValue(carolCTS[1], carolCTS[0])).toString())
+    // console.log('carol ETH Amount:', carolCTS[0][0].toString())
+    // console.log('carol STETH Amount:', carolCTS[0][1].toString())
+    // console.log('carolDebt: ', carolCTS[2].toString())
+
+    // console.log('----------- \n\n')
+
+    // // Price drops to 100 $/E
+    await contracts.priceFeedETH.setPrice(dec(100, 18))
+
+    // console.log('\n----------- ')
+    // console.log('After price drop: \n')
+
+    // activePoolColl = await activePool.getTotalCollateral()
+    // defaultPoolColl = await defaultPool.getTotalCollateral()
+    // systemColl = await contracts.borrowerOperations.getEntireSystemColl()
+
+    // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
+    // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
+    // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
+    // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
+    // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
+    // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
+    // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
+    // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
+    // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system steth amount: ', (await contracts.steth.balanceOf(activePool.address)).add((await contracts.steth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system debt: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
+
+    // bobCTS = (await contracts.troveManager.getCurrentTroveAmounts(bob))
+    // console.log('bobICR: ', (await th.getCurrentICR(contracts, bob)).toString())
+    // console.log('bobVC: ', (await collateralManager.getTotalValue(bobCTS[1], bobCTS[0])).toString())
+    // console.log('bob ETH Amount:', bobCTS[0][0].toString())
+    // //console.log('bob STETH Amount:', bobCTS[0][1].toString())
+    // console.log('bobDebt: ', bobCTS[2].toString())
+
+    // aliceCTS = (await contracts.troveManager.getCurrentTroveAmounts(alice))
+    // console.log('aliceICR: ', (await th.getCurrentICR(contracts, alice)).toString())
+    // console.log('aliceVC: ', (await collateralManager.getTotalValue(aliceCTS[1], aliceCTS[0])).toString())
+    // console.log('alice ETH Amount:', aliceCTS[0][0].toString())
+    // //console.log('alice STETH Amount:', aliceCTS[0][1].toString())
+    // console.log('aliceDebt: ', aliceCTS[2].toString())
+
+    // carolCTS = (await contracts.troveManager.getCurrentTroveAmounts(carol))
+    // console.log('carolICR: ', (await th.getCurrentICR(contracts, carol)).toString())
+    // console.log('carolVC: ', (await collateralManager.getTotalValue(carolCTS[1], carolCTS[0])).toString())
+    // console.log('carol ETH Amount:', carolCTS[0][0].toString())
+    // console.log('carol STETH Amount:', carolCTS[0][1].toString())
+    // console.log('carolDebt: ', carolCTS[2].toString())
+
+    // console.log('----------- \n\n')
+
+    // Confirm not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts))
+
+    // L1: C liquidated
+    const txB = await troveManager.liquidate(carol)
+    assert.isTrue(txB.receipt.status)
+    assert.isFalse(await sortedTroves.contains(carol))
+    await th.assertRevert(troveManager.liquidate(bob), "104")
+    assert.isTrue(await sortedTroves.contains(bob))
+
+    // Price bounces back to 200 $/E
+    await contracts.priceFeedETH.setPrice(dec(200, 18))
+
+    // console.log('\n----------- ')
+    // console.log('After price drop: \n')
+
+    // activePoolColl = await activePool.getTotalCollateral()
+    // defaultPoolColl = await defaultPool.getTotalCollateral()
+    // systemColl = await contracts.borrowerOperations.getEntireSystemColl()
+
+    // console.log('collVC in active pool: ', (await collateralManager.getTotalValue(activePoolColl[1], activePoolColl[2])).toString())
+    // console.log('total amount weth in active pool', (await weth.balanceOf(activePool.address)).toString())
+    // console.log('total amount steth in active pool', (await contracts.steth.balanceOf(activePool.address)).toString())
+    // console.log('debt in active pool: ', (await activePool.getUSDEDebt()).toString())
+    // console.log('collVC in default pool: ', (await collateralManager.getTotalValue(defaultPoolColl[1], defaultPoolColl[2])).toString())
+    // console.log('total amount weth in default pool', (await weth.balanceOf(defaultPool.address)).toString())
+    // console.log('total amount steth in default pool', (await contracts.steth.balanceOf(defaultPool.address)).toString())
+    // console.log('debt in default pool: ', (await defaultPool.getUSDEDebt()).toString())
+    // console.log('TCR: ', (await contracts.collateralManager.getTCR()).toString())
+    // console.log('entire system VC: ', (await contracts.borrowerOperations.getEntireSystemColl()).toString())
+    // console.log('entire system eth amount: ', (await weth.balanceOf(activePool.address)).add((await weth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system steth amount: ', (await contracts.steth.balanceOf(activePool.address)).add((await contracts.steth.balanceOf(defaultPool.address))).toString())
+    // console.log('entire system debt: ', (await collateralManager.getTotalValue(systemColl[0], systemColl[1])).toString())
+
+    // bobCTS = (await contracts.troveManager.getCurrentTroveAmounts(bob))
+    // console.log('bobICR: ', (await th.getCurrentICR(contracts, bob)).toString())
+    // console.log('bobVC: ', (await collateralManager.getTotalValue(bobCTS[1], bobCTS[0])).toString())
+    // console.log('bob ETH Amount:', bobCTS[0][0].toString())
+    // //console.log('bob STETH Amount:', bobCTS[0][1].toString())
+    // console.log('bobDebt: ', bobCTS[2].toString())
+
+    // aliceCTS = (await contracts.troveManager.getCurrentTroveAmounts(alice))
+    // console.log('aliceICR: ', (await th.getCurrentICR(contracts, alice)).toString())
+    // console.log('aliceVC: ', (await collateralManager.getTotalValue(aliceCTS[1], aliceCTS[0])).toString())
+    // console.log('alice ETH Amount:', aliceCTS[0][0].toString())
+    // //console.log('alice STETH Amount:', aliceCTS[0][1].toString())
+    // console.log('aliceDebt: ', aliceCTS[2].toString())
+
+    // carolCTS = (await contracts.troveManager.getCurrentTroveAmounts(carol))
+    // console.log('carolICR: ', (await th.getCurrentICR(contracts, carol)).toString())
+    // console.log('carolVC: ', (await collateralManager.getTotalValue(carolCTS[1], carolCTS[0])).toString())
+    // // console.log('carol ETH Amount:', carolCTS[0][0].toString())
+    // // console.log('carol STETH Amount:', carolCTS[0][1].toString())
+    // console.log('carolDebt: ', carolCTS[2].toString())
+
+    // console.log('----------- \n\n')
+
+    const alice_ETH = (await getTroveEntireColl(alice))[0].toString()
+    const bob_STETH = (await getTroveEntireColl(bob))[1].toString()
+
+    /* Expected collateral:
+    A: Alice receives 0.995 ETH from L1, and ~3/5*0.995 ETH from L2.
+    expect aliceColl = 2 + 0.995 + 2.995/4.995 * 0.995 = 3.5916 ETH
+
+    C: Carol receives ~2/5 ETH from L2
+    expect carolColl = 2 + 2/4.995 * 0.995 = 2.398 ETH
+
+    Total coll = 4 + 2 * 0.995 ETH
+    */
+    const A_ETHAfterL1 = A_amounts[0].add(th.applyLiquidationFee(C_amounts[0]))
+    assert.isAtMost(th.getDifference(alice_ETH, A_ETHAfterL1), Number(dec(150, 20)))
+
+    const entireSystemETH = (await activePool.getCollateralAmount(weth.address)).add(await defaultPool.getCollateralAmount(weth.address)).toString()
+    assert.equal(entireSystemETH, A_amounts[0].add(th.applyLiquidationFee(C_amounts[0])))
+
+    const B_STETHAfterL1 = B_amounts[0].add(th.applyLiquidationFee(C_amounts[1]))
+    assert.isAtMost(th.getDifference(bob_STETH, B_STETHAfterL1), Number(dec(150, 20)))
+
+    const entireSystemSTETH = (await activePool.getCollateralAmount(steth.address)).add(await defaultPool.getCollateralAmount(steth.address)).toString()
+    assert.equal(entireSystemSTETH, B_amounts[0].add(th.applyLiquidationFee(C_amounts[1])))
+    assert.equal((await usdeToken.balanceOf(owner)).toString(), dec(200, 18))
+  })
+
   it("multi redistribution: A open with ETH, B open with STETH, C open with both 5:1.5 ratio, liquidate C", async () => {
     await contracts.priceFeedETH.setPrice(dec(2000, 18))
     await contracts.priceFeedSTETH.setPrice(dec(5, 17))

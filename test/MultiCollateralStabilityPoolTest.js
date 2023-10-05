@@ -226,7 +226,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(18500, 18)),
         whale,
-        whale, {
+        whale, ZERO_ADDRESS, {
           from: whale,
           value: dec(100, 'ether')
         }
@@ -245,7 +245,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
-        defaulter_1, {
+        defaulter_1, ZERO_ADDRESS, {
           from: defaulter_1,
           value: dec(20, 'ether')
         }
@@ -260,7 +260,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
-        defaulter_2, {
+        defaulter_2, ZERO_ADDRESS, {
           from: defaulter_2
         }
       )
@@ -274,7 +274,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         alice,
-        alice, {
+        alice, ZERO_ADDRESS, {
           from: alice
         }
       )
@@ -427,7 +427,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(25000, 18)),
         bob,
-        bob, {
+        bob, ZERO_ADDRESS, {
           from: bob,
           value: dec(1000, 'ether')
         }
@@ -443,7 +443,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(18500, 18)),
         whale,
-        whale, {
+        whale, ZERO_ADDRESS, {
           from: whale,
           value: dec(10000, 'ether')
         }
@@ -462,7 +462,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
-        defaulter_1, {
+        defaulter_1, ZERO_ADDRESS, {
           from: defaulter_1,
           value: dec(20, 'ether')
         }
@@ -477,7 +477,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
-        defaulter_2, {
+        defaulter_2, ZERO_ADDRESS, {
           from: defaulter_2
         }
       )
@@ -491,7 +491,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         alice,
-        alice, {
+        alice, ZERO_ADDRESS, {
           from: alice
         }
       )
@@ -605,7 +605,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         carol,
-        carol, {
+        carol, ZERO_ADDRESS, {
           from: carol
         }
       )
@@ -639,7 +639,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(20000, 18)),
         whale,
-        whale, {
+        whale, ZERO_ADDRESS, {
           from: whale,
           value: dec(100, 'ether')
         }
@@ -651,7 +651,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(12000, 18)),
         alice,
-        alice, {
+        alice, ZERO_ADDRESS, {
           from: alice,
           value: dec(100, 'ether')
         }
@@ -663,7 +663,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(25000, 18)),
         bob,
-        bob, {
+        bob, ZERO_ADDRESS, {
           from: bob,
           value: dec(100, 'ether')
         }
@@ -675,7 +675,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(35000, 18)),
         carol,
-        carol, {
+        carol, ZERO_ADDRESS, {
           from: carol,
           value: dec(100, 'ether')
         }
@@ -774,7 +774,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(2000, 18)),
         alice,
-        alice, {
+        alice, ZERO_ADDRESS, {
           from: alice
         }
       )
@@ -784,7 +784,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(200000, 18)),
         whale,
-        whale, {
+        whale, ZERO_ADDRESS, {
           from: whale
         }
       )
@@ -811,7 +811,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(2000, 18)),
         C,
-        C, {
+        C, ZERO_ADDRESS, {
           from: C
         }
       )
@@ -821,7 +821,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(2000, 18)),
         D,
-        D, {
+        D, ZERO_ADDRESS, {
           from: D
         }
       )
@@ -891,7 +891,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(2000, 18)),
         whale,
-        whale, {
+        whale, ZERO_ADDRESS, {
           from: whale
         }
       )
@@ -902,7 +902,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_1,
-        defaulter_1, {
+        defaulter_1, ZERO_ADDRESS, {
           from: defaulter_1,
           value: dec(20, 'ether')
         }
@@ -914,7 +914,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         await getOpenTroveUSDEAmount(dec(2400, 18)),
         defaulter_2,
-        defaulter_2, {
+        defaulter_2, ZERO_ADDRESS, {
           from: defaulter_2,
           value: dec(21, 'ether')
         })
@@ -1027,7 +1027,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(3290, 18)),
         defaulter_1,
-        defaulter_1, {
+        defaulter_1, ZERO_ADDRESS, {
           from: defaulter_1,
           value: dec(50, 18)
         }
@@ -1042,7 +1042,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(3000, 18)),
         alice,
-        alice, {
+        alice, ZERO_ADDRESS, {
           from: alice,
           value: dec(50, 18)
         }
@@ -1057,7 +1057,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(3000, 18)),
         bob,
-        bob, {
+        bob, ZERO_ADDRESS, {
           from: bob,
           value: dec(50, 18)
         }
@@ -1072,7 +1072,7 @@ contract('StabilityPool', async accounts => {
         th._100pct,
         toBN(dec(3000, 18)),
         carol,
-        carol, {
+        carol, ZERO_ADDRESS, {
           from: carol,
           value: dec(50, 18)
         }

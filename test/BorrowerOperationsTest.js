@@ -135,7 +135,7 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue((await th.getCurrentICR(contracts, alice)).lt(toBN(dec(110, 16))))
 
       const collTopUp = toBN(dec(1, 18)) // 1 ether top up
-      
+
       await assertRevert(borrowerOperations.addColl([], [], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: alice,
           value: collTopUp
@@ -366,20 +366,20 @@ contract('BorrowerOperations', async accounts => {
     it("addColl(), active Trove: adds the right corrected stake after liquidations have occured", async () => {
       // --- SETUP ---
       // A,B,C add 15/5/5 ETH, withdraw 100/100/900 USDE
-      await borrowerOperations.openTrove([], [], th._100pct, dec(2000, 18), alice, alice, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(2000, 18), alice, alice, ZERO_ADDRESS, {
         from: alice,
         value: dec(150, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(2000, 18), bob, bob, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(2000, 18), bob, bob, ZERO_ADDRESS, {
         from: bob,
         value: dec(40, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5000, 18), carol, carol, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(5000, 18), carol, carol, ZERO_ADDRESS, {
         from: carol,
         value: dec(50, 'ether')
       })
 
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5000, 18), dennis, dennis, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(5000, 18), dennis, dennis, ZERO_ADDRESS, {
         from: dennis,
         value: dec(100, 'ether')
       })
@@ -2130,7 +2130,7 @@ contract('BorrowerOperations', async accounts => {
     it("repayUSDE(): Succeeds when it would leave trove with net debt >= minimum net debt", async () => {
       // Make the USDE request 2 wei above min net debt to correct for floor division, and make net debt = min net debt + 1 wei
 
-      await borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('2'))), A, A, {
+      await borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('2'))), A, A, ZERO_ADDRESS, {
         from: A,
         value: dec(100, 18)
       })
@@ -2140,7 +2140,7 @@ contract('BorrowerOperations', async accounts => {
       })
       assert.isTrue(repayTxA.receipt.status)
 
-      await borrowerOperations.openTrove([], [], th._100pct, dec(20, 20), B, B, {
+      await borrowerOperations.openTrove([], [], th._100pct, dec(20, 20), B, B, ZERO_ADDRESS, {
         from: B,
         value: dec(100, 18)
       })
@@ -2164,7 +2164,7 @@ contract('BorrowerOperations', async accounts => {
     it("repayUSDE(): reverts when it would leave trove with net debt < minimum net debt", async () => {
       // Make the USDE request 2 wei above min net debt to correct for floor division, and make net debt = min net debt - 1 wei
 
-      await borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), A, A, {
+      await borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), A, A, ZERO_ADDRESS, {
         from: A,
         value: dec(100, 18)
       })
@@ -4305,7 +4305,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, true, alice, alice, {
           from: alice
         }),
-        '2')  // Debt increase requires non-zero debtChange
+        '2') // Debt increase requires non-zero debtChange
     })
 
     it("adjustTrove(): Reverts if requested coll withdrawal and ether is sent", async () => {
@@ -4520,7 +4520,7 @@ contract('BorrowerOperations', async accounts => {
       // Carol attempts to close her trove during Recovery Mode
       await assertRevert(borrowerOperations.closeTrove({
         from: carol
-      }), "4")  // Operation not permitted during Recovery Mode
+      }), "4") // Operation not permitted during Recovery Mode
     })
 
     it("closeTrove(): reverts when trove is the only one in the system", async () => {
@@ -5452,43 +5452,43 @@ contract('BorrowerOperations', async accounts => {
 
     it("openTrove(): Opens a trove with net debt >= minimum net debt", async () => {
       // Add 1 wei to correct for rounding error in helper function
-      const txA = await contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(1))), A, A, {
+      const txA = await contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(1))), A, A, ZERO_ADDRESS, {
         from: A,
         value: toBN(dec(100, 30))
       })
-      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(1))), A, A, { from: A, value: dec(100, 30) })
+      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(1))), A, A, ZERO_ADDRESS, { from: A, value: dec(100, 30) })
       assert.isTrue(txA.receipt.status)
       assert.isTrue(await sortedTroves.contains(A))
 
-      const txC = await contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(dec(47789898, 22)))), A, A, {
+      const txC = await contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(dec(47789898, 22)))), A, A, ZERO_ADDRESS, {
         from: C,
         value: toBN(dec(100, 30))
       })
-      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(dec(47789898, 22)))), A, A, { from: C, value: dec(100, 30) })
+      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(dec(47789898, 22)))), A, A, ZERO_ADDRESS, { from: C, value: dec(100, 30) })
       assert.isTrue(txC.receipt.status)
       assert.isTrue(await sortedTroves.contains(C))
     })
 
     it("openTrove(): reverts if net debt < minimum net debt", async () => {
-      const txAPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, 0, A, A, {
+      const txAPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, 0, A, A, ZERO_ADDRESS, {
         from: A,
         value: toBN(dec(100, 30))
       })
       //borrowerOperations.openTrove(th._100pct, 0, A, A, { from: A, value: dec(100, 30) })
       await assertRevert(txAPromise, "revert")
 
-      const txBPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.sub(toBN(1))), B, B, {
+      const txBPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.sub(toBN(1))), B, B, ZERO_ADDRESS, {
         from: B,
         value: toBN(dec(100, 30))
       })
-      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.sub(toBN(1))), B, B, { from: B, value: dec(100, 30) })
+      //borrowerOperations.openTrove(th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.sub(toBN(1))), B, B, ZERO_ADDRESS, { from: B, value: dec(100, 30) })
       await assertRevert(txBPromise, "revert")
 
-      const txCPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, {
+      const txCPromise = contracts.borrowerOperations.openTrove([], [], th._100pct, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, ZERO_ADDRESS, {
         from: C,
         value: toBN(dec(100, 30))
       })
-      //borrowerOperations.openTrove(th._100pct, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, { from: C, value: dec(100, 30) })
+      //borrowerOperations.openTrove(th._100pct, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, ZERO_ADDRESS, { from: C, value: dec(100, 30) })
       await assertRevert(txCPromise, "revert")
     })
 
@@ -5708,14 +5708,14 @@ contract('BorrowerOperations', async accounts => {
 
     it("openTrove(): reverts if max fee > 100%", async () => {
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], dec(2, 18), dec(10000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], dec(2, 18), dec(10000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1000, 'ether'))
         }),
         "24") // Max fee percentage must be between 0.75% and 100%
 
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], '1000000000000000001', dec(20000, 18), B, B, {
+        contracts.borrowerOperations.openTrove([], [], '1000000000000000001', dec(20000, 18), B, B, ZERO_ADDRESS, {
           from: B,
           value: toBN(dec(100, 'ether'))
         }),
@@ -5724,19 +5724,19 @@ contract('BorrowerOperations', async accounts => {
 
     it("openTrove(): reverts if max fee < 0.25% in Normal mode", async () => {
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], 0, dec(195000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], 0, dec(195000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1200, 'ether'))
         }),
         "24") // Max fee percentage must be between 0.25% and 100%
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], 1, dec(195000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], 1, dec(195000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1000, 'ether'))
         }),
         "24") // Max fee percentage must be between 0.25% and 100%
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], '1999999999999999', dec(195000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], '1999999999999999', dec(195000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1200, 'ether'))
         }),
@@ -5779,7 +5779,7 @@ contract('BorrowerOperations', async accounts => {
 
       const lessThan5pct = '19999999999999999'
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], lessThan5pct, dec(30000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], lessThan5pct, dec(30000, 18), A, A, ZERO_ADDRESS, {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
@@ -5790,7 +5790,7 @@ contract('BorrowerOperations', async accounts => {
       // Attempt with maxFee 1%
 
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], dec(1, 16), dec(30000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], dec(1, 16), dec(30000, 18), A, A, ZERO_ADDRESS, {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
@@ -5800,7 +5800,7 @@ contract('BorrowerOperations', async accounts => {
       // assert.equal(borrowingRate.toString(), dec(25, 15))
       // // Attempt with maxFee 3.754%
       // await assertRevert(
-      //   contracts.borrowerOperations.openTrove([], [], dec(3754, 13), dec(30000, 18), A, A, {
+      //   contracts.borrowerOperations.openTrove([], [], dec(3754, 13), dec(30000, 18), A, A, ZERO_ADDRESS, {
       //     from: D,
       //     value: toBN(dec(1000, 'ether'))
       //   }),
@@ -5810,7 +5810,7 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(borrowingRate.toString(), dec(25, 15))
       // Attempt with maxFee 1e-16%
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], dec(1, 16), dec(30000, 18), A, A, {
+        contracts.borrowerOperations.openTrove([], [], dec(1, 16), dec(30000, 18), A, A, ZERO_ADDRESS, {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
@@ -5849,7 +5849,7 @@ contract('BorrowerOperations', async accounts => {
 
       // Attempt with maxFee > 5%
       const moreThan5pct = '50000000000000001'
-      const tx1 = await contracts.borrowerOperations.openTrove([], [], moreThan5pct, dec(10000, 18), A, A, {
+      const tx1 = await contracts.borrowerOperations.openTrove([], [], moreThan5pct, dec(10000, 18), A, A, ZERO_ADDRESS, {
         from: D,
         value: toBN(dec(100, 'ether'))
       })
@@ -5859,7 +5859,7 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(borrowingRate.toString(), dec(25, 15))
 
       // Attempt with maxFee = 5%
-      const tx2 = await contracts.borrowerOperations.openTrove([], [], dec(5, 16), dec(10000, 18), A, A, {
+      const tx2 = await contracts.borrowerOperations.openTrove([], [], dec(5, 16), dec(10000, 18), A, A, ZERO_ADDRESS, {
         from: H,
         value: toBN(dec(100, 'ether'))
       })
@@ -5869,7 +5869,7 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(borrowingRate.toString(), dec(25, 15))
 
       // Attempt with maxFee 10%
-      const tx3 = await contracts.borrowerOperations.openTrove([], [], dec(1, 17), dec(10000, 18), A, A, {
+      const tx3 = await contracts.borrowerOperations.openTrove([], [], dec(1, 17), dec(10000, 18), A, A, ZERO_ADDRESS, {
         from: E,
         value: toBN(dec(100, 'ether'))
       })
@@ -5879,18 +5879,18 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(borrowingRate.toString(), dec(25, 15))
 
       // Attempt with maxFee 37.659%
-      const tx4 = await contracts.borrowerOperations.openTrove([], [], dec(37659, 13), dec(10000, 18), A, A, {
+      const tx4 = await contracts.borrowerOperations.openTrove([], [], dec(37659, 13), dec(10000, 18), A, A, ZERO_ADDRESS, {
         from: F,
         value: toBN(dec(100, 'ether'))
       })
       assert.isTrue(tx4.receipt.status)
 
       // Attempt with maxFee 100%
-      const tx5 = await contracts.borrowerOperations.openTrove([], [], dec(1, 18), dec(10000, 18), A, A, {
+      const tx5 = await contracts.borrowerOperations.openTrove([], [], dec(1, 18), dec(10000, 18), A, A, ZERO_ADDRESS, {
         from: G,
         value: toBN(dec(100, 'ether'))
       })
-      //borrowerOperations.openTrove(dec(1, 18), dec(10000, 18), A, A, { from: G, value: dec(100, 'ether') })
+      //borrowerOperations.openTrove(dec(1, 18), dec(10000, 18), A, A, ZERO_ADDRESS, { from: G, value: dec(100, 'ether') })
       assert.isTrue(tx5.receipt.status)
     })
 
@@ -6076,7 +6076,7 @@ contract('BorrowerOperations', async accounts => {
         const D_USDERequest = toBN(dec(20000, 18))
 
         // D withdraws USDE
-        const openTroveTx = await contracts.borrowerOperations.openTrove([], [], th._100pct, D_USDERequest, ZERO_ADDRESS, ZERO_ADDRESS, {
+        const openTroveTx = await contracts.borrowerOperations.openTrove([], [], th._100pct, D_USDERequest, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS, {
           from: D,
           value: toBN(dec(200, 'ether'))
         })
@@ -6143,7 +6143,7 @@ contract('BorrowerOperations', async accounts => {
 
       // D opens trove 
       const USDERequest_D = toBN(dec(40000, 18))
-      await contracts.borrowerOperations.openTrove([], [], th._100pct, USDERequest_D, D, D, {
+      await contracts.borrowerOperations.openTrove([], [], th._100pct, USDERequest_D, D, D, ZERO_ADDRESS, {
         from: D,
         value: toBN(dec(500, 'ether'))
       })
@@ -6176,7 +6176,7 @@ contract('BorrowerOperations', async accounts => {
       })
 
       const USDERequest = toBN(dec(10000, 18))
-      const txC = await contracts.borrowerOperations.openTrove([], [], th._100pct, USDERequest, ZERO_ADDRESS, ZERO_ADDRESS, {
+      const txC = await contracts.borrowerOperations.openTrove([], [], th._100pct, USDERequest, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS, {
         from: C,
         value: toBN(dec(100, 'ether'))
       })
@@ -6427,7 +6427,7 @@ contract('BorrowerOperations', async accounts => {
       assert.isTrue(await th.checkRecoveryMode(contracts))
 
       await assertRevert(
-        contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT), carol, carol, {
+        contracts.borrowerOperations.openTrove([], [], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT), carol, carol, ZERO_ADDRESS, {
           from: carol,
           value: toBN(dec(1, 'ether'))
         })
@@ -6447,7 +6447,7 @@ contract('BorrowerOperations', async accounts => {
       assert.equal(status_Before, 0)
 
       const USDERequest = MIN_NET_DEBT
-      await contracts.borrowerOperations.openTrove([], [], th._100pct, MIN_NET_DEBT, carol, carol, {
+      await contracts.borrowerOperations.openTrove([], [], th._100pct, MIN_NET_DEBT, carol, carol, ZERO_ADDRESS, {
         from: alice,
         value: toBN(dec(100, 'ether'))
       })
@@ -6674,7 +6674,7 @@ contract('BorrowerOperations', async accounts => {
       const debt_Before = await getTroveEntireDebt(alice) //alice_Trove_Before[0]
       assert.equal(debt_Before, 0)
 
-      await contracts.borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), alice, alice, {
+      await contracts.borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(10000, 18)), alice, alice, ZERO_ADDRESS, {
         from: alice,
         value: toBN(dec(100, 'ether'))
       })
@@ -6707,7 +6707,7 @@ contract('BorrowerOperations', async accounts => {
       const alice_USDETokenBalance_Before = await usdeToken.balanceOf(alice)
       assert.equal(alice_USDETokenBalance_Before, 0)
 
-      await contracts.borrowerOperations.openTrove([], [], th._100pct, dec(10000, 18), alice, alice, {
+      await contracts.borrowerOperations.openTrove([], [], th._100pct, dec(10000, 18), alice, alice, ZERO_ADDRESS, {
         from: alice,
         value: toBN(dec(100, 'ether'))
       })
@@ -6859,11 +6859,11 @@ contract('BorrowerOperations', async accounts => {
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
 
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -6897,11 +6897,11 @@ contract('BorrowerOperations', async accounts => {
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
 
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -6934,11 +6934,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -6971,11 +6971,11 @@ contract('BorrowerOperations', async accounts => {
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
 
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -7009,11 +7009,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -7049,11 +7049,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -7089,11 +7089,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -7128,11 +7128,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })
@@ -7167,11 +7167,11 @@ contract('BorrowerOperations', async accounts => {
         const troveColl = toBN(dec(1000, 'ether'))
         const troveTotalDebt = toBN(dec(100000, 18))
         const troveUSDEAmount = await getOpenTroveUSDEAmount(troveTotalDebt)
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, alice, alice, ZERO_ADDRESS, {
           from: alice,
           value: troveColl
         })
-        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, {
+        await contracts.borrowerOperations.openTrove([], [], th._100pct, troveUSDEAmount, bob, bob, ZERO_ADDRESS, {
           from: bob,
           value: troveColl
         })

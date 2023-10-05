@@ -188,7 +188,7 @@ contract('newBorrowerOperations', async accounts => {
             await th.addERC20(contracts.steth, bob, contracts.borrowerOperations.address, toBN(collTopUp), {
                 from: bob
             })
-            const openTxAPromise = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, {
+            const openTxAPromise = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
             // Collateral does not active or is paused
@@ -198,7 +198,7 @@ contract('newBorrowerOperations', async accounts => {
             // 1 ETH : 1 STETH
             await priceFeedSTETH.setPrice(toBN(dec(1, 18)))
 
-            const tx = await borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, {
+            const tx = await borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
             assert.isTrue(tx.receipt.status)
@@ -208,7 +208,7 @@ contract('newBorrowerOperations', async accounts => {
             await th.addERC20(contracts.steth, carol, contracts.borrowerOperations.address, toBN(collTopUp), {
                 from: carol
             })
-            const openTx_C = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), bob, bob, {
+            const openTx_C = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), bob, bob, ZERO_ADDRESS, {
                 from: carol
             })
             // Collateral does not active or is paused
@@ -249,7 +249,7 @@ contract('newBorrowerOperations', async accounts => {
             await th.addERC20(contracts.steth, bob, contracts.borrowerOperations.address, b_stethToMint, {
                 from: bob
             })
-            await borrowerOperations.openTrove([contracts.steth.address], [b_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, {
+            await borrowerOperations.openTrove([contracts.steth.address], [b_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
 
@@ -261,7 +261,7 @@ contract('newBorrowerOperations', async accounts => {
             await th.addERC20(contracts.steth, carol, contracts.borrowerOperations.address, c_stethToMint, {
                 from: carol
             })
-            await borrowerOperations.openTrove([contracts.steth.address], [c_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, {
+            await borrowerOperations.openTrove([contracts.steth.address], [c_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: carol,
                 value: c_wethToMint
             })

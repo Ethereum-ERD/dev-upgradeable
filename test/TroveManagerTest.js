@@ -4325,15 +4325,15 @@ contract('TroveManager', async accounts => {
   })
 
   it("redeemCollateral(): doesn't perform partial redemption if resultant debt would be < minimum net debt", async () => {
-    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(6000, 18)), A, A, {
+    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(6000, 18)), A, A, ZERO_ADDRESS, {
       from: A,
       value: dec(1000, 'ether')
     })
-    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(20000, 18)), B, B, {
+    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(20000, 18)), B, B, ZERO_ADDRESS, {
       from: B,
       value: dec(1000, 'ether')
     })
-    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(30000, 18)), C, C, {
+    await borrowerOperations.openTrove([], [], th._100pct, await getOpenTroveUSDEAmount(dec(30000, 18)), C, C, ZERO_ADDRESS, {
       from: C,
       value: dec(1000, 'ether')
     })
@@ -6533,7 +6533,7 @@ contract('TroveManager', async accounts => {
     // D is not closed, so cannot open trove
     // Trove is active
     await assertRevert(
-      borrowerOperations.openTrove([], [], th._100pct, 0, ZERO_ADDRESS, ZERO_ADDRESS, {
+      borrowerOperations.openTrove([], [], th._100pct, 0, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS, {
         from: D,
         value: toBN(dec(10, 18))
       }),
