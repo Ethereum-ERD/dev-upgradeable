@@ -74,6 +74,11 @@ contract USDEToken is ERC20Upgradeable, IUSDEToken {
         address _newLiquidityIncentiveAddress
     );
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address _troveManagerAddress,
         address _troveManagerLiquidationsAddress,

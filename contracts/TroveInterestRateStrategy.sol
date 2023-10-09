@@ -50,6 +50,11 @@ contract TroveInterestRateStrategy is
 
     IPriceFeed public priceFeed;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize(
         uint256 _OCR,
         uint256 _baseBorrowRate,

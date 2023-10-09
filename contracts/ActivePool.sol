@@ -41,6 +41,12 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     uint256 internal USDEDebt;
 
     // --- Contract setters ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
     }

@@ -81,6 +81,11 @@ contract PriceFeed is OwnableUpgradeable, BaseMath, IPriceFeed {
     event LastGoodPriceUpdated(uint256 _lastGoodPrice);
     event PriceFeedStatusChanged(Status newStatus);
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() public initializer {
         __Ownable_init();
     }

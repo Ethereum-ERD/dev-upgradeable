@@ -23,6 +23,11 @@ contract MultiTroveGetter is Initializable {
     TroveManager public troveManager; // XXX Troves missing from ITroveManager?
     ISortedTroves public sortedTroves;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(TroveManager _troveManager, ISortedTroves _sortedTroves) public initializer {
         troveManager = _troveManager;
         sortedTroves = _sortedTroves;

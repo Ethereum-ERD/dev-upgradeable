@@ -40,6 +40,12 @@ contract TroveManagerRedemptions is
     uint256 internal deploymentStartTime;
 
     // --- Dependency setter ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
     }

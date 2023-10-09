@@ -14,6 +14,11 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ICollateralManager internal collateralManager;
     address public tokenAddress;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         string memory name_,
         string memory symbol_

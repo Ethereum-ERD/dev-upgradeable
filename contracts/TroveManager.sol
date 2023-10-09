@@ -94,6 +94,11 @@ contract TroveManager is
 
     // --- Dependency setter ---
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address _troveDebtAddress,
         address _interestRateAddress

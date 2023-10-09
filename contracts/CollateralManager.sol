@@ -59,6 +59,11 @@ contract CollateralManager is
 
     uint256 public collateralsCount;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() public initializer {
         __Ownable_init();
         BOOTSTRAP_PERIOD = 14 days;

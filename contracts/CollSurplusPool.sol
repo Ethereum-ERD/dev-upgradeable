@@ -37,6 +37,12 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     mapping(address => Info) internal balances;
 
     // --- Contract setters ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
     }

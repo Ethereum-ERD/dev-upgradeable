@@ -235,6 +235,12 @@ contract StabilityPool is
     }
 
     // --- Contract setters ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
         P = DECIMAL_PRECISION;

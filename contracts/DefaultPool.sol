@@ -32,6 +32,12 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
     uint256 internal USDEDebt; // debt
 
     // --- Dependency setters ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
     }

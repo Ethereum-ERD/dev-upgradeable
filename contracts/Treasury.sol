@@ -12,6 +12,11 @@ contract Treasury is OwnableUpgradeable {
 
     string public constant NAME = "Treasury";
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() public initializer {
         __Ownable_init();
     }

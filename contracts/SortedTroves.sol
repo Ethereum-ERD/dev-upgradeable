@@ -71,6 +71,12 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     Data public data;
 
     // --- Dependency setters ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
     function initialize() public initializer {
         __Ownable_init();
     }
