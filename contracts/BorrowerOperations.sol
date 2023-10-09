@@ -95,7 +95,7 @@ contract BorrowerOperations is
     }
 
     // --- Dependency setters ---
-    
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -103,6 +103,7 @@ contract BorrowerOperations is
 
     function initialize() public initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
     }
 
     function setAddresses(

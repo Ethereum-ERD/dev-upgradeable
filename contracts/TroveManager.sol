@@ -104,6 +104,7 @@ contract TroveManager is
         address _interestRateAddress
     ) public initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
         _requireIsContract(_troveDebtAddress);
         _requireIsContract(_interestRateAddress);
         troveDebt = ITroveDebt(_troveDebtAddress);

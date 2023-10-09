@@ -243,6 +243,7 @@ contract StabilityPool is
     
     function initialize() public initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
         P = DECIMAL_PRECISION;
     }
 
