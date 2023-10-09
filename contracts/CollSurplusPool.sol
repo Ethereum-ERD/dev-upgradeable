@@ -51,6 +51,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         address _wethAddress
     ) external override onlyOwner {
         _requireIsContract(_borrowerOperationsAddress);
+        _requireIsContract(_collateralManagerAddress);
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_troveManagerLiquidationsAddress);
         _requireIsContract(_troveManagerRedemptionsAddress);

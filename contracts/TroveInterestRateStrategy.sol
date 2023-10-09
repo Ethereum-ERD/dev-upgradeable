@@ -14,7 +14,10 @@ import "./Interfaces/IPriceFeed.sol";
 import "./Dependencies/WadRayMath.sol";
 import "./DataTypes.sol";
 
-contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStrategy {
+contract TroveInterestRateStrategy is
+    OwnableUpgradeable,
+    ITroveInterestRateStrategy
+{
     using SafeMathUpgradeable for uint256;
     using WadRayMath for uint256;
 
@@ -69,6 +72,14 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
         address _stabilityPoolAddress,
         address _priceFeedAddress
     ) external onlyOwner {
+        _requireIsContract(_troveManagerAddress);
+        _requireIsContract(_collateralManagerAddress);
+        _requireIsContract(_troveDebtAddress);
+        _requireIsContract(_activePoolAddress);
+        _requireIsContract(_defaultPoolAddress);
+        _requireIsContract(_stabilityPoolAddress);
+        _requireIsContract(_priceFeedAddress);
+
         troveManager = ITroveManager(_troveManagerAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
         troveDebt = ITroveDebt(_troveDebtAddress);
@@ -121,7 +132,7 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
         CalcInterestRatesLocalVars memory vars;
         vars.TCR = troveManager.getTCR(priceFeed.fetchPrice_view());
         vars.CCR = collateralManager.getCCR();
-        
+
         vars.currentBorrowRate = 0;
 
         vars.utilizationRate = vars.CCR.wadDiv(vars.TCR).wadToRay();
@@ -132,17 +143,21 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
         } else {
             if (vars.utilizationRate >= optimalUtilizationRate) {
                 vars.currentBorrowRate = baseBorrowRate.add(
-                    rateSlope1.rayMul((vars.TCR.sub(vars.CCR).wadToRay()).rayDiv(OCR.sub(vars.CCR.wadToRay())))
+                    rateSlope1.rayMul(
+                        (vars.TCR.sub(vars.CCR).wadToRay()).rayDiv(
+                            OCR.sub(vars.CCR.wadToRay())
+                        )
+                    )
                 );
             } else {
-                uint256 remaindUtilizationRateRatio = vars.TCR.wadToRay().rayDiv(
-                    OCR
-                ) - WadRayMath.ray();
+                uint256 remaindUtilizationRateRatio = vars
+                    .TCR
+                    .wadToRay()
+                    .rayDiv(OCR) - WadRayMath.ray();
 
                 vars.currentBorrowRate = baseBorrowRate.add(rateSlope1).add(
                     rateSlope2.rayMul(remaindUtilizationRateRatio)
                 );
-                
             }
         }
         uint256 maxRate = baseBorrowRate.add(rateSlope1).add(rateSlope2);
@@ -150,5 +165,9 @@ contract TroveInterestRateStrategy is OwnableUpgradeable, ITroveInterestRateStra
             return maxRate;
         }
         return vars.currentBorrowRate;
+    }
+
+    function _requireIsContract(address _contract) internal view {
+        require(_contract.code.length > 0, "IS_NOT_CONTRACT");
     }
 }

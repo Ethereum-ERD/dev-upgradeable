@@ -20,6 +20,8 @@ contract CollateralManager is
 {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
+    error BadValue();
+    error AtLeastOneCollateral();
 
     // During bootsrap period redemptions are not allowed
     uint256 public BOOTSTRAP_PERIOD;
@@ -115,8 +117,13 @@ contract CollateralManager is
         address _eTokenAddress,
         uint256 _ratio
     ) external override onlyOwner {
+        _requireIsContract(_collateral);
+        _requireIsContract(_oracle);
+        _requireIsContract(_eTokenAddress);
         require(!getIsSupport(_collateral), Errors.CM_COLL_EXISTS);
-        _requireRatioLegal(_ratio);
+        if (_ratio > DECIMAL_PRECISION) {
+            revert BadValue();
+        }
 
         collateralParams[_collateral] = DataTypes.CollateralParams(
             _ratio,
@@ -136,7 +143,9 @@ contract CollateralManager is
             getIsSupport(collAddress) && !getIsActive(collAddress),
             Errors.CM_COLL_MUST_PAUSED
         );
-        require(collateralsCount > 1, Errors.CM_COLL_LT_ONE);
+        if (collateralsCount == 1) {
+            revert AtLeastOneCollateral();
+        }
         uint256 index = getIndex(collAddress);
         address collateral;
         for (uint256 i = index; i < collateralsCount - 1; ) {
@@ -220,6 +229,7 @@ contract CollateralManager is
         address _collateral,
         address _oracle
     ) public override onlyOwner {
+        _requireIsContract(_oracle);
         _requireCollIsActive(_collateral);
         collateralParams[_collateral].oracle = _oracle;
     }
@@ -228,6 +238,7 @@ contract CollateralManager is
         address _collateral,
         address _eTokenAddress
     ) public override onlyOwner {
+        _requireIsContract(_eTokenAddress);
         _requireCollIsActive(_collateral);
         collateralParams[_collateral].eToken = _eTokenAddress;
     }
@@ -237,7 +248,9 @@ contract CollateralManager is
         uint256 _ratio
     ) public override onlyOwner {
         _requireCollIsActive(_collateral);
-        _requireRatioLegal(_ratio);
+        if (_ratio > DECIMAL_PRECISION) {
+            revert BadValue();
+        }
         collateralParams[_collateral].ratio = _ratio;
     }
 
@@ -678,10 +691,6 @@ contract CollateralManager is
         require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
     }
 
-    function _requireRatioLegal(uint256 _ratio) internal pure {
-        require(_ratio <= DECIMAL_PRECISION, Errors.CM_RATIO_MUST_LT_100);
-    }
-
     function _requireCollIsActive(address _collateral) internal view {
         require(getIsActive(_collateral), Errors.CM_COLL_NOT_ACTIVE);
     }
@@ -734,11 +743,16 @@ contract CollateralManager is
     }
 
     function setGasCompensation(uint256 _gas) external override onlyOwner {
-        assert(_gas <= MIN_NET_DEBT);
+        if (_gas > MIN_NET_DEBT) {
+            revert BadValue();
+        }
         USDE_GAS_COMPENSATION = _gas;
     }
 
     function setMinDebt(uint256 _minDebt) external override onlyOwner {
+        if (_minDebt < USDE_GAS_COMPENSATION) {
+            revert BadValue();
+        }
         MIN_NET_DEBT = _minDebt;
     }
 

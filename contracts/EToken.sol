@@ -26,6 +26,8 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         address _collateralManagerAddress,
         address _tokenAddress
     ) external onlyOwner {
+        _requireIsContract(_collateralManagerAddress);
+        _requireIsContract(_tokenAddress);
         collateralManager = ICollateralManager(_collateralManagerAddress);
         tokenAddress = _tokenAddress;
 
@@ -189,6 +191,10 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
 
     function totalShareSupply() public view override returns (uint256) {
         return super.totalSupply();
+    }
+
+    function _requireIsContract(address _contract) internal view {
+        require(_contract.code.length > 0, Errors.IS_NOT_CONTRACT);
     }
 
     function _requireIsCollateralManager() internal view {
