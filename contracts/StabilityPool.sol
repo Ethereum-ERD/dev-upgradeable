@@ -240,7 +240,7 @@ contract StabilityPool is
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -1359,8 +1359,4 @@ contract StabilityPool is
             Errors.SP_KICKBACK_RATE_NOT_IN_RANGE
         );
     }
-
-    // --- Fallback function ---
-
-    receive() external payable {}
 }

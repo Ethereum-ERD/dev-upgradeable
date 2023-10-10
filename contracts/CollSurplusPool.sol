@@ -42,7 +42,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -218,8 +218,4 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     function _requireCallerIsActivePool() internal view {
         require(msg.sender == activePoolAddress, Errors.CALLER_NOT_AP);
     }
-
-    // --- Fallback function ---
-
-    receive() external payable {}
 }

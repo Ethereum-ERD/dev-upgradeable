@@ -46,7 +46,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -296,8 +296,4 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
             Errors.CALLER_NOT_BO_TM
         );
     }
-
-    // --- Fallback function ---
-
-    receive() external payable {}
 }
