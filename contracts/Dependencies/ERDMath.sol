@@ -40,11 +40,10 @@ library ERDMath {
      *
      * Used only inside the exponentiation, _decPow().
      */
-    function decMul(uint256 x, uint256 y)
-        internal
-        pure
-        returns (uint256 decProd)
-    {
+    function decMul(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256 decProd) {
         uint256 prod_xy = x.mul(y);
 
         decProd = prod_xy.add(DECIMAL_PRECISION / 2).div(DECIMAL_PRECISION);
@@ -68,11 +67,10 @@ library ERDMath {
      * In function 1), the decayed base rate will be 0 for 1000 years or > 1000 years
      * In function 2), the difference in tokens issued at 1000 years and any time > 1000 years, will be negligible
      */
-    function _decPow(uint256 _base, uint256 _minutes)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _decPow(
+        uint256 _base,
+        uint256 _minutes
+    ) internal pure returns (uint256) {
         if (_minutes > 525600000) {
             _minutes = 525600000;
         } // cap to avoid overflow
@@ -101,19 +99,17 @@ library ERDMath {
         return decMul(x, y);
     }
 
-    function _getAbsoluteDifference(uint256 _a, uint256 _b)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _getAbsoluteDifference(
+        uint256 _a,
+        uint256 _b
+    ) internal pure returns (uint256) {
         return (_a >= _b) ? _a.sub(_b) : _b.sub(_a);
     }
 
-    function _computeCR(uint256 _coll, uint256 _debt)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _computeCR(
+        uint256 _coll,
+        uint256 _debt
+    ) internal pure returns (uint256) {
         if (_debt > 0) {
             uint256 newCollRatio = _coll.mul(DECIMAL_PRECISION).div(_debt);
 
@@ -122,7 +118,7 @@ library ERDMath {
         // Return the maximal value for uint256 if the Trove has a debt of 0. Represents "infinite" CR.
         else {
             // if (_debt == 0)
-            return 2**256 - 1;
+            return 2 ** 256 - 1;
         }
     }
 
@@ -139,15 +135,14 @@ library ERDMath {
         // Return the maximal value for uint256 if the Trove has a debt of 0. Represents "infinite" CR.
         else {
             // if (_debt == 0)
-            return 2**256 - 1;
+            return 2 ** 256 - 1;
         }
     }
 
-    function _addArray(uint256[] memory _colls, uint256[] memory _rewards)
-        internal
-        pure
-        returns (uint256[] memory)
-    {
+    function _addArray(
+        uint256[] memory _colls,
+        uint256[] memory _rewards
+    ) internal pure returns (uint256[] memory) {
         uint256 collLen = _colls.length;
         if (collLen == 0) {
             return _rewards;
@@ -156,20 +151,20 @@ library ERDMath {
             return _colls;
         }
         uint256[] memory newColls = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             newColls[i] = _colls[i].add(_rewards[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return newColls;
     }
 
-    function _subArray(uint256[] memory _colls, uint256[] memory _rewards)
-        internal
-        pure
-        returns (uint256[] memory)
-    {
+    function _subArray(
+        uint256[] memory _colls,
+        uint256[] memory _rewards
+    ) internal pure returns (uint256[] memory) {
         uint256 collLen = _colls.length;
         if (collLen == 0) {
             return _rewards;
@@ -178,37 +173,43 @@ library ERDMath {
             return _colls;
         }
         uint256[] memory newColls = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             newColls[i] = _colls[i].sub(_rewards[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return newColls;
     }
 
-    function _arrayIsNonzero(uint256[] memory arr)
-        internal
-        pure
-        returns (bool)
-    {
+    function _arrayIsNonzero(
+        uint256[] memory arr
+    ) internal pure returns (bool) {
         uint256 arrLen = arr.length;
-        for (uint256 i; i < arrLen; ) {
+        uint256 i = 0;
+        for (; i < arrLen; ) {
             if (arr[i] != 0) {
                 return true;
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return false;
     }
 
-    function _getArrayCopy(uint[] memory _arr) internal pure returns (uint[] memory){
+    function _getArrayCopy(
+        uint[] memory _arr
+    ) internal pure returns (uint[] memory) {
         uint256 arrLen = _arr.length;
         uint[] memory copy = new uint[](arrLen);
-        for (uint256 i; i < arrLen; ++i) {
+        uint256 i = 0;
+        for (; i < arrLen; ) {
             copy[i] = _arr[i];
+            unchecked {
+                ++i;
+            }
         }
         return copy;
     }
@@ -220,11 +221,10 @@ library ERDMath {
      * @return The interest rate linearly accumulated during the timeDelta, in ray
      **/
 
-    function calculateLinearInterest(uint256 rate, uint40 lastUpdateTimestamp)
-        internal
-        view
-        returns (uint256)
-    {
+    function calculateLinearInterest(
+        uint256 rate,
+        uint40 lastUpdateTimestamp
+    ) internal view returns (uint256) {
         //solium-disable-next-line
         uint256 timeDifference = block.timestamp.sub(
             uint256(lastUpdateTimestamp)

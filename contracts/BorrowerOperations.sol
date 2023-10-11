@@ -329,7 +329,8 @@ contract BorrowerOperations is
                 address collateral;
                 bool hasWETH;
                 uint256 index;
-                for (uint256 i = 0; i < collLen; i++) {
+                uint256 i = 0;
+                for (; i < collLen; ) {
                     collateral = _collaterals[i];
                     if (collateral != address(WETH)) {
                         collaterals[i + 1] = collateral;
@@ -338,6 +339,9 @@ contract BorrowerOperations is
                         hasWETH = true;
                         index = i;
                         break;
+                    }
+                    unchecked {
+                        ++i;
                     }
                 }
                 if (hasWETH) {
@@ -809,10 +813,14 @@ contract BorrowerOperations is
         uint256 amountsLen = _amounts.length;
         address collAddress;
         uint256 amount;
-        for (uint256 i; i < amountsLen; i++) {
+        uint256 i = 0;
+        for (; i < amountsLen; ) {
             collAddress = _colls[i];
             amount = _amounts[i];
             _singleTransferCollateralIntoActivePool(_from, collAddress, amount);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -947,19 +955,27 @@ contract BorrowerOperations is
     ) internal pure returns (address[] memory, uint256[] memory) {
         uint256 collLen = _colls.length;
         uint256 count;
-        for (uint256 i = 0; i < collLen; i++) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 count = count + 1;
+            }
+            unchecked {
+                ++i;
             }
         }
         address[] memory colls = new address[](count);
         uint256[] memory amounts = new uint256[](count);
         uint256 index;
-        for (uint256 i = 0; i < collLen; i++) {
+        i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 colls[index] = _colls[i];
                 amounts[index] = _amounts[i];
                 index = index + 1;
+            }
+            unchecked {
+                ++i;
             }
         }
         return (colls, amounts);
@@ -991,12 +1007,16 @@ contract BorrowerOperations is
                 Errors.BO_ETH_NOT_ACTIVE_OR_PAUSED
             );
         }
-        for (uint256 i; i < collsLen; i++) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
             require(
                 collateralManager.getIsActive(_colls[i]),
                 Errors.BO_COLL_NOT_ACTIVE_PAUSED
             );
             require(_amounts[i] != 0, Errors.BO_COLL_AMOUNT_IS_ZERO);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1018,13 +1038,17 @@ contract BorrowerOperations is
                 _requireNoWETHColls(_colls);
             }
         }
-        for (uint256 i; i < collsLen; ++i) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
             require(
                 (add && collateralManager.getIsActive(_colls[i])) ||
                     (!add && collateralManager.getIsSupport(_colls[i])),
                 Errors.BO_COLL_NOT_ACTIVE_OR_NOT_SUPPORT
             );
             require(_amounts[i] != 0, Errors.BO_COLL_AMOUNT_IS_ZERO);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1034,28 +1058,48 @@ contract BorrowerOperations is
     ) internal pure {
         uint256 colls1Len = _colls1.length;
         uint256 colls2Len = _colls2.length;
-        for (uint256 i; i < colls1Len; ++i) {
-            for (uint256 j; j < colls2Len; j++) {
+        uint256 i = 0;
+        for (; i < colls1Len; ) {
+            uint256 j = 0;
+            for (; j < colls2Len; ) {
                 require(_colls1[i] != _colls2[j], Errors.BO_OVERLAP_COLL);
+                unchecked {
+                    ++j;
+                }
+            }
+            unchecked {
+                ++i;
             }
         }
     }
 
     function _requireNoWETHColls(address[] memory _colls) internal view {
         uint256 collsLen = _colls.length;
-        for (uint256 i; i < collsLen; ++i) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
             require(
                 _colls[i] != address(WETH),
                 Errors.BO_CANNOT_WITHDRAW_AND_ADD_COLL
             );
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function _requireNoDuplicateColls(address[] memory _colls) internal pure {
         uint256 collsLen = _colls.length;
-        for (uint256 i; i < collsLen; ++i) {
-            for (uint256 j = i.add(1); j < collsLen; j++) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
+            uint256 j = i.add(1);
+            for (; j < collsLen; ) {
                 require(_colls[i] != _colls[j], Errors.BO_DUPLICATE_COLL);
+                unchecked {
+                    ++j;
+                }
+            }
+            unchecked {
+                ++i;
             }
         }
     }

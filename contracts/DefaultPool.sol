@@ -37,7 +37,7 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -74,13 +74,14 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
         collaterals = ITroveManager(troveManagerAddress).getCollateralSupport();
         uint256 collLen = collaterals.length;
         amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             amounts[i] = IERC20Upgradeable(collaterals[i]).balanceOf(
                 address(this)
             );
             total = total.add(amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -111,7 +112,8 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
         uint256[] memory collBalance = new uint256[](collLen);
         address collateral;
         uint256 amount;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
             if (amount != 0) {
@@ -121,10 +123,9 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
                 );
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
-
         emit DefaultPoolCollBalanceUpdated(_collaterals, collBalance);
         emit CollateralSent(activePool, _amounts);
     }

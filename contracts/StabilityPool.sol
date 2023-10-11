@@ -311,13 +311,14 @@ contract StabilityPool is
         collaterals = collateralManager.getCollateralSupport();
         uint256 collLen = collaterals.length;
         amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             amounts[i] = IERC20Upgradeable(collaterals[i]).balanceOf(
                 address(this)
             );
             total = total.add(amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -681,7 +682,8 @@ contract StabilityPool is
             _collaterals,
             _collToAdd
         );
-        for (uint256 i = 0; i < collateralsLen; ) {
+        uint256 i = 0;
+        for (; i < collateralsLen; ) {
             collateral = _collaterals[i];
             collNumerators[i] = shares[i].mul(DECIMAL_PRECISION).add(
                 lastCollError_Offset[collateral]
@@ -694,9 +696,8 @@ contract StabilityPool is
             lastCollError_Offset[collateral] = collNumerators[i].sub(
                 collGainPerUnitStakeds[i].mul(_totalUSDEDeposits).div(currentP)
             );
-
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -734,7 +735,8 @@ contract StabilityPool is
          */
         uint256 collateralsLen = _collaterals.length;
         uint256[] memory currentSs = new uint256[](collateralsLen);
-        for (uint256 i = 0; i < collateralsLen; ) {
+        uint256 i = 0;
+        for (; i < collateralsLen; ) {
             address collateral = _collaterals[i];
             uint256 currentSColl = epochToScaleToSum[collateral][
                 currentEpochCached
@@ -746,7 +748,7 @@ contract StabilityPool is
             ] = newSColl;
             currentSs[i] = newSColl;
             unchecked {
-                i++;
+                ++i;
             }
         }
         emit S_Updated(currentSs, currentEpochCached, currentScaleCached);
@@ -837,14 +839,15 @@ contract StabilityPool is
         collaterals = collateralManager.getCollateralSupport();
         uint256 collLen = collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             shares[i] = _getCollateralGainFromSnapshots(
                 initialDeposit,
                 snapshots,
                 collaterals[i]
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
         gains = collateralManager.getAmounts(collaterals, shares);
@@ -1091,7 +1094,8 @@ contract StabilityPool is
         address collateral;
         bool hasETH;
         uint256 ETHAmount;
-        for (uint256 i = 0; i < collateralLen; ) {
+        uint256 i = 0;
+        for (; i < collateralLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
             if (amount != 0) {
@@ -1111,7 +1115,7 @@ contract StabilityPool is
                 emit CollateralSent(msg.sender, collateral, amount);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         if (hasETH) {
@@ -1174,10 +1178,11 @@ contract StabilityPool is
         uint256[] memory currentSs = new uint256[](collateralLen);
         if (_newValue == 0) {
             delete deposits[depositor].frontEndTag;
-            for (uint256 i = 0; i < collateralLen; ) {
+            uint256 i = 0;
+            for (; i < collateralLen; ) {
                 depositSnapshots[depositor].S[collaterals[i]] = 0;
                 unchecked {
-                    i++;
+                    ++i;
                 }
             }
             depositSnapshots[depositor].P = 0;
@@ -1194,7 +1199,8 @@ contract StabilityPool is
         // Get S and G for the current epoch and current scale
         address collateral;
         uint256 currentSColl;
-        for (uint256 i = 0; i < collateralLen; ) {
+        uint256 i = 0;
+        for (; i < collateralLen; ) {
             collateral = collaterals[i];
             currentSColl = epochToScaleToSum[collateral][currentEpochCached][
                 currentScaleCached
@@ -1202,7 +1208,7 @@ contract StabilityPool is
             depositSnapshots[_depositor].S[collateral] = currentSColl;
             currentSs[i] = currentSColl;
             unchecked {
-                i++;
+                ++i;
             }
         }
         uint256 currentG = epochToScaleToG[currentEpochCached][

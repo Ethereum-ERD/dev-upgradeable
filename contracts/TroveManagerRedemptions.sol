@@ -45,7 +45,7 @@ contract TroveManagerRedemptions is
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -590,7 +590,8 @@ contract TroveManagerRedemptions is
         require(redemptionFee < _collDrawnValue, Errors.TM_FEE_TOO_HIGH);
         uint256 length = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](length);
-        for (uint256 i = 0; i < length; ) {
+        uint256 i = 0;
+        for (; i < length; ) {
             uint256 collDrawn = _collDrawns[i];
             if (collDrawn != 0) {
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
@@ -599,7 +600,7 @@ contract TroveManagerRedemptions is
                 require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (redemptionFee, redemptionFees);
@@ -676,8 +677,12 @@ contract TroveManagerRedemptions is
         );
         uint256 price = priceFeed.fetchPrice();
         collateralManager.priceUpdate();
-        for (uint256 i = 0; i < lowerHintsLen; i++) {
+        uint256 i = 0;
+        for (; i < lowerHintsLen; ) {
             _updateTrove(_borrowers[i], _lowerHints[i], _upperHints[i], price);
+            unchecked {
+                ++i;
+            }
         }
     }
 

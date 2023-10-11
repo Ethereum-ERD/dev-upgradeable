@@ -29,7 +29,7 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -217,7 +217,7 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
                 diff = currentDiff;
                 hintAddress = currentAddress;
             }
-            i++;
+            ++i;
         }
     }
 

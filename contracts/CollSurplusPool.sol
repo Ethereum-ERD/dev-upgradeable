@@ -99,13 +99,14 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         collaterals = ITroveManager(troveManagerAddress).getCollateralSupport();
         uint256 collLen = collaterals.length;
         amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             amounts[i] = IERC20Upgradeable(collaterals[i]).balanceOf(
                 address(this)
             );
             total = total.add(amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -137,7 +138,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
             _amount
         );
         uint256 length = collaterals.length;
-        for (uint256 i = 0; i < length; ) {
+        uint256 i = 0;
+        for (; i < length; ) {
             address collateral = collaterals[i];
             uint256 share = shares[i];
             if (share != 0) {
@@ -146,7 +148,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
                 info.balance[collateral] = info.balance[collateral].add(share);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
 
@@ -166,7 +168,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         emit CollBalanceUpdated(_account, false);
         bool hasETH;
         uint256 ETHAmount;
-        for (uint256 i = 0; i < length; ) {
+        uint256 i = 0;
+        for (; i < length; ) {
             address collateral = collaterals[i];
             shares[i] = info.balance[collateral];
             claimableColls[i] = collateralManager.getAmount(
@@ -186,7 +189,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
                 }
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         if (hasETH) {

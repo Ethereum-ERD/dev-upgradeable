@@ -381,7 +381,9 @@ contract TroveManager is
         IDefaultPool _defaultPool,
         address _borrower
     ) internal {
-        (bool has, address[] memory collaterals) = _hasPeningRewards(_borrower);
+        (bool has, address[] memory collaterals) = _hasPendingRewards(
+            _borrower
+        );
         if (has) {
             _requireTroveIsActive(_borrower);
 
@@ -438,7 +440,8 @@ contract TroveManager is
     function _updateTroveRewardSnapshots(address _borrower) internal {
         address[] memory collaterals = getCollateralSupport();
         uint256 collLen = collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             address collateral = collaterals[i];
             rewardSnapshots[_borrower].collShares[collateral] = E_Coll[
                 collateral
@@ -447,7 +450,7 @@ contract TroveManager is
                 collateral
             ];
             unchecked {
-                i++;
+                ++i;
             }
         }
         emit TroveSnapshotsUpdated(block.timestamp);
@@ -481,7 +484,8 @@ contract TroveManager is
         uint256 collLen = _collaterals.length;
         uint256[] memory pendingCollRewards = new uint256[](collLen);
         uint256[] memory pendingShareRewards = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             address collateral = _collaterals[i];
             uint256 snapshotCollReward = rewardSnapshots[_borrower].collShares[
                 collateral
@@ -492,7 +496,7 @@ contract TroveManager is
             if (rewardPerUnitStaked == 0) {
                 pendingCollRewards[i] = 0;
                 unchecked {
-                    i++;
+                    ++i;
                 }
                 continue;
             }
@@ -506,7 +510,7 @@ contract TroveManager is
             );
             pendingShareRewards[i] = collReward;
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (pendingCollRewards, pendingShareRewards);
@@ -522,7 +526,8 @@ contract TroveManager is
         uint256 pendingUSDEDebtReward;
         address[] memory collaterals = getCollateralSupport();
         uint256 collLen = collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             address collateral = collaterals[i];
             uint256 snapshotUSDEDebt = rewardSnapshots[_borrower].USDEDebt[
                 collateral
@@ -532,7 +537,7 @@ contract TroveManager is
             );
             if (rewardPerUnitStaked == 0) {
                 unchecked {
-                    i++;
+                    ++i;
                 }
                 continue;
             }
@@ -544,7 +549,7 @@ contract TroveManager is
             );
             pendingUSDEDebtReward = pendingUSDEDebtReward.add(assetUSDEReward);
             unchecked {
-                i++;
+                ++i;
             }
         }
 
@@ -554,11 +559,11 @@ contract TroveManager is
     function hasPendingRewards(
         address _borrower
     ) public view override returns (bool) {
-        (bool has, ) = _hasPeningRewards(_borrower);
+        (bool has, ) = _hasPendingRewards(_borrower);
         return has;
     }
 
-    function _hasPeningRewards(
+    function _hasPendingRewards(
         address _borrower
     ) internal view returns (bool, address[] memory) {
         /*
@@ -571,7 +576,8 @@ contract TroveManager is
         }
         address[] memory collaterals = getCollateralSupport();
         uint256 collLen = collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             address collateral = collaterals[i];
             if (
                 rewardSnapshots[_borrower].collShares[collateral] <
@@ -580,7 +586,7 @@ contract TroveManager is
                 return (true, collaterals);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (false, collaterals);
@@ -638,7 +644,8 @@ contract TroveManager is
     function _removeStake(address _borrower) internal {
         address[] memory collaterals = getCollateralSupport();
         uint256 collLen = collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             address collateral = collaterals[i];
             uint256 stake = Troves[_borrower].stakes[collateral];
             if (stake != 0) {
@@ -646,7 +653,7 @@ contract TroveManager is
                 Troves[_borrower].stakes[collateral] = 0;
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -666,7 +673,8 @@ contract TroveManager is
             uint256[] memory shares
         ) = collateralManager.getCollateralShares(_borrower);
         uint256 collLen = collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collateral = collaterals[i];
             oldStake = Troves[_borrower].stakes[collateral];
             newStake = _computeNewStake(collateral, shares[i]);
@@ -676,7 +684,7 @@ contract TroveManager is
             );
             emit TotalStakesUpdated(collateral, totalStakes[collateral]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -729,7 +737,8 @@ contract TroveManager is
          * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
          */
         uint256 collLen = _collaterals.length;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             uint256 share = collateralManager.getShare(
                 _collaterals[i],
                 _colls[i]
@@ -769,7 +778,7 @@ contract TroveManager is
                 );
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
 
@@ -823,12 +832,13 @@ contract TroveManager is
         );
 
         uint256 collLend = collaterals.length;
-        for (uint256 i = 0; i < collLend; ) {
+        uint256 i = 0;
+        for (; i < collLend; ) {
             address collateral = collaterals[i];
             rewardSnapshots[_borrower].collShares[collateral] = 0;
             rewardSnapshots[_borrower].USDEDebt[collateral] = 0;
             unchecked {
-                i++;
+                ++i;
             }
         }
         troveData.updateInterestRates();
@@ -855,7 +865,8 @@ contract TroveManager is
         uint256 collLend = _collaterals.length;
         uint256[] memory stakesSnapshot = new uint256[](collLend);
         uint256[] memory collateralsSnapshot = new uint256[](collLend);
-        for (uint256 i = 0; i < collLend; ) {
+        uint256 i = 0;
+        for (; i < collLend; ) {
             uint256 remaind = _collRemainder[i];
             address collateral = _collaterals[i];
             if (remaind != 0) {
@@ -866,29 +877,19 @@ contract TroveManager is
                 uint256 liquidatedColl = defaultPool.getCollateralAmount(
                     collateral
                 );
-                uint256 remaindShare = collateralManager.getShare(
+                uint256 totalColl = activeColl.sub(remaind).add(liquidatedColl);
+                uint256 totalShare = collateralManager.getShare(
                     collateral,
-                    remaind
+                    totalColl
                 );
-                uint256 activeShare = collateralManager.getShare(
-                    collateral,
-                    activeColl
-                );
-                uint256 liquidatedShare = collateralManager.getShare(
-                    collateral,
-                    liquidatedColl
-                );
-                totalCollateralSnapshot[collateral] = activeShare
-                    .sub(remaindShare)
-                    .add(liquidatedShare);
+                totalCollateralSnapshot[collateral] = totalShare;
             }
             stakesSnapshot[i] = totalStakesSnapshot[collateral];
             collateralsSnapshot[i] = totalCollateralSnapshot[collateral];
             unchecked {
-                i++;
+                ++i;
             }
         }
-
         emit SystemSnapshotsUpdated(stakesSnapshot, collateralsSnapshot);
     }
 
@@ -1033,7 +1034,8 @@ contract TroveManager is
         require(redemptionFee < _collDrawn, Errors.TM_FEE_TOO_HIGH);
         uint256 collsLen = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](collsLen);
-        for (uint256 i = 0; i < collsLen; ) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
             uint256 collDrawn = _collDrawns[i];
             if (collDrawn != 0) {
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
@@ -1042,7 +1044,7 @@ contract TroveManager is
                 require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (redemptionFee, redemptionFees);
@@ -1235,11 +1237,12 @@ contract TroveManager is
         uint256[] memory collStakes = new uint256[](collLen);
         DataTypes.Trove storage trove = Troves[_borrower];
         uint256 totalCollStake;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collStakes[i] = trove.stakes[collaterals[i]];
             totalCollStake = totalCollStake.add(collStakes[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (collStakes, totalCollStake, collaterals);

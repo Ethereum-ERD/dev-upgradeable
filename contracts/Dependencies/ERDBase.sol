@@ -59,22 +59,15 @@ contract ERDBase is BaseMath, IERDBase {
     ) internal pure returns (uint256[] memory) {
         uint256 collLen = _entireColl.length;
         uint256[] memory collGas = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collGas[i] = _entireColl[i] / PERCENT_DIVISOR;
             unchecked {
-                i++;
+                ++i;
             }
         }
         return collGas;
     }
-
-    // function getEntireSystemColl()
-    //     public
-    //     view
-    //     returns (address[] memory, uint256[] memory, uint256)
-    // {
-    //     return collateralManager.getEntireCollValue();
-    // }
 
     function getEntireSystemColl()
         public

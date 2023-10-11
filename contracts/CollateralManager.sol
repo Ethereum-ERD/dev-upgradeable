@@ -152,15 +152,15 @@ contract CollateralManager is
         if (collateralsCount == 1) {
             revert AtLeastOneCollateral();
         }
-        uint256 index = getIndex(collAddress);
         address collateral;
-        for (uint256 i = index; i < collateralsCount - 1; ) {
+        uint256 i = getIndex(collAddress);
+        for (; i < collateralsCount - 1; ) {
             collateral = collateralSupport[i];
             collateralSupport[i] = collateralSupport[i + 1];
             collateralSupport[i + 1] = collateral;
             collateralParams[collateralSupport[i]].index = i;
             unchecked {
-                i++;
+                ++i;
             }
         }
         collateralSupport.pop();
@@ -179,19 +179,21 @@ contract CollateralManager is
         if (newIndex < oldIndex) {
             uint256 tmpIndex = oldIndex;
             uint256 gap = oldIndex - newIndex;
-            for (uint256 i = 0; i < gap; ) {
+            uint256 i = 0;
+            for (; i < gap; ) {
                 tmpIndex = _up(tmpIndex);
                 unchecked {
-                    i++;
+                    ++i;
                 }
             }
         } else {
             uint256 tmpIndex = oldIndex;
             uint256 gap = newIndex - oldIndex;
-            for (uint256 i = 0; i < gap; ) {
+            uint256 i = 0;
+            for (; i < gap; ) {
                 tmpIndex = _down(tmpIndex);
                 unchecked {
-                    i++;
+                    ++i;
                 }
             }
         }
@@ -264,10 +266,11 @@ contract CollateralManager is
         if (collateralsCount < 2) {
             return;
         }
-        for (uint256 i = 1; i < collateralsCount; ) {
+        uint256 i = 1;
+        for (; i < collateralsCount; ) {
             IOracle(collateralParams[collateralSupport[i]].oracle).fetchPrice();
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -298,14 +301,14 @@ contract CollateralManager is
         uint256 collLen = _collaterals.length;
         require(collLen == _amounts.length, Errors.LENGTH_MISMATCH);
         values = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 values[i] = _calcValue(_collaterals[i], _amounts[i], _price);
                 totalValue = totalValue.add(values[i]);
             }
-
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -351,13 +354,14 @@ contract CollateralManager is
         _requireCollIsBO();
         uint256 collLen = _collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 shares[i] = mint(_account, _collaterals[i], _amounts[i]);
             }
 
             unchecked {
-                i++;
+                ++i;
             }
         }
         if (_price != 0) {
@@ -374,7 +378,8 @@ contract CollateralManager is
     ) external override returns (uint256[] memory) {
         _requireCollIsTM();
         uint256[] memory newShares = new uint256[](collateralsCount);
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             if (_pendingRewards[i] != 0) {
                 mint(_borrower, collateralSupport[i], _pendingRewards[i]);
             }
@@ -382,7 +387,7 @@ contract CollateralManager is
                 collateralParams[collateralSupport[i]].eToken
             ).sharesOf(_borrower);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return newShares;
@@ -397,13 +402,13 @@ contract CollateralManager is
         _requireCollIsBO();
         uint256 collLen = _collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 shares[i] = burn(_account, _collaterals[i], _amounts[i]);
             }
-
             unchecked {
-                i++;
+                ++i;
             }
         }
         if (_price != 0) {
@@ -446,12 +451,13 @@ contract CollateralManager is
         if (closedStatus == DataTypes.Status.closedByOwner) {
             return collateralSupport;
         }
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             IEToken(collateralParams[collateralSupport[i]].eToken).clear(
                 _account
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
         return collateralSupport;
@@ -468,14 +474,14 @@ contract CollateralManager is
         );
         uint256 collLen = _collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 shares[i] = IEToken(collateralParams[_collaterals[i]].eToken)
                     .reset(_account, _amounts[i]);
             }
-
             unchecked {
-                i++;
+                ++i;
             }
         }
         return shares;
@@ -487,13 +493,14 @@ contract CollateralManager is
     ) public view override returns (uint256[] memory) {
         uint256 collLen = _collaterals.length;
         uint256[] memory amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_amounts[i] != 0) {
                 amounts[i] = IEToken(collateralParams[_collaterals[i]].eToken)
                     .getShare(_amounts[i]);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return amounts;
@@ -505,13 +512,14 @@ contract CollateralManager is
     ) public view override returns (uint256[] memory) {
         uint256 collLen = _collaterals.length;
         uint256[] memory amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             if (_shares[i] != 0) {
                 amounts[i] = IEToken(collateralParams[_collaterals[i]].eToken)
                     .getAmount(_shares[i]);
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         return amounts;
@@ -541,14 +549,14 @@ contract CollateralManager is
     {
         uint256[] memory amounts = new uint256[](collateralsCount);
         uint256[] memory shares = new uint256[](collateralsCount);
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             (amounts[i], shares[i]) = getTroveColl(
                 _borrower,
                 collateralSupport[i]
             );
-
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (amounts, shares, collateralSupport);
@@ -571,11 +579,12 @@ contract CollateralManager is
         address _borrower
     ) external view override returns (address[] memory, uint256[] memory) {
         uint256[] memory shares = new uint256[](collateralsCount);
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             shares[i] = IEToken(collateralParams[collateralSupport[i]].eToken)
                 .sharesOf(_borrower);
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (collateralSupport, shares);
@@ -603,13 +612,11 @@ contract CollateralManager is
         uint256[] memory amounts = new uint256[](collateralsCount);
         uint256 activeBalance;
         uint256 defautBalance;
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             activeBalance = IEToken(
                 collateralParams[collateralSupport[i]].eToken
             ).totalSupply();
-            // activeBalance = IERC20Upgradeable(collateralSupport[i]).balanceOf(
-            //     address(activePool)
-            // );
             defautBalance = IERC20Upgradeable(collateralSupport[i]).balanceOf(
                 address(defaultPool)
             );
@@ -618,7 +625,7 @@ contract CollateralManager is
                 _calcValue(collateralSupport[i], amounts[i], _price)
             );
             unchecked {
-                i++;
+                ++i;
             }
         }
         return (collateralSupport, amounts, totalValue);
@@ -659,10 +666,11 @@ contract CollateralManager is
         returns (address[] memory)
     {
         address[] memory oracles = new address[](collateralsCount);
-        for (uint256 i = 0; i < collateralsCount; ) {
+        uint256 i = 0;
+        for (; i < collateralsCount; ) {
             oracles[i] = collateralParams[collateralSupport[i]].oracle;
             unchecked {
-                i++;
+                ++i;
             }
         }
         return oracles;
@@ -727,14 +735,21 @@ contract CollateralManager is
         newAmounts = ERDMath._getArrayCopy(_initialAmounts);
         uint256 collsInLen = _collsIn.length;
         uint256 collsOutLen = _collsOut.length;
-        for (uint256 i = 0; i < collsInLen; i++) {
+        uint256 i = 0;
+        for (; i < collsInLen; ) {
             uint256 idx = getIndex(_collsIn[i]);
             newAmounts[idx] = newAmounts[idx].add(_amountsIn[i]);
+            unchecked {
+                ++i;
+            }
         }
-
-        for (uint256 i = 0; i < collsOutLen; i++) {
+        i = 0;
+        for (; i < collsOutLen; ) {
             uint256 idx = getIndex(_collsOut[i]);
             newAmounts[idx] = newAmounts[idx].sub(_amountsOut[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 

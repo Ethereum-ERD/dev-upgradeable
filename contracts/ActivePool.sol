@@ -118,13 +118,14 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         collaterals = ITroveManager(troveManagerAddress).getCollateralSupport();
         uint256 collLen = collaterals.length;
         amounts = new uint256[](collLen);
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             amounts[i] = IERC20Upgradeable(collaterals[i]).balanceOf(
                 address(this)
             );
             total = total.add(amounts[i]);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -160,7 +161,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         bool flag = _notNeedsToSwitchWETH(_account);
         bool hasETH;
         uint256 ETHAmount;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
             if (amount != 0) {
@@ -172,7 +174,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
                 }
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
         if (hasETH) {
@@ -192,7 +194,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 collLen = _collaterals.length;
         address collateral;
         uint256 amount;
-        for (uint256 i = 0; i < collLen; ) {
+        uint256 i = 0;
+        for (; i < collLen; ) {
             collateral = _collaterals[i];
             amount = _amounts[i];
             if (amount != 0) {
@@ -213,7 +216,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
                 );
             }
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
@@ -239,12 +242,11 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 _amount
     ) internal {
         IERC20Upgradeable(_collateral).safeTransfer(_to, _amount);
-        uint256 balance = IERC20Upgradeable(_collateral).balanceOf(address(this));
-        require(balance > 0, Errors.BALANCE_EQUAL_ZERO);
-        emit ActivePoolCollBalanceUpdated(
-            _collateral,
-            balance
+        uint256 balance = IERC20Upgradeable(_collateral).balanceOf(
+            address(this)
         );
+        require(balance > 0, Errors.BALANCE_EQUAL_ZERO);
+        emit ActivePoolCollBalanceUpdated(_collateral, balance);
         emit CollateralSent(_to, _collateral, _amount);
     }
 

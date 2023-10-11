@@ -28,16 +28,18 @@ contract MultiTroveGetter is Initializable {
         _disableInitializers();
     }
 
-    function initialize(TroveManager _troveManager, ISortedTroves _sortedTroves) public initializer {
+    function initialize(
+        TroveManager _troveManager,
+        ISortedTroves _sortedTroves
+    ) public initializer {
         troveManager = _troveManager;
         sortedTroves = _sortedTroves;
     }
 
-    function getMultipleSortedTroves(int256 _startIdx, uint256 _count)
-        external
-        view
-        returns (CombinedTroveData[] memory _troves)
-    {
+    function getMultipleSortedTroves(
+        int256 _startIdx,
+        uint256 _count
+    ) external view returns (CombinedTroveData[] memory _troves) {
         uint256 startIdx;
         bool descend;
 
@@ -68,61 +70,69 @@ contract MultiTroveGetter is Initializable {
         }
     }
 
-    function _getMultipleSortedTrovesFromHead(uint256 _startIdx, uint256 _count)
-        internal
-        view
-        returns (CombinedTroveData[] memory _troves)
-    {
+    function _getMultipleSortedTrovesFromHead(
+        uint256 _startIdx,
+        uint256 _count
+    ) internal view returns (CombinedTroveData[] memory _troves) {
         address currentTroveowner = sortedTroves.getFirst();
-
-        for (uint256 idx = 0; idx < _startIdx; ++idx) {
+        uint256 idx = 0;
+        for (; idx < _startIdx; ) {
             currentTroveowner = sortedTroves.getNext(currentTroveowner);
+            unchecked {
+                ++idx;
+            }
         }
 
         _troves = new CombinedTroveData[](_count);
-
-        for (uint256 idx = 0; idx < _count; ++idx) {
+        idx = 0;
+        for (; idx < _count; ) {
             _troves[idx] = _getCombinedTroveData(currentTroveowner);
 
             currentTroveowner = sortedTroves.getNext(currentTroveowner);
+            unchecked {
+                ++idx;
+            }
         }
     }
 
-    function _getMultipleSortedTrovesFromTail(uint256 _startIdx, uint256 _count)
-        internal
-        view
-        returns (CombinedTroveData[] memory _troves)
-    {
+    function _getMultipleSortedTrovesFromTail(
+        uint256 _startIdx,
+        uint256 _count
+    ) internal view returns (CombinedTroveData[] memory _troves) {
         address currentTroveowner = sortedTroves.getLast();
-
-        for (uint256 idx = 0; idx < _startIdx; ++idx) {
+        uint256 idx = 0;
+        for (; idx < _startIdx; ) {
             currentTroveowner = sortedTroves.getPrev(currentTroveowner);
+            unchecked {
+                ++idx;
+            }
         }
 
         _troves = new CombinedTroveData[](_count);
-
-        for (uint256 idx = 0; idx < _count; ++idx) {
+        idx = 0;
+        for (; idx < _count; ) {
             _troves[idx] = _getCombinedTroveData(currentTroveowner);
 
             currentTroveowner = sortedTroves.getPrev(currentTroveowner);
+            unchecked {
+                ++idx;
+            }
         }
     }
 
-    function _getCombinedTroveData(address _troveOwner)
-        internal
-        view
-        returns (CombinedTroveData memory data)
-    {
+    function _getCombinedTroveData(
+        address _troveOwner
+    ) internal view returns (CombinedTroveData memory data) {
         data.owner = _troveOwner;
         data.debt = troveManager.getTroveDebt(data.owner);
-        (data.colls, data.shares, data.collaterals) = troveManager.getTroveColls(
-            data.owner
-        );
+        (data.colls, data.shares, data.collaterals) = troveManager
+            .getTroveColls(data.owner);
         (data.stakes, , ) = troveManager.getTroveStakes(data.owner);
         data.snapshotColls = new uint256[](data.collaterals.length);
         data.snapshotUSDEDebts = new uint256[](data.collaterals.length);
         uint256 collsLen = data.collaterals.length;
-        for (uint256 i; i < collsLen; ++i) {
+        uint256 i = 0;
+        for (; i < collsLen; ) {
             address collateral = data.collaterals[i];
             data.snapshotColls[i] = troveManager.getRewardSnapshotColl(
                 data.owner,
@@ -132,6 +142,9 @@ contract MultiTroveGetter is Initializable {
                 data.owner,
                 collateral
             );
+            unchecked {
+                ++i;
+            }
         }
     }
 }

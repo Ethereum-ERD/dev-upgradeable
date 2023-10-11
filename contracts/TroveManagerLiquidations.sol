@@ -72,7 +72,7 @@ contract TroveManagerLiquidations is
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -634,10 +634,14 @@ contract TroveManagerLiquidations is
         uint256 singleLen = singleValues.length;
         uint256[] memory proratedDebtForCollaterals = new uint256[](singleLen);
         if (totalValueToRedistribute > 0) {
-            for (uint i = 0; i < singleLen; i++) {
+            uint256 i = 0;
+            for (; i < singleLen; ) {
                 proratedDebtForCollaterals[i] = singleValues[i]
                     .mul(totals.totalDebtToRedistribute)
                     .div(totalValueToRedistribute);
+                unchecked {
+                    ++i;
+                }
             }
         }
         troveManager.redistributeDebtAndColl(
@@ -717,7 +721,8 @@ contract TroveManagerLiquidations is
         vars.user = _contractsCache.sortedTroves.getLast();
         address firstUser = _contractsCache.sortedTroves.getFirst();
         uint256 mcr = MCR();
-        for (vars.i = 0; vars.i < _n && vars.user != firstUser; vars.i++) {
+        vars.i = 0;
+        for (; vars.i < _n && vars.user != firstUser; ) {
             // we need to cache it, because current user is likely going to be deleted
             address nextUser = _contractsCache.sortedTroves.getPrev(vars.user);
 
@@ -798,6 +803,9 @@ contract TroveManagerLiquidations is
             } else break; // break if the loop reaches a Trove with ICR >= MCR
 
             vars.user = nextUser;
+            unchecked {
+                ++vars.i;
+            }
         }
     }
 
@@ -814,7 +822,8 @@ contract TroveManagerLiquidations is
 
         vars.remainingUSDEInStabPool = _USDEInStabPool;
         uint256 mcr = MCR();
-        for (vars.i = 0; vars.i < _n; vars.i++) {
+        vars.i = 0;
+        for (; vars.i < _n; ) {
             vars.user = sortedTrovesCached.getLast();
             vars.ICR = _getCurrentICR(vars.user, _price);
 
@@ -837,6 +846,9 @@ contract TroveManagerLiquidations is
                     singleLiquidation
                 );
             } else break; // break if the loop reaches a Trove with ICR >= MCR
+            unchecked {
+                ++vars.i;
+            }
         }
     }
 
@@ -911,10 +923,14 @@ contract TroveManagerLiquidations is
         uint256 singleLen = singleValues.length;
         uint256[] memory proratedDebtForCollaterals = new uint256[](singleLen);
         if (totalValueToRedistribute > 0) {
-            for (uint i = 0; i < singleLen; i++) {
+            uint256 i = 0;
+            for (; i < singleLen; ) {
                 proratedDebtForCollaterals[i] = singleValues[i]
                     .mul(totals.totalDebtToRedistribute)
                     .div(totalValueToRedistribute);
+                unchecked {
+                    ++i;
+                }
             }
         }
 
@@ -994,10 +1010,14 @@ contract TroveManagerLiquidations is
         );
 
         uint256 mcr = MCR();
-        for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
+        vars.i = 0;
+        for (; vars.i < _troveArray.length; ) {
             vars.user = _troveArray[vars.i];
             // Skip non-active troves
             if (troveManager.getTroveStatus(vars.user) != 1) {
+                unchecked {
+                    ++vars.i;
+                }
                 continue;
             }
             vars.ICR = _getCurrentICR(vars.user, _price);
@@ -1005,6 +1025,9 @@ contract TroveManagerLiquidations is
             if (!vars.backToNormalMode) {
                 // Skip this trove if ICR is greater than MCR and Stability Pool is empty
                 if (vars.ICR >= mcr && vars.remainingUSDEInStabPool == 0) {
+                    unchecked {
+                        ++vars.i;
+                    }
                     continue;
                 }
 
@@ -1075,7 +1098,10 @@ contract TroveManagerLiquidations is
                     totals,
                     singleLiquidation
                 );
-            } else continue; // In Normal Mode skip troves with ICR >= MCR
+            } // else ==> In Normal Mode skip troves with ICR >= MCR
+            unchecked {
+                ++vars.i;
+            }
         }
     }
 
@@ -1092,7 +1118,8 @@ contract TroveManagerLiquidations is
         vars.remainingUSDEInStabPool = _USDEInStabPool;
 
         uint256 mcr = MCR();
-        for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
+        vars.i = 0;
+        for (; vars.i < _troveArray.length; ) {
             vars.user = _troveArray[vars.i];
             vars.ICR = _getCurrentICR(vars.user, _price);
 
@@ -1113,6 +1140,9 @@ contract TroveManagerLiquidations is
                     totals,
                     singleLiquidation
                 );
+            }
+            unchecked {
+                ++vars.i;
             }
         }
     }
