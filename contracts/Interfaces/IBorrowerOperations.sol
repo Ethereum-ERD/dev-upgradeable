@@ -134,7 +134,9 @@ interface IBorrowerOperations {
 
     function closeTrove() external;
 
-    function setPause(bool val) external;
+    function setPause(bool _val) external;
+
+    function updateUSDEGas(bool _val, uint256 _amount) external;
 
     function claimCollateral() external;
 

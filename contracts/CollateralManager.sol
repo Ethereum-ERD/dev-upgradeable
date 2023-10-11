@@ -8,6 +8,7 @@ import "./TroveManagerDataTypes.sol";
 import "./DataTypes.sol";
 import "./Errors.sol";
 import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/IPriceFeed.sol";
 import "./Interfaces/IOracle.sol";
@@ -751,7 +752,20 @@ contract CollateralManager is
         if (_gas > MIN_NET_DEBT) {
             revert BadValue();
         }
+        bool increase;
+        uint256 offset;
+        if (USDE_GAS_COMPENSATION > _gas) {
+            increase = false;
+            offset = USDE_GAS_COMPENSATION - _gas;
+        } else {
+            increase = true;
+            offset = _gas - USDE_GAS_COMPENSATION;
+        }
         USDE_GAS_COMPENSATION = _gas;
+        IBorrowerOperations(borrowerOperationsAddress).updateUSDEGas(
+            increase,
+            offset
+        );
     }
 
     function setMinDebt(uint256 _minDebt) external override onlyOwner {

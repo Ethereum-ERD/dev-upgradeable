@@ -781,6 +781,23 @@ contract BorrowerOperations is
         }
     }
 
+    function updateUSDEGas(bool _val, uint256 _amount) external override {
+        require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
+        uint256 trovesCount = troveManager.getTroveOwnersCount();
+        uint256 offset = trovesCount * _amount;
+        if (_val) {
+            _withdrawUSDE(
+                activePool,
+                usdeToken,
+                gasPoolAddress,
+                offset,
+                offset
+            );
+        } else {
+            _repayUSDE(activePool, usdeToken, gasPoolAddress, offset);
+        }
+    }
+
     // --- Helper functions ---
 
     // Send collateral to Active Pool and increase its recorded collateral balance
