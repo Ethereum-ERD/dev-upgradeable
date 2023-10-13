@@ -1014,7 +1014,10 @@ contract TroveManagerLiquidations is
         for (; vars.i < _troveArray.length; ) {
             vars.user = _troveArray[vars.i];
             // Skip non-active troves
-            if (troveManager.getTroveStatus(vars.user) != 1) {
+            if (
+                troveManager.getTroveStatus(vars.user) !=
+                DataTypes.Status.active
+            ) {
                 unchecked {
                     ++vars.i;
                 }
