@@ -652,13 +652,16 @@ contract CollateralManager is
     function getIsActive(
         address _collateral
     ) public view override returns (bool) {
-        return (uint256(collateralParams[_collateral].status)) == 1;
+        return
+            collateralParams[_collateral].status == DataTypes.CollStatus.active;
     }
 
     function getIsSupport(
         address _collateral
     ) public view override returns (bool) {
-        return (uint256(collateralParams[_collateral].status)) != 0;
+        return
+            collateralParams[_collateral].status !=
+            DataTypes.CollStatus.nonSupport;
     }
 
     function getCollateralOracle(

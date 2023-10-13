@@ -50,7 +50,7 @@ library TroveLogic {
     }
 
     /**
-     * @dev Updates the liquidity cumulative index and the borrow index.
+     * @dev Updates the liquidity cumulative index and the borrow index, minting accumulated interest to the treasury.
      * @param trove the trove object
      **/
     function updateState(DataTypes.TroveData storage trove) internal {

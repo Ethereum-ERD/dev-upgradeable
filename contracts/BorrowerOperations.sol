@@ -55,10 +55,8 @@ contract BorrowerOperations is
         address borrower;
         address[] collsIn;
         uint256[] amountsIn;
-        uint256[] sharesIn;
         address[] collsOut;
         uint256[] amountsOut;
-        uint256[] sharesOut;
         uint256 USDEChange;
         bool isDebtIncrease;
         address upperHint;
@@ -90,7 +88,6 @@ contract BorrowerOperations is
     struct LocalVariables_openTrove {
         uint256 price;
         uint256 USDEFee;
-        uint256 netShare;
         uint256 netDebt;
         uint256 compositeDebt;
         uint256 ICR;
@@ -218,7 +215,10 @@ contract BorrowerOperations is
                 vars.price
             );
 
-        if (contractsCache.troveManager.getTroveStatus(msg.sender) == 1) {
+        if (
+            contractsCache.troveManager.getTroveStatus(msg.sender) ==
+            DataTypes.Status.active
+        ) {
             revert Errors.BO_TroveIsActive();
         }
 
@@ -383,10 +383,6 @@ contract BorrowerOperations is
         );
 
         _activePoolAddColl(msg.sender, params.collsIn, params.amountsIn);
-        params.sharesIn = collateralManager.getShares(
-            params.collsIn,
-            params.amountsIn
-        );
         params.upperHint = _upperHint;
         params.lowerHint = _lowerHint;
         _adjustTrove(params);
@@ -411,10 +407,6 @@ contract BorrowerOperations is
             params.amountsOut,
             0,
             false
-        );
-        params.sharesOut = collateralManager.getShares(
-            params.collsOut,
-            params.amountsOut
         );
 
         _adjustTrove(params);
@@ -475,10 +467,6 @@ contract BorrowerOperations is
             0,
             true
         );
-        params.sharesIn = collateralManager.getShares(
-            params.collsIn,
-            params.amountsIn
-        );
 
         _activePoolAddColl(msg.sender, params.collsIn, params.amountsIn);
 
@@ -515,24 +503,13 @@ contract BorrowerOperations is
             uint256[] memory adjustAmountsIn
         ) = _adjustArray(_collsIn, _amountsIn, msg.value);
 
-        uint256[] memory adjustSharesIn = collateralManager.getShares(
-            adjustCollsIn,
-            adjustAmountsIn
-        );
-        uint256[] memory adjustSharesOut = collateralManager.getShares(
-            _collsOut,
-            _amountsOut
-        );
-
         _activePoolAddColl(msg.sender, adjustCollsIn, adjustAmountsIn);
         AdjustTrove_Params memory params = AdjustTrove_Params({
             borrower: msg.sender,
             collsIn: adjustCollsIn,
             amountsIn: adjustAmountsIn,
-            sharesIn: adjustSharesIn,
             collsOut: _collsOut,
             amountsOut: _amountsOut,
-            sharesOut: adjustSharesOut,
             USDEChange: _USDEChange,
             isDebtIncrease: _isDebtIncrease,
             upperHint: _upperHint,
@@ -594,7 +571,7 @@ contract BorrowerOperations is
         contractsCache.troveManager.applyPendingRewards(params.borrower);
 
         (vars.colls, vars.shares, vars.collaterals) = contractsCache
-            .troveManager
+            .collateralManager
             .getTroveColls(params.borrower);
 
         (vars.currValue, ) = contractsCache.collateralManager.getValue(
@@ -664,9 +641,6 @@ contract BorrowerOperations is
                     vars.netDebtChange
                 )
             );
-            if (vars.netDebtChange > vars.debt.sub(USDE_GAS_COMPENSATION())) {
-                revert Errors.BO_RepaidExceedDebt();
-            }
             _requireSufficientUSDEBalance(
                 contractsCache.usdeToken,
                 params.borrower,
@@ -691,7 +665,7 @@ contract BorrowerOperations is
         );
 
         (vars.colls, vars.newShares, ) = contractsCache
-            .troveManager
+            .collateralManager
             .getTroveColls(params.borrower);
 
         emit TroveUpdated(
@@ -1137,8 +1111,9 @@ contract BorrowerOperations is
         ITroveManager _troveManager,
         address _borrower
     ) internal view {
-        uint256 status = _troveManager.getTroveStatus(_borrower);
-        if (status != 1) {
+        if (
+            _troveManager.getTroveStatus(_borrower) != DataTypes.Status.active
+        ) {
             revert Errors.BO_TroveNotExistOrClosed();
         }
     }

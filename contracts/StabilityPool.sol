@@ -17,7 +17,6 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ICommunityIssuance.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/ERDBase.sol";
-import "./Dependencies/ERDSafeMath128.sol";
 import "./Errors.sol";
 
 /*
@@ -155,7 +154,6 @@ contract StabilityPool is
     IStabilityPool,
     ReentrancyGuardUpgradeable
 {
-    using ERDSafeMath128 for uint128;
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -451,16 +449,14 @@ contract StabilityPool is
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
         _requireUserHasTrove(msg.sender);
-        _requireUserHasCollGain(msg.sender);
+        (
+            address[] memory collaterals,
+            uint256[] memory depositorCollateralGains
+        ) = _requireUserHasCollGain(msg.sender);
 
         ICommunityIssuance communityIssuanceCached = communityIssuance;
         // do nothing
         _trigger(communityIssuanceCached);
-
-        (
-            address[] memory collaterals,
-            uint256[] memory depositorCollateralGains
-        ) = getDepositorCollateralGain(msg.sender);
 
         uint256 compoundedUSDEDeposit = getCompoundedUSDEDeposit(msg.sender);
         uint256 USDELoss = initialDeposit.sub(compoundedUSDEDeposit); // Needed only for event log
@@ -756,7 +752,7 @@ contract StabilityPool is
 
         // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
         if (newProductFactor == 0) {
-            currentEpoch = currentEpochCached.add(1);
+            currentEpoch = currentEpochCached + 1;
             emit EpochUpdated(currentEpoch);
             currentScale = 0;
             emit ScaleUpdated(currentScale);
@@ -769,7 +765,7 @@ contract StabilityPool is
             newP = currentP.mul(newProductFactor).mul(SCALE_FACTOR).div(
                 DECIMAL_PRECISION
             );
-            currentScale = currentScaleCached.add(1);
+            currentScale = currentScaleCached + 1;
             emit ScaleUpdated(currentScale);
         } else {
             newP = currentP.mul(newProductFactor).div(DECIMAL_PRECISION);
@@ -877,7 +873,7 @@ contract StabilityPool is
             scaleSnapshot
         ].sub(S_Snapshot);
         uint256 secondPortion = epochToScaleToSum[collateral][epochSnapshot][
-            scaleSnapshot.add(1)
+            scaleSnapshot + 1
         ].div(SCALE_FACTOR);
 
         return
@@ -963,7 +959,7 @@ contract StabilityPool is
         uint256 firstPortion = epochToScaleToG[epochSnapshot][scaleSnapshot]
             .sub(G_Snapshot);
         uint256 secondPortion = epochToScaleToG[epochSnapshot][
-            scaleSnapshot.add(1)
+            scaleSnapshot + 1
         ].div(SCALE_FACTOR);
 
         uint256 gain = initialStake
@@ -1036,7 +1032,7 @@ contract StabilityPool is
         }
 
         uint256 compoundedStake;
-        uint128 scaleDiff = currentScale.sub(scaleSnapshot);
+        uint128 scaleDiff = currentScale - scaleSnapshot;
 
         /* Compute the compounded stake. If a scale change in P was made during the stake's lifetime,
          * account for it. If more than one scale change was made, then the stake has decreased by a factor of
@@ -1351,10 +1347,14 @@ contract StabilityPool is
         }
     }
 
-    function _requireUserHasCollGain(address _depositor) internal view {
-        (, uint256[] memory collateralGains) = getDepositorCollateralGain(
-            _depositor
-        );
+    function _requireUserHasCollGain(
+        address _depositor
+    )
+        internal
+        view
+        returns (address[] memory collaterals, uint256[] memory collateralGains)
+    {
+        (collaterals, collateralGains) = getDepositorCollateralGain(_depositor);
         if (!ERDMath._arrayIsNonzero(collateralGains)) {
             revert Errors.SP_ZeroGain();
         }

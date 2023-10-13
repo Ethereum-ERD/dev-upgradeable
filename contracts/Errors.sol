@@ -48,7 +48,6 @@ library Errors {
     //contract specific errors
     error BO_TroveIsActive(); // 'Trove is active'
     error BO_DebtIncreaseZero(); // 'Debt increase requires non-zero debtChange'
-    error BO_RepaidExceedDebt(); // 'Amount repaid must not be larger than the Trove's debt'
     error BO_NotPermitInRM(); // 'Operation not permitted during Recovery Mode'
     error BO_LengthZero(); // 'Length is zero'
     error BO_ETHNotActiveOrPaused(); // 'ETH does not active or is paused'

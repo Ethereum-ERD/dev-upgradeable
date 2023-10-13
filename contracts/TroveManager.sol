@@ -997,7 +997,8 @@ contract TroveManager is
         }
         baseRate = newBaseRate;
         emit BaseRateUpdated(newBaseRate);
-        _updateLastFeeOpTime();
+        uint256 timePassed = block.timestamp.sub(lastFeeOperationTime);
+        _updateLastFeeOpTime(timePassed);
     }
 
     function getRedemptionRate() public view override returns (uint256) {
@@ -1010,7 +1011,8 @@ contract TroveManager is
         override
         returns (uint256)
     {
-        return _calcRedemptionRate(calcDecayedBaseRate());
+        (uint256 decayedBaseRate, ) = calcDecayedBaseRate();
+        return _calcRedemptionRate(decayedBaseRate);
     }
 
     function _calcRedemptionRate(
@@ -1078,7 +1080,8 @@ contract TroveManager is
         override
         returns (uint256)
     {
-        return _calcBorrowingRate(calcDecayedBaseRate());
+        (uint256 decayedBaseRate, ) = calcDecayedBaseRate();
+        return _calcBorrowingRate(decayedBaseRate);
     }
 
     function _calcBorrowingRate(
@@ -1114,7 +1117,7 @@ contract TroveManager is
     function decayBaseRateFromBorrowing() external override {
         _requireCallerIsBorrowerOperations();
 
-        uint256 decayedBaseRate = calcDecayedBaseRate();
+        (uint256 decayedBaseRate, uint256 timePassed) = calcDecayedBaseRate();
         // assert(decayedBaseRate <= DECIMAL_PRECISION); // The baseRate can decay to 0
         if (decayedBaseRate > DECIMAL_PRECISION) {
             revert Errors.TM_BadValue();
@@ -1122,35 +1125,32 @@ contract TroveManager is
 
         baseRate = decayedBaseRate;
         emit BaseRateUpdated(decayedBaseRate);
-        _updateLastFeeOpTime();
+        _updateLastFeeOpTime(timePassed);
     }
 
     // --- Internal fee functions ---
 
     // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
-    function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp.sub(lastFeeOperationTime);
-
-        if (timePassed >= SECONDS_IN_ONE_MINUTE) {
+    function _updateLastFeeOpTime(uint256 _timePassed) internal {
+        if (_timePassed >= SECONDS_IN_ONE_MINUTE) {
             lastFeeOperationTime = block.timestamp;
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }
 
-    function calcDecayedBaseRate() public view override returns (uint256) {
-        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
+    function calcDecayedBaseRate()
+        public
+        view
+        override
+        returns (uint256, uint256)
+    {
+        uint256 timePassed = block.timestamp.sub(lastFeeOperationTime);
+        uint256 minutesPassed = timePassed.div(SECONDS_IN_ONE_MINUTE);
         uint256 decayFactor = ERDMath._decPow(
             MINUTE_DECAY_FACTOR,
             minutesPassed
         );
-        return baseRate.mul(decayFactor).div(DECIMAL_PRECISION);
-    }
-
-    function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
-        return
-            (block.timestamp.sub(lastFeeOperationTime)).div(
-                SECONDS_IN_ONE_MINUTE
-            );
+        return (baseRate.mul(decayFactor).div(DECIMAL_PRECISION), timePassed);
     }
 
     // --- 'require' wrapper functions ---
@@ -1208,8 +1208,8 @@ contract TroveManager is
 
     function getTroveStatus(
         address _borrower
-    ) external view override returns (uint256) {
-        return uint256(Troves[_borrower].status);
+    ) external view override returns (DataTypes.Status) {
+        return Troves[_borrower].status;
     }
 
     function getTroveDebt(

@@ -143,7 +143,7 @@ contract USDEToken is ERC20Upgradeable, IUSDEToken {
     }
 
     function burn(address _account, uint256 _amount) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsBOorSPorTMR();
         _burn(_account, _amount);
     }
 
@@ -305,10 +305,9 @@ contract USDEToken is ERC20Upgradeable, IUSDEToken {
         );
     }
 
-    function _requireCallerIsBOorTroveMorSP() internal view {
+    function _requireCallerIsBOorSPorTMR() internal view {
         require(
             msg.sender == borrowerOperationsAddress ||
-                msg.sender == troveManagerAddress ||
                 msg.sender == stabilityPoolAddress ||
                 msg.sender == troveManagerRedemptionsAddress,
             "USDE: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"

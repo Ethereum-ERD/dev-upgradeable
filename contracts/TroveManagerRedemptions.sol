@@ -147,13 +147,14 @@ contract TroveManagerRedemptions is
             .troveManager
             .getCurrentTroveAmounts(borrower);
         singleRedemption.collaterals = collAssets;
+        uint256 gas = USDE_GAS_COMPENSATION();
         {
             debt = contractsCache.troveManager.getTroveDebt(borrower);
             // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
 
             singleRedemption.USDELot = ERDMath._min(
                 _maxUSDEamount,
-                debt.sub(USDE_GAS_COMPENSATION())
+                debt.sub(gas)
             );
 
             // Get the collLot of equivalent value in USD
@@ -177,7 +178,6 @@ contract TroveManagerRedemptions is
             price
         );
 
-        uint256 gas = USDE_GAS_COMPENSATION();
         if (newDebt == gas) {
             // No debt left in the Trove (except for the liquidation reserve), therefore the trove gets closed
             troveManager.removeStake(borrower);
@@ -553,7 +553,7 @@ contract TroveManagerRedemptions is
         uint256 _collDrawnValue,
         uint256 _totalUSDESupply
     ) internal returns (uint256) {
-        uint256 decayedBaseRate = troveManager.calcDecayedBaseRate();
+        (uint256 decayedBaseRate, ) = troveManager.calcDecayedBaseRate();
         /* Convert the drawn collateral back to USDE at face value rate (1 USDE:1 USD), in order to get
          * the fraction of total supply that was redeemed at face value. */
         uint256 redeemedUSDEFraction = _collDrawnValue

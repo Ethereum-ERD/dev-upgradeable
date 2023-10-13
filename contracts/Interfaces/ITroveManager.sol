@@ -26,12 +26,7 @@ interface ITroveManager is IERDBase {
         address _collateralManagerAddress
     ) external;
 
-    // function initTrove(address _troveDebtAddress, address _interestRateAddress)
-    //     external;
-
     function stabilityPool() external view returns (IStabilityPool);
-
-    // function usdeToken() external view returns (IUSDEToken);
 
     function getCollateralSupport() external view returns (address[] memory);
 
@@ -127,7 +122,7 @@ interface ITroveManager is IERDBase {
 
     function decayBaseRateFromBorrowing() external;
 
-    function getTroveStatus(address _borrower) external view returns (uint256);
+    function getTroveStatus(address _borrower) external view returns (DataTypes.Status);
 
     function getTroveDebt(address _borrower) external view returns (uint256);
 
@@ -182,7 +177,7 @@ interface ITroveManager is IERDBase {
 
     function checkRecoveryMode(uint256 _price) external view returns (bool);
 
-    function calcDecayedBaseRate() external view returns (uint256);
+    function calcDecayedBaseRate() external view returns (uint256, uint256);
 
     function movePendingTroveRewardsToActivePool(
         IActivePool activePool,

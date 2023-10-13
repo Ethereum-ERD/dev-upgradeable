@@ -154,7 +154,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         address[] memory _collaterals,
         uint256[] memory _amounts
     ) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsBOorTroveMorSPorTMLorTMR();
         uint256 collLen = _collaterals.length;
         address collateral;
         uint256 amount;
@@ -190,7 +190,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         address[] memory _collaterals,
         uint256[] memory _amounts
     ) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsBOorTroveMorSPorTMLorTMR();
         uint256 collLen = _collaterals.length;
         address collateral;
         uint256 amount;
@@ -272,7 +272,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     }
 
     function decreaseUSDEDebt(uint256 _amount) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsBOorTroveMorSPorTMLorTMR();
         uint256 amount = _amount < USDEDebt ? _amount : USDEDebt;
         USDEDebt = USDEDebt.sub(amount);
         emit ActivePoolUSDEDebtUpdated(USDEDebt);
@@ -286,7 +286,7 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         }
     }
 
-    function _requireCallerIsBOorTroveMorSP() internal view {
+    function _requireCallerIsBOorTroveMorSPorTMLorTMR() internal view {
         if (
             msg.sender != borrowerOperationsAddress &&
             msg.sender != troveManagerAddress &&
