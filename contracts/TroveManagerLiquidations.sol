@@ -7,6 +7,7 @@ import "./Interfaces/ITroveManagerLiquidations.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./TroveManagerDataTypes.sol";
 import "./DataTypes.sol";
+import "./Errors.sol";
 
 contract TroveManagerLiquidations is
     TroveManagerDataTypes,
@@ -345,7 +346,9 @@ contract TroveManagerLiquidations is
                 vars.pendingDebtReward,
                 vars.pendingCollRewards
             );
-            assert(_USDEInStabPool != 0);
+            if (_USDEInStabPool == 0) {
+                revert Errors.TML_NoUSDEInSP();
+            }
 
             troveManager.removeStake(_borrower);
 
@@ -611,10 +614,9 @@ contract TroveManagerLiquidations is
             );
         }
 
-        require(
-            totals.totalDebtInSequence > 0,
-            "TroveManagerLiquidations: nothing to liquidate"
-        );
+        if (totals.totalDebtInSequence == 0) {
+            revert Errors.TML_NothingToLiquidate();
+        }
 
         // Move liquidated collateral and USDE to the appropriate pools
         stabilityPoolCached.offset(
@@ -856,14 +858,13 @@ contract TroveManagerLiquidations is
      * Attempt to liquidate a custom list of troves provided by the caller.
      */
     function batchLiquidateTroves(
-        address[] memory _troveArray,
+        address[] calldata _troveArray,
         address _liquidator
     ) public override {
         _requireCallerisTroveManager();
-        require(
-            _troveArray.length != 0,
-            "TroveManagerLiquidations: Calldata address array must not be empty"
-        );
+        if (_troveArray.length == 0) {
+            revert Errors.TML_EmptyArray();
+        }
 
         ICollateralManager collateralManagerCached = collateralManager;
         IActivePool activePoolCached = activePool;
@@ -899,10 +900,9 @@ contract TroveManagerLiquidations is
             );
         }
 
-        require(
-            totals.totalDebtInSequence > 0,
-            "TroveManagerLiquidations: nothing to liquidate"
-        );
+        if (totals.totalDebtInSequence == 0) {
+            revert Errors.TML_NothingToLiquidate();
+        }
 
         vars.collaterals = collateralManagerCached.getCollateralSupport();
         // Move liquidated collateral and USDE to the appropriate pools
@@ -1254,13 +1254,14 @@ contract TroveManagerLiquidations is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "TroveManager: Contract check error");
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerisTroveManager() internal view {
-        require(
-            msg.sender == address(troveManager),
-            "TroveManagerLiquidations: Caller not TM"
-        );
+        if (msg.sender != address(troveManager)) {
+            revert Errors.Caller_NotTM();
+        }
     }
 }

@@ -21,8 +21,8 @@ contract CollateralManager is
 {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
-    error BadValue();
-    error AtLeastOneCollateral();
+    // error BadValue();
+    // error AtLeastOneCollateral();
 
     // During bootsrap period redemptions are not allowed
     uint256 public BOOTSTRAP_PERIOD;
@@ -126,9 +126,11 @@ contract CollateralManager is
         _requireIsContract(_collateral);
         _requireIsContract(_oracle);
         _requireIsContract(_eTokenAddress);
-        require(!getIsSupport(_collateral), Errors.CM_COLL_EXISTS);
+        if (getIsSupport(_collateral)) {
+            revert Errors.CM_CollExists();
+        }
         if (_ratio > DECIMAL_PRECISION) {
-            revert BadValue();
+            revert Errors.CM_BadValue();
         }
 
         collateralParams[_collateral] = DataTypes.CollateralParams(
@@ -140,17 +142,18 @@ contract CollateralManager is
         );
         collateralSupport.push(_collateral);
         collateralsCount = collateralsCount.add(1);
-        assert(collateralsCount < 16);
+        if (collateralsCount > 15) {
+            revert Errors.CM_BadValue();
+        }
     }
 
     function removeCollateral(address _collateral) external override onlyOwner {
         address collAddress = _collateral;
-        require(
-            getIsSupport(collAddress) && !getIsActive(collAddress),
-            Errors.CM_COLL_MUST_PAUSED
-        );
+        if (!getIsSupport(collAddress) || getIsActive(collAddress)) {
+            revert Errors.CM_CollNotPaused();
+        }
         if (collateralsCount == 1) {
-            revert AtLeastOneCollateral();
+            revert Errors.CM_NoMoreColl();
         }
         address collateral;
         uint256 i = getIndex(collAddress);
@@ -175,7 +178,9 @@ contract CollateralManager is
         _requireCollIsActive(_collateral);
         uint256 oldIndex = getIndex(_collateral);
         uint256 newIndex = _newIndex;
-        assert(newIndex != oldIndex && newIndex < collateralsCount);
+        if (newIndex == oldIndex || newIndex >= collateralsCount) {
+            revert Errors.CM_BadValue();
+        }
         if (newIndex < oldIndex) {
             uint256 tmpIndex = oldIndex;
             uint256 gap = oldIndex - newIndex;
@@ -229,7 +234,9 @@ contract CollateralManager is
     }
 
     function _setStatus(address _collateral, uint256 _num) internal {
-        require(getIsSupport(_collateral), Errors.CM_COLL_NOT_SUPPORT);
+        if (!getIsSupport(_collateral)) {
+            revert Errors.CM_CollNotSupported();
+        }
         collateralParams[_collateral].status = DataTypes.CollStatus(_num);
     }
 
@@ -257,7 +264,7 @@ contract CollateralManager is
     ) public override onlyOwner {
         _requireCollIsActive(_collateral);
         if (_ratio > DECIMAL_PRECISION) {
-            revert BadValue();
+            revert Errors.CM_BadValue();
         }
         collateralParams[_collateral].ratio = _ratio;
     }
@@ -299,7 +306,9 @@ contract CollateralManager is
         returns (uint256 totalValue, uint256[] memory values)
     {
         uint256 collLen = _collaterals.length;
-        require(collLen == _amounts.length, Errors.LENGTH_MISMATCH);
+        if (collLen != _amounts.length) {
+            revert Errors.LengthMismatch();
+        }
         values = new uint256[](collLen);
         uint256 i = 0;
         for (; i < collLen; ) {
@@ -468,10 +477,9 @@ contract CollateralManager is
         address[] memory _collaterals,
         uint256[] memory _amounts
     ) external override returns (uint256[] memory) {
-        require(
-            msg.sender == troveManagerRedemptionsAddress,
-            Errors.CALLER_NOT_TMR
-        );
+        if (msg.sender != troveManagerRedemptionsAddress) {
+            revert Errors.Caller_NotTMR();
+        }
         uint256 collLen = _collaterals.length;
         uint256[] memory shares = new uint256[](collLen);
         uint256 i = 0;
@@ -689,7 +697,9 @@ contract CollateralManager is
     function getIndex(
         address _collateral
     ) public view override returns (uint256) {
-        require(getIsSupport(_collateral), Errors.CM_COLL_NOT_SUPPORT);
+        if (!getIsSupport(_collateral)) {
+            revert Errors.CM_CollNotSupported();
+        }
         return collateralParams[_collateral].index;
     }
 
@@ -702,27 +712,36 @@ contract CollateralManager is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCollIsActive(address _collateral) internal view {
-        require(getIsActive(_collateral), Errors.CM_COLL_NOT_ACTIVE);
+        if (!getIsActive(_collateral)) {
+            revert Errors.CM_CollNotActive();
+        }
     }
 
     function _requireCollIsBO() internal view {
-        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
+        if (msg.sender != borrowerOperationsAddress) {
+            revert Errors.Caller_NotBO();
+        }
     }
 
     function _requireCollIsTM() internal view {
-        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
+        if (msg.sender != address(troveManager)) {
+            revert Errors.Caller_NotTM();
+        }
     }
 
     function _requireCollIsBOOrTM() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == address(troveManager),
-            Errors.CALLER_NOT_BO_TM
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != address(troveManager)
+        ) {
+            revert Errors.Caller_NotBOOrTM();
+        }
     }
 
     function adjustColls(
@@ -765,7 +784,7 @@ contract CollateralManager is
 
     function setGasCompensation(uint256 _gas) external override onlyOwner {
         if (_gas > MIN_NET_DEBT) {
-            revert BadValue();
+            revert Errors.CM_BadValue();
         }
         bool increase;
         uint256 offset;
@@ -785,7 +804,7 @@ contract CollateralManager is
 
     function setMinDebt(uint256 _minDebt) external override onlyOwner {
         if (_minDebt < USDE_GAS_COMPENSATION) {
-            revert BadValue();
+            revert Errors.CM_BadValue();
         }
         MIN_NET_DEBT = _minDebt;
     }

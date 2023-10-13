@@ -227,7 +227,9 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 amount = _amount;
         WETH.withdraw(amount);
         (bool success, ) = _to.call{value: amount}("");
-        require(success, Errors.SEND_ETH_FAILED);
+        if (!success) {
+            revert Errors.SendETHFailed();
+        }
         emit ActivePoolCollBalanceUpdated(
             collateral,
             IERC20Upgradeable(collateral).balanceOf(address(this))
@@ -245,7 +247,9 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
         uint256 balance = IERC20Upgradeable(_collateral).balanceOf(
             address(this)
         );
-        require(balance > 0, Errors.BALANCE_EQUAL_ZERO);
+        if (balance == 0) {
+            revert Errors.ZeroValue();
+        }
         emit ActivePoolCollBalanceUpdated(_collateral, balance);
         emit CollateralSent(_to, _collateral, _amount);
     }
@@ -277,25 +281,29 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsBOorTroveMorSP() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == troveManagerAddress ||
-                msg.sender == stabilityPoolAddress ||
-                msg.sender == troveManagerRedemptionsAddress ||
-                msg.sender == troveManagerLiquidationsAddress,
-            Errors.CALLER_NOT_BO_TM_SP_TMR_TML
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != troveManagerAddress &&
+            msg.sender != stabilityPoolAddress &&
+            msg.sender != troveManagerRedemptionsAddress &&
+            msg.sender != troveManagerLiquidationsAddress
+        ) {
+            revert Errors.Caller_NotBOOrTMOrSPOrTMLOrTMR();
+        }
     }
 
     function _requireCallerIsBOorTroveM() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == troveManagerAddress,
-            Errors.CALLER_NOT_BO_TM
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != troveManagerAddress
+        ) {
+            revert Errors.Caller_NotBOOrTM();
+        }
     }
 }

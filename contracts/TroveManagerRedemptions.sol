@@ -396,10 +396,12 @@ contract TroveManagerRedemptions is
 
         totals.totalUSDESupplyAtStart = getEntireSystemDebt();
         // Confirm redeemer's balance is less than total USDE supply
-        assert(
-            contractsCache.usdeToken.balanceOf(_redeemer) <=
-                totals.totalUSDESupplyAtStart
-        );
+        if (
+            contractsCache.usdeToken.balanceOf(_redeemer) >
+            totals.totalUSDESupplyAtStart
+        ) {
+            revert Errors.TMR_BadUSDEBalance();
+        }
 
         totals.remainingUSDE = USDEamount;
         address currentBorrower;
@@ -470,10 +472,9 @@ contract TroveManagerRedemptions is
             );
             currentBorrower = nextUserToCheck;
         }
-        require(
-            ERDMath._arrayIsNonzero(totals.totalCollDrawns),
-            Errors.TMR_CANNOT_REDEEM
-        );
+        if (!ERDMath._arrayIsNonzero(totals.totalCollDrawns)) {
+            revert Errors.TMR_CannotRedeem();
+        }
 
         (uint256 totalCollDrawnValue, ) = contractsCache
             .collateralManager
@@ -587,7 +588,9 @@ contract TroveManagerRedemptions is
         uint256 redemptionFee = _redemptionRate.mul(_collDrawnValue).div(
             DECIMAL_PRECISION
         );
-        require(redemptionFee < _collDrawnValue, Errors.TM_FEE_TOO_HIGH);
+        if (redemptionFee >= _collDrawnValue) {
+            revert Errors.TM_BadFee();
+        }
         uint256 length = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](length);
         uint256 i = 0;
@@ -597,7 +600,9 @@ contract TroveManagerRedemptions is
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
                     DECIMAL_PRECISION
                 );
-                require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
+                if (redemptionFees[i] >= collDrawn) {
+                    revert Errors.TM_BadFee();
+                }
             }
             unchecked {
                 ++i;
@@ -617,11 +622,15 @@ contract TroveManagerRedemptions is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerisTroveManager() internal view {
-        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
+        if (msg.sender != address(troveManager)) {
+            revert Errors.Caller_NotTM();
+        }
     }
 
     function _requireUSDEBalanceCoversRedemption(
@@ -629,39 +638,52 @@ contract TroveManagerRedemptions is
         address _redeemer,
         uint256 _amount
     ) internal view {
-        require(
-            _usdeToken.balanceOf(_redeemer) >= _amount,
-            Errors.TMR_REDEMPTION_AMOUNT_EXCEED_BALANCE
-        );
+        if (_usdeToken.balanceOf(_redeemer) < _amount) {
+            revert Errors.TMR_RedemptionAmountExceedBalance();
+        }
     }
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, Errors.TMR_AMOUNT_MUST_GT_ZERO);
+        if (_amount == 0) {
+            revert Errors.TMR_ZeroValue();
+        }
     }
 
     function _requireTCRoverMCR(uint256 _price) internal view {
-        require(
-            troveManager.getTCR(_price) >= MCR(),
-            Errors.TMR_CANNOT_REDEEM_WHEN_TCR_LT_MCR
-        );
+        if (troveManager.getTCR(_price) < MCR()) {
+            revert Errors.TMR_CannotRedeemWhenTCRLessThanMCR();
+        }
     }
 
     function _requireAfterBootstrapPeriod() internal view {
-        require(
-            block.timestamp >=
-                deploymentStartTime.add(collateralManager.getBootstrapPeriod()),
-            Errors.TMR_REDEMPTION_NOT_ALLOWED
-        );
+        if (
+            block.timestamp <
+            deploymentStartTime.add(collateralManager.getBootstrapPeriod())
+        ) {
+            revert Errors.TMR_RedemptionNotAllowed();
+        }
     }
 
     function _requireValidMaxFeePercentage(
         uint256 _maxFeePercentage
     ) internal view {
-        require(
-            _maxFeePercentage >= collateralManager.getRedemptionFeeFloor() &&
-                _maxFeePercentage <= DECIMAL_PRECISION,
-            Errors.BO_MAX_FEE_NOT_IN_RANGE
-        );
+        if (
+            _maxFeePercentage < collateralManager.getRedemptionFeeFloor() ||
+            _maxFeePercentage > DECIMAL_PRECISION
+        ) {
+            revert Errors.TMR_BadMaxFee();
+        }
+    }
+
+    function _requireUserAcceptsFee(
+        uint256 _fee,
+        uint256 _amount,
+        uint256 _maxFeePercentage
+    ) internal pure {
+        uint256 feePercentage = _fee.mul(DECIMAL_PRECISION).div(_amount);
+        if (feePercentage > _maxFeePercentage) {
+            revert Errors.TMR_BadMaxFee();
+        }
     }
 
     function updateTroves(
@@ -670,11 +692,12 @@ contract TroveManagerRedemptions is
         address[] calldata _upperHints
     ) external override {
         uint256 lowerHintsLen = _lowerHints.length;
-        require(
-            lowerHintsLen == _upperHints.length &&
-                lowerHintsLen == _borrowers.length,
-            Errors.LENGTH_MISMATCH
-        );
+        if (
+            lowerHintsLen != _upperHints.length ||
+            lowerHintsLen != _borrowers.length
+        ) {
+            revert Errors.LengthMismatch();
+        }
         uint256 price = priceFeed.fetchPrice();
         collateralManager.priceUpdate();
         uint256 i = 0;

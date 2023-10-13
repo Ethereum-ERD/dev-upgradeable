@@ -230,7 +230,9 @@ contract StabilityPool is
     bool internal paused;
 
     modifier whenNotPaused() {
-        require(!paused, Errors.PROTOCOL_PAUSED);
+        if (paused) {
+            revert Errors.ProtocolPaused();
+        }
         _;
     }
 
@@ -604,10 +606,9 @@ contract StabilityPool is
         address _collateral,
         uint256 _value
     ) external onlyOwner {
-        require(
-            collateralManager.getIsActive(_collateral),
-            Errors.CM_COLL_NOT_ACTIVE
-        );
+        if (!collateralManager.getIsActive(_collateral)) {
+            revert Errors.CM_CollNotActive();
+        }
         IERC20Upgradeable(_collateral).safeIncreaseAllowance(
             address(borrowerOperations),
             _value
@@ -618,10 +619,9 @@ contract StabilityPool is
         address _collateral,
         uint256 _value
     ) external onlyOwner {
-        require(
-            collateralManager.getIsSupport(_collateral),
-            Errors.CM_COLL_NOT_SUPPORT
-        );
+        if (!collateralManager.getIsSupport(_collateral)) {
+            revert Errors.CM_CollNotSupported();
+        }
         IERC20Upgradeable(_collateral).safeDecreaseAllowance(
             address(borrowerOperations),
             _value
@@ -658,7 +658,9 @@ contract StabilityPool is
         collGainPerUnitStakeds = new uint256[](collateralsLen);
         uint256 currentP = P;
 
-        assert(_debtToOffset <= _totalUSDEDeposits);
+        if (_debtToOffset > _totalUSDEDeposits) {
+            revert Errors.SP_BadDebtOffset();
+        }
         if (_debtToOffset == _totalUSDEDeposits) {
             USDELossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
             lastUSDELossError_Offset = 0;
@@ -711,10 +713,9 @@ contract StabilityPool is
         uint256 currentP = P;
         uint256 newP;
 
-        require(
-            _USDELossPerUnitStaked <= DECIMAL_PRECISION,
-            Errors.SP_USDE_LOSS_LT_1
-        );
+        if (_USDELossPerUnitStaked > DECIMAL_PRECISION) {
+            revert Errors.SP_USDELossGreaterThanOne();
+        }
         /*
          * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool USDE in the liquidation.
          * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - USDELossPerUnitStaked)
@@ -774,7 +775,9 @@ contract StabilityPool is
             newP = currentP.mul(newProductFactor).div(DECIMAL_PRECISION);
         }
 
-        require(newP != 0, Errors.SP_EQ_ZERO);
+        if (newP == 0) {
+            revert Errors.SP_ZeroValue();
+        }
         P = newP;
 
         emit P_Updated(newP);
@@ -1088,7 +1091,9 @@ contract StabilityPool is
         uint256[] memory _amounts
     ) internal {
         uint256 collateralLen = _collaterals.length;
-        require(collateralLen == _amounts.length, Errors.LENGTH_MISMATCH);
+        if (collateralLen != _amounts.length) {
+            revert Errors.LengthMismatch();
+        }
 
         uint256 amount;
         address collateral;
@@ -1121,7 +1126,9 @@ contract StabilityPool is
         if (hasETH) {
             WETH.withdraw(ETHAmount);
             (bool success, ) = msg.sender.call{value: ETHAmount}("");
-            require(success, Errors.SEND_ETH_FAILED);
+            if (!success) {
+                revert Errors.SendETHFailed();
+            }
             emit StabilityPoolCollBalanceUpdated(
                 address(WETH),
                 IERC20Upgradeable(address(WETH)).balanceOf(address(this))
@@ -1176,9 +1183,9 @@ contract StabilityPool is
         deposits[depositor].initialValue = _newValue;
         uint256 collateralLen = collaterals.length;
         uint256[] memory currentSs = new uint256[](collateralLen);
+        uint256 i = 0;
         if (_newValue == 0) {
             delete deposits[depositor].frontEndTag;
-            uint256 i = 0;
             for (; i < collateralLen; ) {
                 depositSnapshots[depositor].S[collaterals[i]] = 0;
                 unchecked {
@@ -1199,7 +1206,6 @@ contract StabilityPool is
         // Get S and G for the current epoch and current scale
         address collateral;
         uint256 currentSColl;
-        uint256 i = 0;
         for (; i < collateralLen; ) {
             collateral = collaterals[i];
             currentSColl = epochToScaleToSum[collateral][currentEpochCached][
@@ -1287,22 +1293,27 @@ contract StabilityPool is
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(msg.sender == address(activePool), Errors.CALLER_NOT_AP);
+        if (msg.sender != address(activePool)) {
+            revert Errors.Caller_NotAP();
+        }
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
+        if (msg.sender != address(troveManager)) {
+            revert Errors.Caller_NotTM();
+        }
     }
 
     function _requireCallerIsTroveML() internal view {
-        require(
-            msg.sender == troveManagerLiquidationsAddress,
-            Errors.CALLER_NOT_TML
-        );
+        if (msg.sender != troveManagerLiquidationsAddress) {
+            revert Errors.Caller_NotTML();
+        }
     }
 
     function _requireNoUnderCollateralizedTroves() internal {
@@ -1310,59 +1321,62 @@ contract StabilityPool is
         collateralManager.priceUpdate();
         address lowestTrove = sortedTroves.getLast();
         uint256 ICR = troveManager.getCurrentICR(lowestTrove, price);
-        require(
-            ICR >= collateralManager.getMCR(),
-            Errors.SP_CANNOT_WITHDRAW_WITH_ICR_LT_MCR
-        );
+        if (ICR < collateralManager.getMCR()) {
+            revert Errors.SP_WithdrawWithICRLessThanMCR();
+        }
     }
 
     function _requireUserHasDeposit(uint256 _initialDeposit) internal pure {
-        require(_initialDeposit > 0, Errors.SP_ZERO_DEPOSIT);
+        if (_initialDeposit == 0) {
+            revert Errors.SP_NoDepositBefore();
+        }
     }
 
     function _requireUserHasNoDeposit(address _address) internal view {
         uint256 initialDeposit = deposits[_address].initialValue;
-        require(initialDeposit == 0, Errors.SP_MUST_NO_DEPOSIT);
+        if (initialDeposit > 0) {
+            revert Errors.SP_HadDeposit();
+        }
     }
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
-        require(_amount > 0, Errors.SP_AMOUNT_ZERO);
+        if (_amount == 0) {
+            revert Errors.SP_ZeroValue();
+        }
     }
 
     function _requireUserHasTrove(address _depositor) internal view {
-        require(
-            troveManager.getTroveStatus(_depositor) == 1,
-            Errors.SP_CALLER_NO_ACTIVE_TROVE
-        );
+        if (troveManager.getTroveStatus(_depositor) != 1) {
+            revert Errors.SP_CallerTroveNotActive();
+        }
     }
 
     function _requireUserHasCollGain(address _depositor) internal view {
         (, uint256[] memory collateralGains) = getDepositorCollateralGain(
             _depositor
         );
-        require(ERDMath._arrayIsNonzero(collateralGains), Errors.SP_ZERO_GAIN);
+        if (!ERDMath._arrayIsNonzero(collateralGains)) {
+            revert Errors.SP_ZeroGain();
+        }
     }
 
     function _requireFrontEndNotRegistered(address _address) internal view {
-        require(
-            !frontEnds[_address].registered,
-            Errors.SP_ALREADY_REGISTERED_FRONT_END
-        );
+        if (frontEnds[_address].registered) {
+            revert Errors.SP_AlreadyRegistered();
+        }
     }
 
     function _requireFrontEndIsRegisteredOrZero(
         address _address
     ) internal view {
-        require(
-            frontEnds[_address].registered || _address == address(0),
-            Errors.SP_MUST_REGISTERED_OR_ZERO_ADDRESS
-        );
+        if (!(frontEnds[_address].registered || _address == address(0))) {
+            revert Errors.SP_MustRegisteredOrZeroAddress();
+        }
     }
 
     function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
-        require(
-            _kickbackRate <= DECIMAL_PRECISION,
-            Errors.SP_KICKBACK_RATE_NOT_IN_RANGE
-        );
+        if (_kickbackRate > DECIMAL_PRECISION) {
+            revert Errors.SP_BadKickbackRate();
+        }
     }
 }

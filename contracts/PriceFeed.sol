@@ -9,6 +9,7 @@ import "./Interfaces/ITellorCaller.sol";
 import "./Dependencies/AggregatorV3Interface.sol";
 import "./Dependencies/BaseMath.sol";
 import "./Dependencies/ERDMath.sol";
+import "./Errors.sol";
 
 /*
  * PriceFeed for mainnet deployment, to be connected to Chainlink's live ETH:USD aggregator reference
@@ -114,11 +115,12 @@ contract PriceFeed is OwnableUpgradeable, BaseMath, IPriceFeed {
                 chainlinkResponse.decimals
             );
 
-        require(
-            !_chainlinkIsBroken(chainlinkResponse, prevChainlinkResponse) &&
-                !_chainlinkIsFrozen(chainlinkResponse),
-            "PriceFeed: Chainlink must be working and current"
-        );
+        if (
+            _chainlinkIsBroken(chainlinkResponse, prevChainlinkResponse) ||
+            _chainlinkIsFrozen(chainlinkResponse)
+        ) {
+            revert Errors.PF_ChainlinkNotWork();
+        }
 
         _storeChainlinkPrice(chainlinkResponse);
     }
@@ -697,6 +699,8 @@ contract PriceFeed is OwnableUpgradeable, BaseMath, IPriceFeed {
     }
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "PriceFeed: Contract check error");
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 }

@@ -13,6 +13,7 @@ import "./Interfaces/ITroveInterestRateStrategy.sol";
 import "./Interfaces/IPriceFeed.sol";
 import "./Dependencies/WadRayMath.sol";
 import "./DataTypes.sol";
+import "./Errors.sol";
 
 contract TroveInterestRateStrategy is
     OwnableUpgradeable,
@@ -54,7 +55,7 @@ contract TroveInterestRateStrategy is
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize(
         uint256 _OCR,
         uint256 _baseBorrowRate,
@@ -173,6 +174,8 @@ contract TroveInterestRateStrategy is
     }
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.code.length > 0, "IS_NOT_CONTRACT");
+        if (_contract.code.length == 0) {
+            revert Errors.NotContract();
+        }
     }
 }

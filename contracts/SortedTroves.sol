@@ -76,7 +76,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     constructor() {
         _disableInitializers();
     }
-    
+
     function initialize() public initializer {
         __Ownable_init();
     }
@@ -87,7 +87,9 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         address _troveManagerRedemptionsAddress,
         address _borrowerOperationsAddress
     ) external override onlyOwner {
-        require(_size > 0, Errors.ST_SIZE_ZERO);
+        if (_size == 0) {
+            revert Errors.ST_SizeZero();
+        }
         _requireIsContract(_troveManagerAddress);
         _requireIsContract(_troveManagerRedemptionsAddress);
         _requireIsContract(_borrowerOperationsAddress);
@@ -130,13 +132,21 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         address _nextId
     ) internal {
         // List must not be full
-        require(!isFull(), Errors.ST_LIST_FULL);
+        if (isFull()) {
+            revert Errors.ST_ListFull();
+        }
         // List must not already contain node
-        require(!contains(_id), Errors.ST_LIST_CONTAINS_NODE);
+        if (contains(_id)) {
+            revert Errors.ST_ListContainsNode();
+        }
         // Node id must not be null
-        require(_id != address(0), Errors.ST_ID_ZERO);
+        if (_id == address(0)) {
+            revert Errors.ST_ZeroAddress();
+        }
         // NICR must be non-zero
-        require(_ICR > 0, Errors.ST_ICR_NEGATIVE);
+        if (_ICR == 0) {
+            revert Errors.ST_ZeroICR();
+        }
 
         address prevId = _prevId;
         address nextId = _nextId;
@@ -187,7 +197,9 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
      */
     function _remove(address _id) internal {
         // List must contain the node
-        require(contains(_id), Errors.ST_LIST_NOT_CONTAIN_NODE);
+        if (!contains(_id)) {
+            revert Errors.ST_ListNotContainsNode();
+        }
 
         if (data.size > 1) {
             // List contains more than a single node
@@ -242,9 +254,13 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     ) external override {
         _requireCallerIsBOorTMR();
         // List must contain the node
-        require(contains(_id), Errors.ST_LIST_NOT_CONTAIN_NODE);
+        if (!contains(_id)) {
+            revert Errors.ST_ListNotContainsNode();
+        }
         // NICR must be non-zero
-        require(_newICR > 0, Errors.ST_ICR_NEGATIVE);
+        if (_newICR == 0) {
+            revert Errors.ST_ZeroICR();
+        }
 
         // Remove node from the list
         _remove(_id);
@@ -471,22 +487,29 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == address(troveManager), Errors.CALLER_NOT_TM);
+        if (msg.sender != address(troveManager)) {
+            revert Errors.Caller_NotTM();
+        }
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
+        if (msg.sender != borrowerOperationsAddress) {
+            revert Errors.Caller_NotBO();
+        }
     }
 
     function _requireCallerIsBOorTMR() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == troveManagerRedemptionsAddress,
-            Errors.CALLER_NOT_BO_TMR
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != troveManagerRedemptionsAddress
+        ) {
+            revert Errors.Caller_NotBOOrTMR();
+        }
     }
 }

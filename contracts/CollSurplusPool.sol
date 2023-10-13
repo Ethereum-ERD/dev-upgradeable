@@ -161,7 +161,9 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         uint256 length = collaterals.length;
         Info storage info = balances[_account];
         bool flag = info.hasBalance;
-        require(flag, Errors.CSP_CANNOT_CLAIM);
+        if (!flag) {
+            revert Errors.CSP_CannotClaim();
+        }
         info.hasBalance = false;
         uint256[] memory claimableColls = new uint256[](length);
         uint256[] memory shares = new uint256[](length);
@@ -195,7 +197,9 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
         if (hasETH) {
             IWETH(wethAddress).withdraw(ETHAmount);
             (bool success, ) = _account.call{value: ETHAmount}("");
-            require(success, Errors.SEND_ETH_FAILED);
+            if (!success) {
+                revert Errors.SendETHFailed();
+            }
         }
         emit CollateralSent(_account, shares, claimableColls);
     }
@@ -203,22 +207,29 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
+        if (msg.sender != borrowerOperationsAddress) {
+            revert Errors.Caller_NotBO();
+        }
     }
 
     function _requireCallerIsTMLorTMR() internal view {
-        require(
-            msg.sender == troveManagerLiquidationsAddress ||
-                msg.sender == troveManagerRedemptionsAddress,
-            Errors.CALLER_NOT_TML_TMR
-        );
+        if (
+            msg.sender != troveManagerLiquidationsAddress &&
+            msg.sender != troveManagerRedemptionsAddress
+        ) {
+            revert Errors.Caller_NotTMLOrTMR();
+        }
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(msg.sender == activePoolAddress, Errors.CALLER_NOT_AP);
+        if (msg.sender != activePoolAddress) {
+            revert Errors.Caller_NotAP();
+        }
     }
 }

@@ -11,7 +11,6 @@ import "./Interfaces/ITroveDebt.sol";
 import "./TroveManagerDataTypes.sol";
 import "./TroveLogic.sol";
 import "./Dependencies/WadRayMath.sol";
-import "./DataTypes.sol";
 
 contract TroveManager is
     TroveManagerDataTypes,
@@ -88,7 +87,9 @@ contract TroveManager is
     bool internal paused;
 
     modifier whenNotPaused() {
-        require(!paused, Errors.PROTOCOL_PAUSED);
+        if (paused) {
+            revert Errors.ProtocolPaused();
+        }
         _;
     }
 
@@ -225,7 +226,7 @@ contract TroveManager is
      * Attempt to liquidate a custom list of troves provided by the caller.
      */
     function batchLiquidateTroves(
-        address[] memory _troveArray
+        address[] calldata _troveArray
     ) public override whenNotPaused nonReentrant {
         troveManagerLiquidations.batchLiquidateTroves(_troveArray, msg.sender);
     }
@@ -704,7 +705,9 @@ contract TroveManager is
              * - When we close or liquidate a trove, we redistribute the pending rewards, so if all troves were closed/liquidated,
              * rewards would’ve been emptied and totalCollateralSnapshot would be zero too.
              */
-            assert(totalStakesSnapshot[_collateral] > 0);
+            if (totalStakesSnapshot[_collateral] == 0) {
+                revert Errors.TM_ZeroValue();
+            }
             stake = _share.mul(totalStakesSnapshot[_collateral]).div(
                 totalCollateralSnapshot[_collateral]
             );
@@ -810,16 +813,17 @@ contract TroveManager is
         address _borrower,
         DataTypes.Status closedStatus
     ) internal {
-        assert(
-            closedStatus != DataTypes.Status.nonExistent &&
-                closedStatus != DataTypes.Status.active
-        );
+        if (
+            closedStatus == DataTypes.Status.nonExistent ||
+            closedStatus == DataTypes.Status.active
+        ) {
+            revert Errors.TM_BadClosedStatus();
+        }
 
         uint256 TroveOwnersArrayLength = TroveOwners.length;
-        require(
-            TroveOwnersArrayLength > 1 && sortedTroves.getSize() > 1,
-            Errors.TM_ONLY_ONE_TROVE_IN_SYSTEM
-        );
+        if (TroveOwnersArrayLength <= 1 || sortedTroves.getSize() <= 1) {
+            revert Errors.TM_OnlyOneTroveLeft();
+        }
         uint256 oldDebt = troveDebt.balanceOf(_borrower);
 
         troveData.updateState();
@@ -927,16 +931,20 @@ contract TroveManager is
     ) internal {
         DataTypes.Status troveStatus = Troves[_borrower].status;
         // It’s set in caller function `_closeTrove`
-        assert(
-            troveStatus != DataTypes.Status.nonExistent &&
-                troveStatus != DataTypes.Status.active
-        );
+        if (
+            troveStatus == DataTypes.Status.nonExistent ||
+            troveStatus == DataTypes.Status.active
+        ) {
+            revert Errors.TM_BadClosedStatus();
+        }
 
         uint128 index = Troves[_borrower].arrayIndex;
         uint256 length = TroveOwnersArrayLength;
         uint256 idxLast = length.sub(1);
 
-        assert(index <= idxLast);
+        if (index > idxLast) {
+            revert Errors.TM_BadValue();
+        }
 
         address addressToMove = TroveOwners[idxLast];
 
@@ -948,7 +956,9 @@ contract TroveManager is
     }
 
     function setFactor(uint256 _factor) external override {
-        require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
+        if (msg.sender != address(collateralManager)) {
+            revert Errors.Caller_NotCM();
+        }
         troveData.factor = _factor;
     }
 
@@ -982,7 +992,9 @@ contract TroveManager is
     function updateBaseRate(uint256 newBaseRate) external override {
         _requireCallerIsTMR();
         //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
-        require(newBaseRate != 0, Errors.TM_BASERATE_MUST_GT_ZERO);
+        if (newBaseRate == 0) {
+            revert Errors.TM_BadBaseRate();
+        }
         baseRate = newBaseRate;
         emit BaseRateUpdated(newBaseRate);
         _updateLastFeeOpTime();
@@ -1031,7 +1043,9 @@ contract TroveManager is
         uint256 redemptionFee = _redemptionRate.mul(_collDrawn).div(
             DECIMAL_PRECISION
         );
-        require(redemptionFee < _collDrawn, Errors.TM_FEE_TOO_HIGH);
+        if (redemptionFee >= _collDrawn) {
+            revert Errors.TM_BadFee();
+        }
         uint256 collsLen = _collDrawns.length;
         uint256[] memory redemptionFees = new uint256[](collsLen);
         uint256 i = 0;
@@ -1041,7 +1055,9 @@ contract TroveManager is
                 redemptionFees[i] = _redemptionRate.mul(collDrawn).div(
                     DECIMAL_PRECISION
                 );
-                require(redemptionFees[i] < collDrawn, Errors.TM_FEE_TOO_HIGH);
+                if (redemptionFees[i] >= collDrawn) {
+                    revert Errors.TM_BadFee();
+                }
             }
             unchecked {
                 ++i;
@@ -1099,7 +1115,10 @@ contract TroveManager is
         _requireCallerIsBorrowerOperations();
 
         uint256 decayedBaseRate = calcDecayedBaseRate();
-        assert(decayedBaseRate <= DECIMAL_PRECISION); // The baseRate can decay to 0
+        // assert(decayedBaseRate <= DECIMAL_PRECISION); // The baseRate can decay to 0
+        if (decayedBaseRate > DECIMAL_PRECISION) {
+            revert Errors.TM_BadValue();
+        }
 
         baseRate = decayedBaseRate;
         emit BaseRateUpdated(decayedBaseRate);
@@ -1137,49 +1156,52 @@ contract TroveManager is
     // --- 'require' wrapper functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, Errors.CALLER_NOT_BO);
+        if (msg.sender != borrowerOperationsAddress) {
+            revert Errors.Caller_NotBO();
+        }
     }
 
     function _requireCallerIsBOorTMLorTMR() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == address(troveManagerLiquidations) ||
-                msg.sender == address(troveManagerRedemptions),
-            Errors.CALLER_NOT_BO_TML_TMR
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != address(troveManagerLiquidations) &&
+            msg.sender != address(troveManagerRedemptions)
+        ) {
+            revert Errors.Caller_NotBOOrTMLOrTMR();
+        }
     }
 
     function _requireCallerIsBOorTMR() internal view {
-        require(
-            msg.sender == borrowerOperationsAddress ||
-                msg.sender == address(troveManagerRedemptions),
-            Errors.CALLER_NOT_BO_TMR
-        );
+        if (
+            msg.sender != borrowerOperationsAddress &&
+            msg.sender != address(troveManagerRedemptions)
+        ) {
+            revert Errors.Caller_NotBOOrTMR();
+        }
     }
 
     function _requireCallerIsTML() internal view {
-        require(
-            msg.sender == address(troveManagerLiquidations),
-            Errors.CALLER_NOT_TML
-        );
+        if (msg.sender != address(troveManagerLiquidations)) {
+            revert Errors.Caller_NotTML();
+        }
     }
 
     function _requireCallerIsTMR() internal view {
-        require(
-            msg.sender == address(troveManagerRedemptions),
-            Errors.CALLER_NOT_TMR
-        );
+        if (msg.sender != address(troveManagerRedemptions)) {
+            revert Errors.Caller_NotTMR();
+        }
     }
 
     function _requireTroveIsActive(address _borrower) internal view {
-        require(
-            Troves[_borrower].status == DataTypes.Status.active,
-            Errors.TM_TROVE_NOT_EXIST_OR_CLOSED
-        );
+        if (Troves[_borrower].status != DataTypes.Status.active) {
+            revert Errors.TM_TroveNotExistOrClosed();
+        }
     }
 
     // --- Trove property getters ---

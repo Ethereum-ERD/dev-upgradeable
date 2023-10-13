@@ -92,7 +92,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     {
         _recipient;
         _amount;
-        revert("TRANSFER_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function transferFrom(
@@ -108,7 +108,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
         _sender;
         _recipient;
         _amount;
-        revert("TRANSFER_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function allowance(
@@ -123,7 +123,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     {
         _owner;
         _spender;
-        revert("ALLOWANCE_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function approve(
@@ -137,7 +137,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     {
         _spender;
         _amount;
-        revert("APPROVAL_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function increaseAllowance(
@@ -146,7 +146,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) public virtual override(ERC20Upgradeable) returns (bool) {
         _spender;
         _addedValue;
-        revert("ALLOWANCE_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function decreaseAllowance(
@@ -155,7 +155,7 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     ) public virtual override(ERC20Upgradeable) returns (bool) {
         _spender;
         _subtractedValue;
-        revert("ALLOWANCE_NOT_SUPPORTED");
+        revert Errors.ET_NotSupported();
     }
 
     function sharesOf(address _account) public view override returns (uint256) {
@@ -199,10 +199,14 @@ contract EToken is ERC20Upgradeable, OwnableUpgradeable, IEToken {
     }
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.code.length > 0, Errors.IS_NOT_CONTRACT);
+        if (_contract.code.length == 0) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireIsCollateralManager() internal view {
-        require(msg.sender == address(collateralManager), Errors.CALLER_NOT_CM);
+        if (msg.sender != address(collateralManager)) {
+            revert Errors.Caller_NotCM();
+        }
     }
 }

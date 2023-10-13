@@ -76,7 +76,9 @@ library TroveLogic {
     function updateInterestRates(DataTypes.TroveData storage trove) internal {
         uint256 newRate = ITroveInterestRateStrategy(trove.interestRateAddress)
             .calculateInterestRates();
-        require(newRate <= type(uint128).max, Errors.TM_BORROW_RATE_OVERFLOW);
+        if (newRate > type(uint128).max) {
+            revert Errors.TM_BadBorrowRate();
+        }
 
         trove.currentBorrowRate = uint128(newRate);
 
@@ -149,10 +151,9 @@ library TroveLogic {
                     timestamp
                 );
             newBorrowIndex = cumulatedBorrowInterest.rayMul(borrowIndex);
-            require(
-                newBorrowIndex <= type(uint128).max,
-                Errors.TM_BORROW_INDEX_OVERFLOW
-            );
+            if (newBorrowIndex > type(uint128).max) {
+                revert Errors.TM_BadBorrowIndex();
+            }
             trove.borrowIndex = uint128(newBorrowIndex);
         }
 

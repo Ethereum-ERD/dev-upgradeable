@@ -8,6 +8,7 @@ import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ICollateralManager.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/ERDBase.sol";
+import "./Errors.sol";
 
 contract HintHelpers is ERDBase, OwnableUpgradeable {
     string public constant NAME = "HintHelpers";
@@ -243,6 +244,8 @@ contract HintHelpers is ERDBase, OwnableUpgradeable {
     }
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), "HintHelpers: Contract check error");
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 }

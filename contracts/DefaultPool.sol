@@ -146,14 +146,20 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
     // --- 'require' functions ---
 
     function _requireIsContract(address _contract) internal view {
-        require(_contract.isContract(), Errors.IS_NOT_CONTRACT);
+        if (!_contract.isContract()) {
+            revert Errors.NotContract();
+        }
     }
 
     function _requireCallerIsActivePool() internal view {
-        require(msg.sender == activePoolAddress, Errors.CALLER_NOT_AP);
+        if (msg.sender != activePoolAddress) {
+            revert Errors.Caller_NotAP();
+        }
     }
 
     function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == troveManagerAddress, Errors.CALLER_NOT_TM);
+        if (msg.sender != troveManagerAddress) {
+            revert Errors.Caller_NotTM();
+        }
     }
 }

@@ -23,7 +23,9 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
      * @dev Only troveManager can call functions marked by this modifier
      **/
     modifier onlyTroveManager() {
-        require(_msgSender() == address(troveManager), Errors.CALLER_NOT_TM);
+        if (_msgSender() != address(troveManager)) {
+            revert Errors.Caller_NotCM();
+        }
         _;
     }
 
@@ -37,6 +39,7 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
     }
 
     function setAddress(address _troveManagerAddress) external onlyOwner {
+        _requireIsContract(_troveManagerAddress);
         troveManager = ITroveManager(_troveManagerAddress);
     }
 
@@ -57,7 +60,9 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
     ) external override onlyTroveManager returns (bool) {
         uint256 previousBalance = _balances[user];
         uint256 amountScaled = amount.rayDiv(index);
-        require(amountScaled != 0, Errors.TD_AMOUNT_ZERO);
+        if (amountScaled == 0) {
+            revert Errors.TD_ZeroValue();
+        }
 
         uint256 oldTotalSupply = _totalSupply;
         _totalSupply = oldTotalSupply.add(amountScaled);
@@ -74,7 +79,9 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
         uint256 index
     ) external override onlyTroveManager {
         uint256 amountScaled = amount.rayDiv(index);
-        require(amountScaled != 0, Errors.TD_AMOUNT_ZERO);
+        if (amountScaled == 0) {
+            revert Errors.TD_ZeroValue();
+        }
 
         uint256 oldTotalSupply = _totalSupply;
         _totalSupply = oldTotalSupply.sub(amountScaled);
@@ -125,5 +132,11 @@ contract TroveDebt is ContextUpgradeable, OwnableUpgradeable, ITroveDebt {
         address user
     ) external view override returns (uint256, uint256) {
         return (_balances[user], _totalSupply);
+    }
+
+    function _requireIsContract(address _contract) internal view {
+        if (_contract.code.length == 0) {
+            revert Errors.NotContract();
+        }
     }
 }
