@@ -21,8 +21,6 @@ contract ERDBase is BaseMath, IERDBase {
 
     uint256 public constant _100pct = 1000000000000000000; // 1e18 == 100%
 
-    // uint constant public MIN_NET_DEBT = 0;
-
     uint256 public constant PERCENT_DIVISOR = 200; // dividing by 200 yields 0.5%
 
     IActivePool public activePool;

@@ -48,9 +48,6 @@ import "./DataTypes.sol";
  * and accumulated ETH/wrapperETH gains over time, as liquidations occur, using just these two variables P and S. When depositors join the
  * Stability Pool, they get a snapshot of the latest P and S: P_t and S_t, respectively.
  *
- * The formula for a depositor's accumulated ETH/wrapperETH gain is derived here:
- * https://github.com/liquity/dev/blob/main/packages/contracts/mathProofs/Scalable%20Compounding%20Stability%20Pool%20Deposits.pdf
- *
  * For a given deposit d_t, the ratio P/P_t tells us the factor by which a deposit has decreased since it joined the Stability Pool,
  * and the term d_t * (S - S_t)/P_t gives us the deposit's total accumulated ETH/wrapperETH gain.
  *
@@ -142,8 +139,6 @@ import "./DataTypes.sol";
  * All deposits earn a share of the issued GAIN in proportion to the deposit as a share of total deposits. The GAIN earned
  * by a given deposit, is split between the depositor and the front end through which the deposit was made, based on the front end's kickbackRate.
  *
- * Please see the system Readme for an overview:
- * https://github.com/
  *
  * We use the same mathematical product-sum approach to track GAIN gains for depositors, where 'G' is the sum corresponding to GAIN gains.
  * The product P (and snapshot P_t) is re-used, as the ratio P/P_t tracks a deposit's depletion due to liquidations.

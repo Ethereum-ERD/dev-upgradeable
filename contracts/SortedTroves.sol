@@ -61,8 +61,8 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
 
     // Information for the list
     struct Data {
-        address head; // Head of the list. Also the node in the list with the largest NICR
-        address tail; // Tail of the list. Also the node in the list with the smallest NICR
+        address head; // Head of the list. Also the node in the list with the largest ICR
+        address tail; // Tail of the list. Also the node in the list with the smallest ICR
         uint256 maxSize; // Maximum size of the list
         uint256 size; // Current size of the list
         mapping(address => Node) nodes; // Track the corresponding ids for each node in the list
@@ -110,7 +110,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     /*
      * @dev Add a node to the list
      * @param _id Node's id
-     * @param _NICR Node's NICR
+     * @param _ICR Node's ICR
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
@@ -143,7 +143,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         if (_id == address(0)) {
             revert Errors.ST_ZeroAddress();
         }
-        // NICR must be non-zero
+        // ICR must be non-zero
         if (_ICR == 0) {
             revert Errors.ST_ZeroICR();
         }
@@ -240,9 +240,9 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Re-insert the node at a new position, based on its new NICR
+     * @dev Re-insert the node at a new position, based on its new ICR
      * @param _id Node's id
-     * @param _newNICR Node's new NICR
+     * @param _newICR Node's new ICR
      * @param _prevId Id of previous node for the new insert position
      * @param _nextId Id of next node for the new insert position
      */
@@ -257,7 +257,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         if (!contains(_id)) {
             revert Errors.ST_ListNotContainsNode();
         }
-        // NICR must be non-zero
+        // ICR must be non-zero
         if (_newICR == 0) {
             revert Errors.ST_ZeroICR();
         }
@@ -304,21 +304,21 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Returns the first node in the list (node with the largest NICR)
+     * @dev Returns the first node in the list (node with the largest ICR)
      */
     function getFirst() external view override returns (address) {
         return data.head;
     }
 
     /*
-     * @dev Returns the last node in the list (node with the smallest NICR)
+     * @dev Returns the last node in the list (node with the smallest ICR)
      */
     function getLast() external view override returns (address) {
         return data.tail;
     }
 
     /*
-     * @dev Returns the next node (with a smaller NICR) in the list for a given node
+     * @dev Returns the next node (with a smaller ICR) in the list for a given node
      * @param _id Node's id
      */
     function getNext(address _id) external view override returns (address) {
@@ -326,7 +326,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Returns the previous node (with a larger NICR) in the list for a given node
+     * @dev Returns the previous node (with a larger ICR) in the list for a given node
      * @param _id Node's id
      */
     function getPrev(address _id) external view override returns (address) {
@@ -341,8 +341,8 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Check if a pair of nodes is a valid insertion point for a new node with the given NICR
-     * @param _NICR Node's NICR
+     * @dev Check if a pair of nodes is a valid insertion point for a new node with the given ICR
+     * @param _ICR Node's ICR
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
@@ -369,7 +369,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
             // `(_prevId, null)` is a valid insert position if `_prevId` is the tail of the list
             return data.tail == _prevId && _ICR <= data.nodes[_prevId].ICR;
         } else {
-            // `(_prevId, _nextId)` is a valid insert position if they are adjacent nodes and `_NICR` falls between the two nodes' NICRs
+            // `(_prevId, _nextId)` is a valid insert position if they are adjacent nodes and `_ICR` falls between the two nodes' ICRs
             return
                 data.nodes[_prevId].nextId == _nextId &&
                 data.nodes[_prevId].ICR >= _ICR &&
@@ -406,7 +406,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Ascend the list (smaller NICRs to larger NICRs) to find a valid insert position
+     * @dev Ascend the list (smaller ICRs to larger ICRs) to find a valid insert position
      * @param _ICR Node's ICR
      * @param _startId Id of node to start ascending the list from
      */
@@ -434,7 +434,7 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
     }
 
     /*
-     * @dev Find the insert position for a new node with the given NICR
+     * @dev Find the insert position for a new node with the given ICR
      * @param _ICR Node's ICR
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
@@ -457,14 +457,14 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
 
         if (prevId != address(0)) {
             if (!contains(prevId) || _ICR > data.nodes[prevId].ICR) {
-                // `prevId` does not exist anymore or now has a smaller NICR than the given NICR
+                // `prevId` does not exist anymore or now has a smaller ICR than the given ICR
                 prevId = address(0);
             }
         }
 
         if (nextId != address(0)) {
             if (!contains(nextId) || _ICR < data.nodes[nextId].ICR) {
-                // `nextId` does not exist anymore or now has a larger NICR than the given NICR
+                // `nextId` does not exist anymore or now has a larger ICR than the given ICR
                 nextId = address(0);
             }
         }
@@ -475,10 +475,8 @@ contract SortedTroves is OwnableUpgradeable, ISortedTroves {
         } else if (prevId == address(0)) {
             // No `prevId` for hint - ascend list starting from `nextId`
             return _ascendList(_ICR, nextId);
-        } else if (nextId == address(0)) {
-            // No `nextId` for hint - descend list starting from `prevId`
-            return _descendList(_ICR, prevId);
         } else {
+            // No `nextId` for hint - descend list starting from `prevId`
             // Descend list starting from `prevId`
             return _descendList(_ICR, prevId);
         }
