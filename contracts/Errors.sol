@@ -30,6 +30,7 @@ library Errors {
     error LengthMismatch(); // 'Length mismatch'
     error SendETHFailed();
     error ZeroValue();
+    error OwnershipCannotBeRenounced();
 
     error Caller_NotAP(); // 'Caller is not ActivePool'
     error Caller_NotBO(); // 'Caller is not BorrowerOperations'

@@ -123,6 +123,10 @@ contract TroveInterestRateStrategy is
         baseBorrowRate = _baseRate;
     }
 
+    function renounceOwnership() public view override onlyOwner {
+        revert Errors.OwnershipCannotBeRenounced();
+    }
+
     struct CalcInterestRatesLocalVars {
         uint256 currentBorrowRate;
         uint256 utilizationRate;

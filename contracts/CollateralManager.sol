@@ -844,6 +844,10 @@ contract CollateralManager is
         troveManager.setFactor(_factor);
     }
 
+    function renounceOwnership() public view override onlyOwner {
+        revert Errors.OwnershipCannotBeRenounced();
+    }
+
     function getFactor() external view override returns (uint256) {
         return troveManager.getFactor();
     }
