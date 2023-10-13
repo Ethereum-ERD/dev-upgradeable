@@ -18,6 +18,7 @@ import "./Interfaces/ICommunityIssuance.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/ERDBase.sol";
 import "./Errors.sol";
+import "./DataTypes.sol";
 
 /*
  * The Stability Pool holds USDE tokens deposited by Stability Pool depositors.
@@ -1342,7 +1343,9 @@ contract StabilityPool is
     }
 
     function _requireUserHasTrove(address _depositor) internal view {
-        if (troveManager.getTroveStatus(_depositor) != 1) {
+        if (
+            troveManager.getTroveStatus(_depositor) != DataTypes.Status.active
+        ) {
             revert Errors.SP_CallerTroveNotActive();
         }
     }
