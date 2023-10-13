@@ -140,7 +140,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: collTopUp
         }),
-        "18") // An operation that would result in ICR < MCR is not permitted
+        "ICRLessThanMCR") // An operation that would result in ICR < MCR is not permitted
     })
 
     it("addColl(): Increases the activePool ETH and raw ether balance by correct amount", async () => {
@@ -446,7 +446,7 @@ contract('BorrowerOperations', async accounts => {
       } catch (error) {
         // Trove does not exist or is closed
         assert.include(error.message, "revert")
-        assert.include(error.message, "15")
+        assert.include(error.message, "TroveNotExistOrClosed")
       }
 
       // Price drops
@@ -468,7 +468,7 @@ contract('BorrowerOperations', async accounts => {
       } catch (error) {
         // Trove does not exist or is closed
         assert.include(error.message, "revert")
-        assert.include(error.message, "15")
+        assert.include(error.message, "TroveNotExistOrClosed")
       }
     })
 
@@ -524,7 +524,7 @@ contract('BorrowerOperations', async accounts => {
       await assertRevert(borrowerOperations.withdrawColl([contracts.weth.address], [collWithdrawal], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: alice
         }),
-        "18") // An operation that would result in ICR < MCR is not permitted
+        "ICRLessThanMCR") // An operation that would result in ICR < MCR is not permitted
     })
 
     // reverts when calling address does not have active trove  
@@ -624,7 +624,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.withdrawColl([contracts.weth.address], [toBN(carolColl)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: carol
         }),
-        '18'
+        'ICRLessThanMCR'
       ) // An operation that would result in ICR < MCR is not permitted
 
       // Bob attempts to withdraw 1 wei more than his collateral
@@ -730,7 +730,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.withdrawColl([contracts.weth.address], [toBN(aliceColl)], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: alice
         }),
-        '18'
+        'ICRLessThanMCR'
       ) // An operation that would result in ICR < MCR is not permitted
     })
 
@@ -992,7 +992,7 @@ contract('BorrowerOperations', async accounts => {
       await assertRevert(borrowerOperations.withdrawUSDE(USDEwithdrawal, alice, alice, th._100pct, {
           from: alice
         }),
-        "18") // An operation that would result in ICR < MCR is not permitted
+        "ICRLessThanMCR") // An operation that would result in ICR < MCR is not permitted
     })
 
     it("withdrawUSDE(): decays a non-zero base rate", async () => {
@@ -1105,10 +1105,10 @@ contract('BorrowerOperations', async accounts => {
       // Max fee percentage must be between 0.25% and 100%
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, dec(2, 18), {
         from: A
-      }), "24")
+      }), "BadMaxFee")
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, '1000000000000000001', {
         from: A
-      }), "24")
+      }), "BadMaxFee")
     })
 
     it("withdrawUSDE(): reverts if max fee < 0.25% in Normal mode", async () => {
@@ -1143,13 +1143,13 @@ contract('BorrowerOperations', async accounts => {
       // Max fee percentage must be between 0.25% and 100%
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, 0, {
         from: A
-      }), "24")
+      }), "BadMaxFee")
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, 1, {
         from: A
-      }), "24")
+      }), "BadMaxFee")
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, '1999999999999999', {
         from: A
-      }), "24")
+      }), "BadMaxFee")
     })
 
     it("withdrawUSDE(): reverts if fee exceeds max fee percentage", async () => {
@@ -1210,28 +1210,28 @@ contract('BorrowerOperations', async accounts => {
       const lessThan8pct = '7999999999999999'
       await assertRevert(borrowerOperations.withdrawUSDE(dec(3, 18), A, A, lessThan8pct, {
         from: A
-      }), "Fee exceeded provided maximum")
+      }), "BadMaxFee")
 
       baseRate = await troveManager.baseRate() // expect 8% base rate
       assert.equal(baseRate, dec(8, 16))
       // Attempt with maxFee 1%
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, dec(1, 16), {
         from: B
-      }), "Fee exceeded provided maximum")
+      }), "BadMaxFee")
 
       baseRate = await troveManager.baseRate() // expect 8% base rate
       assert.equal(baseRate, dec(8, 16))
       // // Attempt with maxFee 3.754%
       // await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, dec(3754, 13), {
       //   from: C
-      // }), "Fee exceeded provided maximum")
+      // }), "BadMaxFee")
 
       baseRate = await troveManager.baseRate() // expect 8% base rate
       assert.equal(baseRate, dec(8, 16))
       // Attempt with maxFee 0.25%%
       await assertRevert(borrowerOperations.withdrawUSDE(dec(1, 18), A, A, dec(25, 14), {
         from: D
-      }), "Fee exceeded provided maximum")
+      }), "BadMaxFee")
     })
 
     it("withdrawUSDE(): succeeds when fee is less than max fee percentage", async () => {
@@ -2124,7 +2124,7 @@ contract('BorrowerOperations', async accounts => {
       await assertRevert(borrowerOperations.repayUSDE(USDERepayment, alice, alice, {
           from: alice
         }),
-        "18") // An operation that would result in ICR < MCR is not permitted
+        "ICRLessThanMCR") // An operation that would result in ICR < MCR is not permitted
     })
 
     it("repayUSDE(): Succeeds when it would leave trove with net debt >= minimum net debt", async () => {
@@ -2174,7 +2174,7 @@ contract('BorrowerOperations', async accounts => {
       const repayTxAPromise = borrowerOperations.repayUSDE(toBN(dec(1, 13)), A, A, {
         from: A
       })
-      await assertRevert(repayTxAPromise, "21") // Trove's net debt must be greater than minimum
+      await assertRevert(repayTxAPromise, "TroveDebtLessThanMinDebt") // Trove's net debt must be greater than minimum
     })
 
     it("repayUSDE(): reverts when calling address does not have active trove", async () => {
@@ -2441,7 +2441,7 @@ contract('BorrowerOperations', async accounts => {
         from: B
       })
       // Caller doesnt have enough USDE to make repayment
-      await assertRevert(repayUSDEPromise_B, "22")
+      await assertRevert(repayUSDEPromise_B, "USDEInsufficient")
     })
 
     // --- adjustTrove() ---
@@ -2475,7 +2475,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: toBN(collTopUp)
         }),
-        "18") // An operation that would result in ICR < MCR is not permitted
+        "ICRLessThanMCR") // An operation that would result in ICR < MCR is not permitted
     })
 
     it("adjustTrove(): reverts if max fee < 0.25% in Normal mode", async () => {
@@ -2492,28 +2492,28 @@ contract('BorrowerOperations', async accounts => {
           from: A,
           value: toBN(dec(2, 16))
         }),
-        "24"
+        "BadMaxFee"
       )
       await assertRevert(
         borrowerOperations.adjustTrove([], [], [], [], 1, toBN(dec(1, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(2, 16))
         }),
-        "24"
+        "BadMaxFee"
       )
       await assertRevert(
         borrowerOperations.adjustTrove([], [], [], [], '2499999999999999', toBN(dec(1, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(2, 16))
         }),
-        "24"
+        "BadMaxFee"
       )
       await assertRevert(
         borrowerOperations.adjustTrove([], [], [], [], toBN(dec(1, 19)), toBN(dec(1, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(2, 16))
         }),
-        "24"
+        "BadMaxFee"
       )
       // allow normal fee ceiling between 0.75% and 100%
       const tx = await borrowerOperations.adjustTrove([], [], [], [], toBN(dec(1, 17)), toBN(dec(1, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
@@ -3220,7 +3220,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.adjustTrove([], [], [contracts.weth.address], [toBN(1)], th._100pct, dec(5000, 18), false, alice, alice, {
           from: alice
         }),
-        "16") // Collateral withdrawal not permitted Recovery Mode
+        "CollsCannotWithdrawalInRM") // Collateral withdrawal not permitted Recovery Mode
     })
 
     it("adjustTrove(): debt increase that would leave ICR < 150% reverts in Recovery Mode", async () => {
@@ -3263,7 +3263,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: collIncrease
         }),
-        "19") // Operation must leave trove with ICR >= CCR
+        "ICRLessThanCCR") // Operation must leave trove with ICR >= CCR
     })
 
     it("adjustTrove(): debt increase that would reduce the ICR reverts in Recovery Mode", async () => {
@@ -3311,7 +3311,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: aliceCollIncrease
         }),
-        "17") // Cannot decrease your Trove's ICR in Recovery Mode
+        "CannotDecreaseICRInRM") // Cannot decrease your Trove's ICR in Recovery Mode
 
       //--- Bob with ICR < 130% tries to reduce his ICR ---
 
@@ -3335,7 +3335,7 @@ contract('BorrowerOperations', async accounts => {
           from: bob,
           bobCollIncrease
         }),
-        "19") // Operation must leave trove with ICR >= CCR
+        "ICRLessThanCCR") // Operation must leave trove with ICR >= CCR
     })
 
     it("adjustTrove(): A trove with ICR < CCR in Recovery Mode can adjust their trove to ICR > CCR", async () => {
@@ -4281,7 +4281,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.adjustTrove([], [], [contracts.weth.address], [aliceColl[0]], th._100pct, aliceDebt, true, alice, alice, {
           from: alice
         }),
-        '18'
+        'ICRLessThanMCR'
       ) // An operation that would result in ICR < MCR is not permitted
     })
 
@@ -4305,7 +4305,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, true, alice, alice, {
           from: alice
         }),
-        '2') // Debt increase requires non-zero debtChange
+        'DebtIncreaseZero') // Debt increase requires non-zero debtChange
     })
 
     it("adjustTrove(): Reverts if requested coll withdrawal and ether is sent", async () => {
@@ -4329,7 +4329,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: dec(3, 'ether')
         }),
-        '13') // Cannot withdraw and add Coll
+        'CollsCannotContainWETH') // Cannot withdraw and add Coll
     })
 
     it("adjustTrove(): Reverts if it's zero adjustment", async () => {
@@ -4345,7 +4345,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, false, alice, alice, {
           from: alice
         }),
-        '14') // There must be either a collateral change or a debt change
+        'MustChangeForCollOrDebt') // There must be either a collateral change or a debt change
     })
 
     it("adjustTrove(): Reverts if requested coll withdrawal is greater than trove's collateral", async () => {
@@ -4441,7 +4441,7 @@ contract('BorrowerOperations', async accounts => {
         borrowerOperations.closeTrove({
           from: alice
         }),
-        "20"
+        "TCRLessThanCCR"
       ) // An operation that would result in TCR < CCR is not permitted
     })
 
@@ -4520,7 +4520,7 @@ contract('BorrowerOperations', async accounts => {
       // Carol attempts to close her trove during Recovery Mode
       await assertRevert(borrowerOperations.closeTrove({
         from: carol
-      }), "4") // Operation not permitted during Recovery Mode
+      }), "NotPermitInRM") // Operation not permitted during Recovery Mode
     })
 
     it("closeTrove(): reverts when trove is the only one in the system", async () => {
@@ -4547,7 +4547,7 @@ contract('BorrowerOperations', async accounts => {
       // Only one trove in the system
       await assertRevert(borrowerOperations.closeTrove({
         from: alice
-      }), "84")
+      }), "OnlyOneTroveLeft")
     })
 
     it("closeTrove(): reduces a Trove's collateral to zero", async () => {
@@ -5354,7 +5354,7 @@ contract('BorrowerOperations', async accounts => {
       })
 
       // Check closing trove reverts
-      await assertRevert(closeTrovePromise_B, "22") // Caller doesnt have enough USDE to make repayment
+      await assertRevert(closeTrovePromise_B, "USDEInsufficient") // Caller doesnt have enough USDE to make repayment
     })
 
     // --- openTrove() ---
@@ -5712,14 +5712,14 @@ contract('BorrowerOperations', async accounts => {
           from: A,
           value: toBN(dec(1000, 'ether'))
         }),
-        "24") // Max fee percentage must be between 0.75% and 100%
+        "BadMaxFee") // Max fee percentage must be between 0.75% and 100%
 
       await assertRevert(
         contracts.borrowerOperations.openTrove([], [], '1000000000000000001', dec(20000, 18), B, B, ZERO_ADDRESS, {
           from: B,
           value: toBN(dec(100, 'ether'))
         }),
-        "24") // Max fee percentage must be between 0.75% and 100%
+        "BadMaxFee") // Max fee percentage must be between 0.75% and 100%
     })
 
     it("openTrove(): reverts if max fee < 0.25% in Normal mode", async () => {
@@ -5728,19 +5728,19 @@ contract('BorrowerOperations', async accounts => {
           from: A,
           value: toBN(dec(1200, 'ether'))
         }),
-        "24") // Max fee percentage must be between 0.25% and 100%
+        "BadMaxFee") // Max fee percentage must be between 0.25% and 100%
       await assertRevert(
         contracts.borrowerOperations.openTrove([], [], 1, dec(195000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1000, 'ether'))
         }),
-        "24") // Max fee percentage must be between 0.25% and 100%
+        "BadMaxFee") // Max fee percentage must be between 0.25% and 100%
       await assertRevert(
         contracts.borrowerOperations.openTrove([], [], '1999999999999999', dec(195000, 18), A, A, ZERO_ADDRESS, {
           from: A,
           value: toBN(dec(1200, 'ether'))
         }),
-        "24") // Max fee percentage must be between 0.25% and 100%
+        "BadMaxFee") // Max fee percentage must be between 0.25% and 100%
     })
 
     it("openTrove(): reverts if fee exceeds max fee percentage", async () => { // new fee system takes into account the max of ether and debt. 
@@ -5783,7 +5783,7 @@ contract('BorrowerOperations', async accounts => {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
-        "Fee exceeded provided maximum")
+        "BadMaxFee")
 
       borrowingRate = await troveManager.getBorrowingRate() // expect 2.5% rate
       assert.equal(borrowingRate.toString(), dec(25, 15))
@@ -5794,7 +5794,7 @@ contract('BorrowerOperations', async accounts => {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
-        "Fee exceeded provided maximum")
+        "BadMaxFee")
 
       // borrowingRate = await troveManager.getBorrowingRate() // expect 2.5% rate
       // assert.equal(borrowingRate.toString(), dec(25, 15))
@@ -5804,7 +5804,7 @@ contract('BorrowerOperations', async accounts => {
       //     from: D,
       //     value: toBN(dec(1000, 'ether'))
       //   }),
-      //   "Fee exceeded provided maximum")
+      //   "BadMaxFee")
 
       borrowingRate = await troveManager.getBorrowingRate() // expect 2.5% rate
       assert.equal(borrowingRate.toString(), dec(25, 15))
@@ -5814,7 +5814,7 @@ contract('BorrowerOperations', async accounts => {
           from: D,
           value: toBN(dec(1000, 'ether'))
         }),
-        "Fee exceeded provided maximum")
+        "BadMaxFee")
     })
 
     it("openTrove(): succeeds when fee is less than max fee percentage", async () => {

@@ -812,7 +812,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate Bob
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     // Check that Pool rewards don't change
     const P_Before = (await stabilityPool.P()).toString()
@@ -1443,7 +1443,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate Bob
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     /* Since the pool only contains 100 USDE, and Bob's pre-liquidation debt was 250 USDE,
     expect Bob's trove to remain untouched, and remain active after liquidation */
@@ -1509,7 +1509,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate Bob
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     /* Since the pool only contains 100 USDE, and Bob's pre-liquidation debt was 250 USDE,
     expect Bob's trove to only be partially offset, and remain active after liquidation */
@@ -1582,7 +1582,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate Bob
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     /*  Since Bob's debt (250 USDE) is larger than all USDE in the Stability Pool, Liquidation won’t happen
 
@@ -1657,7 +1657,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Liquidate Bob, it won’t happen as there are no funds in the SP
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     /* After liquidation, totalStakes snapshot should still equal the total stake: 25 ether
 
@@ -1717,7 +1717,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate Bob. Shouldn’t happen
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     // check Stability Pool rewards. Nothing happened, so everything should remain the same
 
@@ -1804,7 +1804,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // L1: Try to liquidate Bob. Nothing happens
     await assertRevert(troveManager.liquidate(bob, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     //Check SP USDE has been completely emptied
     assert.equal((await stabilityPool.getTotalUSDEDeposits()).toString(), dec(100, 18))
@@ -1850,7 +1850,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.isTrue((await th.getCurrentICR(contracts, carol)).gt(mv._MCR))
 
     // L2: Try to liquidate Carol. Nothing happens
-    await assertRevert(troveManager.liquidate(carol), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(carol), "NothingToLiquidate")
 
     //Check SP USDE has been completely emptied
     assert.equal((await stabilityPool.getTotalUSDEDeposits()).toString(), dec(150, 18))
@@ -1943,7 +1943,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     const entireSystemDebtBefore = await troveManager.getEntireSystemDebt()
 
     // Try to liquidate Alice
-    await assertRevert(troveManager.liquidate(alice), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(alice), "NothingToLiquidate")
 
     // Expect system debt and system coll not reduced
     const entireSystemCollAfter = (await troveManager.getEntireSystemColl())[1][0]
@@ -1984,7 +1984,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Try to liquidate the trove
     await assertRevert(troveManager.liquidate(alice, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
 
     // Check Alice's trove has not been removed
     const activeTrovesCount_After = await troveManager.getTroveOwnersCount()
@@ -2084,7 +2084,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.equal(USDEinSP, '0')
 
     // Attempt to liquidate bob
-    await assertRevert(troveManager.liquidate(bob), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(bob), "NothingToLiquidate")
 
     // check A, B, C remain active
     assert.isTrue((await sortedTroves.contains(bob)))
@@ -2136,7 +2136,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
 
     assert.isTrue(ICR_A.gt(TCR))
     // Try to liquidate A
-    await assertRevert(troveManager.liquidate(A), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(A), "NothingToLiquidate")
 
     // Check liquidation of A does nothing - trove remains in system
     assert.isTrue(await sortedTroves.contains(A))
@@ -2302,7 +2302,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.isTrue(bob_rawICR.gte(mv._MCR))
 
     //liquidate A, B, C
-    await assertRevert(troveManager.liquidate(alice), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(alice), "NothingToLiquidate")
     await troveManager.liquidate(bob)
     await troveManager.liquidate(carol)
 
@@ -3111,7 +3111,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.isTrue(await th.checkRecoveryMode(contracts))
 
     // Liquidation with n = 0
-    await assertRevert(troveManager.liquidateTroves(0), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidateTroves(0), "NothingToLiquidate")
 
     // Check all troves are still in the system
     assert.isTrue(await sortedTroves.contains(alice))
@@ -3563,7 +3563,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.equal((await stabilityPool.getTotalUSDEDeposits()).toString(), '0')
 
     // Attempt liqudation sequence
-    await assertRevert(troveManager.liquidateTroves(10), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidateTroves(10), "NothingToLiquidate")
 
     // Check all troves remain active
     assert.isTrue((await sortedTroves.contains(alice)))
@@ -6028,7 +6028,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     // Troves are ordered by ICR, low to high: A, B, C, D. 
     // Liquidate out of ICR order: D, B, C. A (lowest ICR) not included.
     const trovesToLiquidate = [dennis, bob, carol]
-    await assertRevert(troveManager.batchLiquidateTroves(trovesToLiquidate), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.batchLiquidateTroves(trovesToLiquidate), "NothingToLiquidate")
 
     // Confirm troves D, B, C remain in system
     assert.isTrue(await sortedTroves.contains(dennis))
@@ -6187,7 +6187,7 @@ contract('TroveManager - in Recovery Mode', async accounts => {
     assert.isTrue(ICR_I.gte(TCR))
 
     // Attempt to liquidate only troves with ICR > TCR% 
-    await assertRevert(troveManager.batchLiquidateTroves([G, H, I]), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.batchLiquidateTroves([G, H, I]), "NothingToLiquidate")
 
     // Check G, H, I remain in system
     assert.isTrue(await sortedTroves.contains(G))

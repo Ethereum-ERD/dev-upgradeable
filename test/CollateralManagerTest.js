@@ -152,7 +152,7 @@ contract('newBorrowerOperations', async accounts => {
                 await collateralManager.removeCollateral(validCollateral[i])
                 assert.isFalse(await collateralManager.getIsSupport(validCollateral[i]), "Collateral is not be supported");
                 // Collateral not pause
-                await assertRevert(collateralManager.removeCollateral(validCollateral[i]), "31");
+                await assertRevert(collateralManager.removeCollateral(validCollateral[i]), "CollNotPaused");
             }
 
         })
@@ -192,7 +192,7 @@ contract('newBorrowerOperations', async accounts => {
                 from: bob
             })
             // Collateral does not active or is paused
-            await assertRevert(openTxAPromise, "7")
+            await assertRevert(openTxAPromise, "CollNotActive")
 
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             // 1 ETH : 1 STETH
@@ -212,7 +212,7 @@ contract('newBorrowerOperations', async accounts => {
                 from: carol
             })
             // Collateral does not active or is paused
-            await assertRevert(openTx_C, "7")
+            await assertRevert(openTx_C, "CollNotActive")
 
             const tx_B = await borrowerOperations.adjustTrove([], [], [contracts.steth.address], [toBN(dec(1, 18))], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: bob
@@ -281,7 +281,7 @@ contract('newBorrowerOperations', async accounts => {
                         value: d_wethToMint
                     }
                 }),
-                "6"
+                "ETHNotActive"
             )
 
             const addedColl1 = toBN(dec(1, 'ether'))
@@ -291,7 +291,7 @@ contract('newBorrowerOperations', async accounts => {
                     from: alice,
                     value: addedColl1
                 }),
-                "9"
+                "ETHNotActive"
             )
 
             await borrowerOperations.withdrawColl([contracts.weth.address], [addedColl1], carol, carol, {

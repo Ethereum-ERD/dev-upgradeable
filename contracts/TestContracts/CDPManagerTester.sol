@@ -11,13 +11,14 @@ contract TroveManagerTester is TroveManager {
         external
         returns (uint256)
     {
-        baseRate = calcDecayedBaseRate();
+        uint256 timePassed;
+        (baseRate, timePassed) = calcDecayedBaseRate();
         require(
             baseRate >= 0 && baseRate <= DECIMAL_PRECISION,
             "unprotectedDecayBaseRateFromBorrowing: bad baseRate"
         );
 
-        _updateLastFeeOpTime();
+        _updateLastFeeOpTime(timePassed);
         return baseRate;
     }
 

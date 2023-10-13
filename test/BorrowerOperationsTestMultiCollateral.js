@@ -368,7 +368,7 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.openTrove([tokenA.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
-                    "18"
+                    "ICRLessThanMCR"
                 )
             })
         })
@@ -435,7 +435,7 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(5, 18), false, alice, alice, {
                         from: alice
                     }),
-                    "21"
+                    "TroveDebtLessThanMinDebt"
                 )
             })
 
@@ -452,39 +452,39 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, true, alice, alice, {
                         from: alice
                     }),
-                    "2"
+                    "DebtIncreaseZero"
                 )
                 // There must be either a collateral change or a debt change
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "14"
+                    "MustChangeForCollOrDebt"
                 )
                 // Collateral amount is 0
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [tokenA.address], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "8"
+                    "CollAmountZero"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([tokenA.address], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "8"
+                    "CollAmountZero"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([tokenA.address, tokenB.address], [0, 0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "8"
+                    "CollAmountZero"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [tokenA.address, tokenB.address], [0, 0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "8"
+                    "CollAmountZero"
                 )
             })
 
@@ -504,31 +504,31 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [tokenA.address, tokenB.address], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [tokenA.address], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([tokenA.address, tokenB.address], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
             })
 
@@ -545,13 +545,13 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([tokenA.address], [toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "11"
+                    "CollsOverlap"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, dec(1, 18), false, alice, alice, {
                         from: alice
                     }),
-                    "11"
+                    "CollsOverlap"
                 )
             })
 
@@ -564,7 +564,7 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.openTrove([tokenA.address, tokenA.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
-                    "12"
+                    "CollsDuplicate"
                 )
 
                 // Can still open normal trove
@@ -576,13 +576,13 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([tokenA.address, tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
                 await assertRevert(
                     borrowerOperations.adjustTrove([], [], [tokenA.address, tokenA.address, tokenB.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
-                    "102"
+                    "LengthMismatch"
                 )
 
                 // Can still adjust normal trove
@@ -669,7 +669,7 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.adjustTrove([tokenC.address], [toBN(dec(1, 18))], [tokenSuperRisky.address], [toBN(dec(11, 18))], th._100pct, toBN(dec(500, 18)), true, alice, alice, {
                         from: alice
                     }),
-                    "18"
+                    "ICRLessThanMCR"
                 )
             })
         })
@@ -1194,7 +1194,7 @@ contract('BorrowerOperations', async accounts => {
                     borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], justBelowFeeCap, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                         from: bob
                     }),
-                    "This tx should revert because the Trove is active"
+                    "TroveIsActive"
                 )
             })
 

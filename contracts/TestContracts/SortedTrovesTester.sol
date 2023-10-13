@@ -26,9 +26,13 @@ contract SortedTrovesTester is SortedTroves {
         address _prevId,
         address _nextId
     ) external {
-        require(contains(_id), "SortedTroves: List does not contain the id");
+        if (!contains(_id)) {
+            revert Errors.ST_ListNotContainsNode();
+        }
         // ICR must be non-zero
-        require(_newICR != 0, "SortedTroves: ICR must be positive");
+        if (_newICR == 0) {
+            revert Errors.ST_ZeroICR();
+        }
 
         // Remove node from the list
         _remove(_id);

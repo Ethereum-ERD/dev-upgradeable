@@ -705,7 +705,7 @@ contract('TroveManager', async accounts => {
     } catch (err) {
       // Trove does not exist or is closed
       assert.include(err.message, "revert")
-      assert.include(err.message, "87")
+      assert.include(err.message, "TroveNotExistOrClosed")
     }
   })
 
@@ -752,7 +752,7 @@ contract('TroveManager', async accounts => {
     } catch (err) {
       // Trove does not exist or is closed
       assert.include(err.message, "revert")
-      assert.include(err.message, "87")
+      assert.include(err.message, "TroveNotExistOrClosed")
     }
   })
 
@@ -781,7 +781,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Attempt to liquidate bob
-    await assertRevert(troveManager.liquidate(bob), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(bob), "NothingToLiquidate")
 
     // Check bob active, check whale active
     assert.isTrue((await sortedTroves.contains(bob)))
@@ -1218,7 +1218,7 @@ contract('TroveManager', async accounts => {
     } catch (err) {
       // Trove does not exist or is closed
       assert.include(err.message, "revert")
-      assert.include(err.message, "87")
+      assert.include(err.message, "TroveNotExistOrClosed")
     }
 
     // Check Dennis' SP deposit does not change after liquidation attempt
@@ -1290,7 +1290,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Attempt to liquidate Bob
-    await assertRevert(troveManager.liquidate(bob), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(bob), "NothingToLiquidate")
 
     // Confirm Bob's trove is still active
     assert.isTrue(await sortedTroves.contains(bob))
@@ -1585,7 +1585,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await th.checkRecoveryMode(contracts))
 
     // Liquidate Alice, Bob, Carol
-    await assertRevert(troveManager.liquidate(alice), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.liquidate(alice), "NothingToLiquidate")
     await troveManager.liquidate(bob)
     await troveManager.liquidate(carol)
 
@@ -1837,7 +1837,7 @@ contract('TroveManager', async accounts => {
     })
     await assertRevert(troveManager.liquidate(C, {
       from: owner
-    }), "TroveManagerLiquidations: nothing to liquidate")
+    }), "NothingToLiquidate")
     assert.isFalse(await sortedTroves.contains(B))
     assert.isTrue(await sortedTroves.contains(C))
     assert.isTrue(await sortedTroves.contains(D))
@@ -2208,7 +2208,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Attempt liqudation sequence
-    await assertRevert(troveManager.batchLiquidateTroves([whale, alice, bob, carol]), "TroveManagerLiquidations: nothing to liquidate")
+    await assertRevert(troveManager.batchLiquidateTroves([whale, alice, bob, carol]), "NothingToLiquidate")
     // Check all troves remain active
     assert.isTrue((await sortedTroves.contains(whale)))
     assert.isTrue((await sortedTroves.contains(alice)))
@@ -2375,7 +2375,7 @@ contract('TroveManager', async accounts => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Liquidation with n = 0
-    await assertRevert(troveManager.batchLiquidateTroves([]), "not be empty")
+    await assertRevert(troveManager.batchLiquidateTroves([]), "EmptyArray")
 
     // Check all troves are still in the system
     assert.isTrue(await sortedTroves.contains(whale))
@@ -3414,7 +3414,7 @@ contract('TroveManager', async accounts => {
       assert.isFalse(tx.receipt.status)
     } catch (error) {
       // console.log(error.message)
-      assert.include(error.message, "TroveManagerLiquidations: Calldata address array must not be empty")
+      assert.include(error.message, "EmptyArray")
     }
   })
 
@@ -4747,7 +4747,7 @@ contract('TroveManager', async accounts => {
     // skip bootstrapping phase
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_WEEK * 2, web3.currentProvider)
     // Cannot redeem when TCR < MCR
-    await assertRevert(th.redeemCollateral(carol, contracts, dec(270, 18)), "91")
+    await assertRevert(th.redeemCollateral(carol, contracts, dec(270, 18)), "CannotRedeemWhenTCRLessThanMCR")
   });
 
   it("redeemCollateral(): reverts when argument _amount is 0", async () => {
@@ -4798,7 +4798,7 @@ contract('TroveManager', async accounts => {
       from: erin
     })
     // Amount must be greater than zero
-    await assertRevert(redemptionTxPromise, "90")
+    await assertRevert(redemptionTxPromise, "ZeroValue")
   })
 
   it("redeemCollateral(): reverts if max fee > 100%", async () => {
@@ -4834,9 +4834,9 @@ contract('TroveManager', async accounts => {
     // skip bootstrapping phase
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_WEEK * 2, web3.currentProvider)
     // Max fee percentage must be between 0.25% and 100%
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), dec(2, 18)), "24")
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), dec(11, 18)), "24")
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), '1000000000000000001'), "24")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), dec(2, 18)), "BadMaxFee")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), dec(11, 18)), "BadMaxFee")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), '1000000000000000001'), "BadMaxFee")
   })
 
   it("redeemCollateral(): reverts if max fee < 0.5%", async () => {
@@ -4872,9 +4872,9 @@ contract('TroveManager', async accounts => {
     // skip bootstrapping phase
     await th.fastForwardTime(timeValues.SECONDS_IN_ONE_WEEK * 2, web3.currentProvider)
 
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), 0), "24")
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), 1), "24")
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), '1999999999999999'), "24")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), 0), "BadMaxFee")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), 1), "BadMaxFee")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, dec(10, 18), '1999999999999999'), "BadMaxFee")
   })
 
   it("redeemCollateral(): reverts if fee exceeds max fee percentage", async () => {
@@ -4927,22 +4927,22 @@ contract('TroveManager', async accounts => {
     // Max fee is <5%
     const lessThan5pct = '49999999999999999'
 
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, lessThan5pct), "Fee exceeded provided maximum")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, lessThan5pct), "BadMaxFee")
 
     await troveManager.setBaseRate(0) // artificially zero the baseRate
 
     // Max fee is 1%
-    th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(1, 16), "Fee exceeded provided maximum")
+    th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(1, 16), "BadMaxFee")
 
     await troveManager.setBaseRate(0)
 
     // Max fee is 3.754%
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(3754, 13)), "Fee exceeded provided maximum")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(3754, 13)), "BadMaxFee")
 
     await troveManager.setBaseRate(0)
 
     // Max fee is 0.75%
-    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(75, 14)), "Fee exceeded provided maximum")
+    await assertRevert(th.redeemCollateralAndGetTxObject(A, contracts, attemptedUSDERedemption, dec(75, 14)), "BadMaxFee")
   })
 
   it("redeemCollateral(): succeeds if fee is less than max fee percentage", async () => {
@@ -5416,7 +5416,7 @@ contract('TroveManager', async accounts => {
     } catch (error) {
       // Requested redemption amount must be <= user's USDE token balance
       assert.include(error.message, "revert")
-      assert.include(error.message, "89")
+      assert.include(error.message, "RedemptionAmountExceedBalance")
     }
 
     // Erin tries to redeem 401 USDE
@@ -5426,7 +5426,7 @@ contract('TroveManager', async accounts => {
     } catch (error) {
       // Requested redemption amount must be <= user's USDE token balance
       assert.include(error.message, "revert")
-      assert.include(error.message, "89")
+      assert.include(error.message, "RedemptionAmountExceedBalance")
     }
 
     // Erin tries to redeem 239482309 USDE
@@ -5436,7 +5436,7 @@ contract('TroveManager', async accounts => {
     } catch (error) {
       // Requested redemption amount must be <= user's USDE token balance
       assert.include(error.message, "revert")
-      assert.include(error.message, "89")
+      assert.include(error.message, "RedemptionAmountExceedBalance")
     }
 
     // Erin tries to redeem 2^256 - 1 USDE
@@ -5472,10 +5472,10 @@ contract('TroveManager', async accounts => {
     } catch (error) {
       // Requested redemption amount must be <= user's USDE token balance
       assert.include(error.message, "revert")
-      assert.include(error.message, "89")
+      assert.include(error.message, "RedemptionAmountExceedBalance")
     }
   })
-
+  
   it("redeemCollateral(): value of issued ETH == face value of redeemed USDE (assuming 1 USDE has value of $1)", async () => {
     const {
       collateral: W_coll
@@ -6537,7 +6537,7 @@ contract('TroveManager', async accounts => {
         from: D,
         value: toBN(dec(10, 18))
       }),
-      '1')
+      'TroveIsActive')
 
     return {
       A_netDebt,
@@ -6658,7 +6658,7 @@ contract('TroveManager', async accounts => {
 
     // CollSurplusPool endpoint cannot be called directly
     // Caller is not BorrowerOperations
-    await assertRevert(collSurplusPool.claimColl(A), '201')
+    await assertRevert(collSurplusPool.claimColl(A), 'Caller_NotBO')
 
     await borrowerOperations.claimCollateral({
       from: A,
@@ -6841,7 +6841,7 @@ contract('TroveManager', async accounts => {
           gasPrice: 0
         }
       ),
-      '86'
+      'BadFee'
     )
   })
 

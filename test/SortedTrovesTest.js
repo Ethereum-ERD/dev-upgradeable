@@ -440,7 +440,7 @@ contract('SortedTroves', async accounts => {
     context('when params are wrongly set', () => {
       it('setParams(): reverts if size is zero', async () => {
         // Size can't be zero
-        await th.assertRevert(sortedTrovesTester.setParams(0, troveManager.address, borrowerOperations.address, contracts.troveManagerRedemptions.address), "60")
+        await th.assertRevert(sortedTrovesTester.setParams(0, troveManager.address, borrowerOperations.address, contracts.troveManagerRedemptions.address), "SizeZero")
       })
     })
 
@@ -453,38 +453,38 @@ contract('SortedTroves', async accounts => {
         await sortedTrovesTester.callInsert(alice, 1, alice, alice)
         await sortedTrovesTester.callInsert(bob, 1, alice, alice)
         // List is full
-        await th.assertRevert(sortedTrovesTester.callInsert(carol, 1, alice, alice), '61')
+        await th.assertRevert(sortedTrovesTester.callInsert(carol, 1, alice, alice), 'ListFull')
       })
 
       it('insert(): fails if list already contains the node', async () => {
         await sortedTrovesTester.callInsert(alice, 1, alice, alice)
         // List already contains the node
-        await th.assertRevert(sortedTrovesTester.callInsert(alice, 1, alice, alice), '62')
+        await th.assertRevert(sortedTrovesTester.callInsert(alice, 1, alice, alice), 'ListContainsNode')
       })
 
       it('insert(): fails if id is zero', async () => {
         // Id cannot be zero
-        await th.assertRevert(sortedTrovesTester.callInsert(th.ZERO_ADDRESS, 1, alice, alice), '63')
+        await th.assertRevert(sortedTrovesTester.callInsert(th.ZERO_ADDRESS, 1, alice, alice), 'ZeroAddress')
       })
 
       it('insert(): fails if ICR is zero', async () => {
         // ICR must be positive
-        await th.assertRevert(sortedTrovesTester.callInsert(alice, 0, alice, alice), '64')
+        await th.assertRevert(sortedTrovesTester.callInsert(alice, 0, alice, alice), 'ZeroICR')
       })
 
       it('remove(): fails if id is not in the list', async () => {
         // List does not contain the id
-        await th.assertRevert(sortedTrovesTester.callRemove(alice), '65')
+        await th.assertRevert(sortedTrovesTester.callRemove(alice), 'ListNotContainsNode')
       })
 
-      it('reInsert(): fails if list doesn’t contain the node', async () => {
-        await th.assertRevert(sortedTrovesTester.callReInsert(alice, 1, alice, alice), 'SortedTroves: List does not contain the id')
+      it('reInsert(): fails if list doesn\'t contain the node', async () => {
+        await th.assertRevert(sortedTrovesTester.callReInsert(alice, 1, alice, alice), 'ListNotContainsNode')
       })
 
       it('reInsert(): fails if new ICR is zero', async () => {
         await sortedTrovesTester.callInsert(alice, 1, alice, alice)
         assert.isTrue(await sortedTrovesTester.contains(alice), 'list should contain element')
-        await th.assertRevert(sortedTrovesTester.callReInsert(alice, 0, alice, alice), 'SortedTroves: ICR must be positive')
+        await th.assertRevert(sortedTrovesTester.callReInsert(alice, 0, alice, alice), 'ZeroICR')
         assert.isTrue(await sortedTrovesTester.contains(alice), 'list should contain element')
       })
 

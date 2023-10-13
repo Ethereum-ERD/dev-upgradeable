@@ -15,8 +15,6 @@ const mv = testHelpers.MoneyValues
 const timeValues = testHelpers.TimeValues
 
 const ZERO_ADDRESS = th.ZERO_ADDRESS
-const assertRevert = th.assertRevert
-const STETH_ADDRESS = ZERO_ADDRESS;
 
 /* NOTE: Some of the borrowing tests do not test for specific USDE fee values. They only test that the
  * fees are non-zero when they should occur, and that they decay over time.
@@ -195,7 +193,7 @@ contract('newBorrowerOperations', async accounts => {
             const mintedUSDE = await contracts.usdeToken.balanceOf(alice)
             console.log(th.toNormalBase(mintedUSDE))
             console.log("result " + result)
-            
+
             // const amountToMint = toBN(dec(1000, 18));
 
             const collsBob = [contracts.weth, contracts.steth];

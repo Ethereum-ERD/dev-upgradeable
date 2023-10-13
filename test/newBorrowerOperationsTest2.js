@@ -134,7 +134,7 @@ contract('BorrowerOperations', async accounts => {
           from: alice,
           value: collTopUp
         }), //th.addColl(contracts, toBN(dec(collTopUp, 18), alice)),
-        "18")
+        "ICRLessThanMCR")
     })
   }
   describe('Without proxy', async () => {

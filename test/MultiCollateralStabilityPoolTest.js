@@ -76,8 +76,6 @@ contract('StabilityPool', async accounts => {
   const openTrove = async (params) => th.openTrove(contracts, params)
   const openTroveToken = async (token, params) => th.openTroveWithToken(contracts, token, params)
 
-  const assertRevert = th.assertRevert
-
   describe("Stability Pool Mechanisms", async () => {
     before(async () => {
       gasPriceInWei = await web3.eth.getGasPrice()

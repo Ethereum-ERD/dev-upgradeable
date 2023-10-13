@@ -10,7 +10,6 @@ contract DefaultPoolTester is DefaultPool {
     }
 
     function unprotectedPayable() external payable {
-         // @KingYet: Commented
         // ETH = ETH.add(msg.value);
     }    
 }

@@ -3086,7 +3086,7 @@ contract('TroveManager - Redistribution reward calculations', async accounts => 
     const txB = await troveManager.liquidate(carol)
     assert.isTrue(txB.receipt.status)
     assert.isFalse(await sortedTroves.contains(carol))
-    await th.assertRevert(troveManager.liquidate(bob), "104")
+    await th.assertRevert(troveManager.liquidate(bob), "ZeroValue")
     assert.isTrue(await sortedTroves.contains(bob))
 
     // Price bounces back to 200 $/E
