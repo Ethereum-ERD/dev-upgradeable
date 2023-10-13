@@ -481,7 +481,7 @@ The project is deployed on the Ropsten testnet.
 
 ## Running Tests
 
-Run all tests with `npx hardhat test`, or run a specific test with `npx hardhat test ./test/contractTest.js` (reduce the optimizer runs if cannot compile)
+Run all tests with `npx hardhat test`, or run a specific test with `npx hardhat test ./test/contractTest.js` (remove `constructor()` code before run test, reduce the optimizer runs if cannot compile)
 
 Tests are run against the Hardhat EVM.
 
