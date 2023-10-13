@@ -306,4 +306,8 @@ contract ActivePool is OwnableUpgradeable, IActivePool {
             revert Errors.Caller_NotBOOrTM();
         }
     }
+
+    // --- Fallback function ---
+
+    receive() external payable {}
 }

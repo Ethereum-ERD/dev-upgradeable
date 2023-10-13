@@ -1379,4 +1379,8 @@ contract StabilityPool is
             revert Errors.SP_BadKickbackRate();
         }
     }
+
+    // --- Fallback function ---
+
+    receive() external payable {}
 }

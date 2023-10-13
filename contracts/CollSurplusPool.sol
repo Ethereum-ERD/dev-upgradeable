@@ -232,4 +232,8 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
             revert Errors.Caller_NotAP();
         }
     }
+
+    // --- Fallback function ---
+
+    receive() external payable {}
 }
