@@ -388,7 +388,7 @@ class DeploymentHelper {
     await contracts.stabilityPool.initialize()
     await contracts.defaultPool.initialize()
     await contracts.collSurplusPool.initialize()
-    await contracts.borrowerOperations.initialize()
+    await contracts.borrowerOperations.initialize(maxBytes32)
     await contracts.hintHelpers.initialize()
     await contracts.collateralManager.initialize()
     await contracts.troveDebt.initialize()

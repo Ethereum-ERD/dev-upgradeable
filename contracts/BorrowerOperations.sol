@@ -39,6 +39,8 @@ contract BorrowerOperations is
 
     bool internal paused;
 
+    uint256 public marketCap;
+
     modifier whenNotPaused() {
         if (paused) {
             revert Errors.ProtocolPaused();
@@ -105,9 +107,11 @@ contract BorrowerOperations is
         _disableInitializers();
     }
 
-    function initialize() public initializer {
+    function initialize(uint256 _marketCap) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
+        marketCap = _marketCap;
+        emit MarketCapChanged(_marketCap);
     }
 
     function setAddresses(
@@ -767,6 +771,11 @@ contract BorrowerOperations is
         }
     }
 
+    function setMarketCap(uint256 _marketCap) external override onlyOwner {
+        marketCap = _marketCap;
+        emit MarketCapChanged(_marketCap);
+    }
+
     function updateUSDEGas(bool _val, uint256 _amount) external override {
         if (msg.sender != address(collateralManager)) {
             revert Errors.Caller_NotCM();
@@ -920,6 +929,10 @@ contract BorrowerOperations is
     ) internal {
         _activePool.increaseUSDEDebt(_netDebtIncrease);
         _usdeToken.mint(_account, _USDEAmount);
+        uint256 totalUSDE = _usdeToken.totalSupply();
+        if (totalUSDE > marketCap) {
+            revert Errors.BO_ExceedMarketCap();
+        }
     }
 
     // Burn the specified amount of USDE from _account and decreases the total active debt

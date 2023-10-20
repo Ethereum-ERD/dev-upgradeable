@@ -52,6 +52,8 @@ interface IBorrowerOperations {
     event Paused();
     event Unpaused();
 
+    event MarketCapChanged(uint256 _newMarketCap);
+
     event Referrer(
         address indexed _referrer,
         address _referee,
@@ -135,6 +137,8 @@ interface IBorrowerOperations {
     function closeTrove() external;
 
     function setPause(bool _val) external;
+
+    function setMarketCap(uint256 _marketCap) external;
 
     function updateUSDEGas(bool _val, uint256 _amount) external;
 

@@ -71,6 +71,7 @@ library Errors {
     error BO_USDEInsufficient(); // 'Caller doesnt have enough USDE to make repayment'
     error BO_MaxFeeExceed100(); // 'Max fee percentage must less than or equal to 100%'
     error BO_BadMaxFee(); // 'Max fee percentage must be between 0.25% and 100%'
+    error BO_ExceedMarketCap();
 
     error CM_CollExists(); // 'Collateral already exists'
     error CM_CollNotPaused(); // 'Collateral not pause'
