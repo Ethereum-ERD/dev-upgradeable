@@ -66,7 +66,6 @@ contract TroveManagerDataTypes is ERDBase, OwnableUpgradeable {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event TotalStakesUpdated(address _collateral, uint256 _newTotalStakes);
-    event TotalStakesUpdated(uint256[] _newTotalStakes);
     event SystemSnapshotsUpdated(
         uint256[] _totalStakesSnapshot,
         uint256[] _totalCollateralSnapshot

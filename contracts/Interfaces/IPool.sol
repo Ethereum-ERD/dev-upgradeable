@@ -27,7 +27,7 @@ interface IPool {
     event CommunityIssuanceAddressChanged(address _newCommunityIssuanceAddress);
     event WETHAddressChanged(address _wethAddress);
 
-    event CollateralSent(address _to, uint256[] _amount);
+    event CollateralsSent(address _to, uint256[] _amount);
     event CollateralSent(address _to, address _collateral, uint256 _amount);
 
     // --- Functions ---

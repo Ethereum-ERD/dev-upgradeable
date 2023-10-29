@@ -8,10 +8,10 @@ interface ICollSurplusPool is IPool {
     // --- Events ---
 
     event CollBalanceUpdated(address indexed _account, bool _hasBalance);
-    event CollateralSent(
+    event CollateralClaimedSent(
         address indexed _account,
         uint256[] _shares,
-        uint[] _amounts
+        uint256[] _amounts
     );
 
     // --- Contract setters ---

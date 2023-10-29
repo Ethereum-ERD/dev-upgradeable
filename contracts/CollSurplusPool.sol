@@ -201,7 +201,7 @@ contract CollSurplusPool is OwnableUpgradeable, ICollSurplusPool {
                 revert Errors.SendETHFailed();
             }
         }
-        emit CollateralSent(_account, shares, claimableColls);
+        emit CollateralClaimedSent(_account, shares, claimableColls);
     }
 
     // --- 'require' functions ---

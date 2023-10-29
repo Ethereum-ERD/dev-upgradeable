@@ -483,7 +483,7 @@ contract StabilityPool is
             _lowerHint
         );
 
-        emit CollateralSent(msg.sender, depositorCollateralGains);
+        emit CollateralsSent(msg.sender, depositorCollateralGains);
     }
 
     // --- gain issuance functions ---

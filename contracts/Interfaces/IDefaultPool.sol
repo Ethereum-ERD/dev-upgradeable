@@ -7,12 +7,7 @@ import "./IPool.sol";
 interface IDefaultPool is IPool {
     // --- Events ---
     event DefaultPoolUSDEDebtUpdated(uint256 _USDEDebt);
-    event DefaultPoolCollBalanceUpdated(
-        address _collateral,
-        uint256 _coll,
-        uint256 _totalColl
-    );
-    event DefaultPoolCollBalanceUpdated(address[] _collaterals, uint256[] _collAmounts);
+    event DefaultPoolCollsBalanceUpdated(address[] _collaterals, uint256[] _collAmounts);
 
     // --- Functions ---
     function sendCollateralToActivePool(

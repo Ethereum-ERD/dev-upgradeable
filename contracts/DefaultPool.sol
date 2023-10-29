@@ -126,8 +126,8 @@ contract DefaultPool is OwnableUpgradeable, IDefaultPool {
                 ++i;
             }
         }
-        emit DefaultPoolCollBalanceUpdated(_collaterals, collBalance);
-        emit CollateralSent(activePool, _amounts);
+        emit DefaultPoolCollsBalanceUpdated(_collaterals, collBalance);
+        emit CollateralsSent(activePool, _amounts);
     }
 
     function increaseUSDEDebt(uint256 _amount) external override {
