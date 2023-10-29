@@ -6,8 +6,8 @@
 */
 const fs = require('fs')
 
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 const timeValues = testHelpers.TimeValues

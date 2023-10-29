@@ -1,5 +1,5 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const {
   keccak256
@@ -19,6 +19,9 @@ const {
 const {
   ecsign
 } = require('ethereumjs-util');
+const {
+  ethers
+} = require("hardhat");
 
 const {
   toBN,
@@ -63,7 +66,8 @@ const getPermitDigest = (name, address, chainId, version,
 }
 
 contract('USDEToken', async accounts => {
-  const [owner, alice, bob, carol, dennis] = accounts;
+  const [owner, alice, bob, carol, dennis] = accounts
+  let Owner, Alice, Bob, Carol, Dennis
 
   // the second account our hardhatenv creates (for Alice)
   // from https://github.com/liquity/dev/blob/main/packages/contracts/hardhatAccountsList2k.js#L3
@@ -83,20 +87,13 @@ contract('USDEToken', async accounts => {
     withProxy = false
   }) => {
     beforeEach(async () => {
-      const ERDContracts = await deploymentHelper.deployERDContracts()
-      const contracts = await deploymentHelper.deployTesterContractsHardhat(ERDContracts)
-
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+      const contracts = await deploymentHelper.deployERDCore()
 
       usdeTokenOriginal = contracts.usdeToken
-      if (withProxy) {
-        const users = [alice, bob, carol, dennis]
-        await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-      }
 
       usdeTokenTester = contracts.usdeToken
-      // for some reason this doesn’t work with coverage network
-      //chainId = await web3.eth.getChainId()
+      // // for some reason this doesn’t work with coverage network
+      // //chainId = await web3.eth.getChainId()
       chainId = await usdeTokenOriginal.getChainId()
 
       stabilityPool = contracts.stabilityPool
@@ -105,6 +102,12 @@ contract('USDEToken', async accounts => {
 
       tokenVersion = await usdeTokenOriginal.version()
       tokenName = await usdeTokenOriginal.name()
+      const signers = await ethers.getSigners()
+      Owner = signers[0]
+      Alice = signers[1]
+      Bob = signers[2]
+      Carol = signers[3]
+      Dennis = signers[4]
 
       // mint some tokens
       if (withProxy) {
@@ -149,7 +152,7 @@ contract('USDEToken', async accounts => {
     })
 
     it("allowance(): returns an account's spending allowance for another account's balance", async () => {
-      await usdeTokenTester.approve(alice, 100, {
+      await usdeTokenTester.connect(Bob).approve(alice, 100, {
         from: bob
       })
 
@@ -164,7 +167,7 @@ contract('USDEToken', async accounts => {
       const allowance_A_before = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_before, '0')
 
-      await usdeTokenTester.approve(alice, 100, {
+      await usdeTokenTester.connect(Bob).approve(alice, 100, {
         from: bob
       })
 
@@ -174,14 +177,14 @@ contract('USDEToken', async accounts => {
 
     if (!withProxy) {
       it("approve(): reverts when spender param is address(0)", async () => {
-        const txPromise = usdeTokenTester.approve(ZERO_ADDRESS, 100, {
+        const txPromise = usdeTokenTester.connect(Bob).approve(ZERO_ADDRESS, 100, {
           from: bob
         })
         await assertAssert(txPromise, "ERC20: approve to the zero address")
       })
 
       it("approve(): reverts when owner param is address(0)", async () => {
-        const txPromise = usdeTokenTester.callInternalApprove(ZERO_ADDRESS, alice, dec(1000, 18), {
+        const txPromise = usdeTokenTester.connect(Bob).callInternalApprove(ZERO_ADDRESS, alice, dec(1000, 18), {
           from: bob
         })
         await assertAssert(txPromise, "ERC20: approve from the zero address")
@@ -192,7 +195,7 @@ contract('USDEToken', async accounts => {
       const allowance_A_0 = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_0, '0')
 
-      await usdeTokenTester.approve(alice, 50, {
+      await usdeTokenTester.connect(Bob).approve(alice, 50, {
         from: bob
       })
 
@@ -204,7 +207,7 @@ contract('USDEToken', async accounts => {
       assert.equal(await usdeTokenTester.balanceOf(carol), 50)
 
       // Alice transfers from bob to Carol, using up her allowance
-      await usdeTokenTester.transferFrom(bob, carol, 50, {
+      await usdeTokenTester.connect(Alice).transferFrom(bob, carol, 50, {
         from: alice
       })
       assert.equal(await usdeTokenTester.balanceOf(carol), 100)
@@ -217,7 +220,7 @@ contract('USDEToken', async accounts => {
       assert.equal(await usdeTokenTester.balanceOf(bob), 50)
 
       // Alice tries to transfer more tokens from bob's account to carol than she's allowed
-      const txPromise = usdeTokenTester.transferFrom(bob, carol, 50, {
+      const txPromise = usdeTokenTester.connect(Alice).transferFrom(bob, carol, 50, {
         from: alice
       })
       await assertRevert(txPromise)
@@ -226,7 +229,7 @@ contract('USDEToken', async accounts => {
     it("transfer(): increases the recipient's balance by the correct amount", async () => {
       assert.equal(await usdeTokenTester.balanceOf(alice), 150)
 
-      await usdeTokenTester.transfer(alice, 37, {
+      await usdeTokenTester.connect(Bob).transfer(alice, 37, {
         from: bob
       })
 
@@ -236,26 +239,26 @@ contract('USDEToken', async accounts => {
     it("transfer(): reverts if amount exceeds sender's balance", async () => {
       assert.equal(await usdeTokenTester.balanceOf(bob), 100)
 
-      const txPromise = usdeTokenTester.transfer(alice, 101, {
+      const txPromise = usdeTokenTester.connect(Bob).transfer(alice, 101, {
         from: bob
       })
       await assertRevert(txPromise)
     })
 
     it('transfer(): transferring to a blacklisted address reverts', async () => {
-      await assertRevert(usdeTokenTester.transfer(usdeTokenTester.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(usdeTokenTester.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(ZERO_ADDRESS, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(ZERO_ADDRESS, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(troveManager.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(troveManager.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(stabilityPool.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(stabilityPool.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(borrowerOperations.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(borrowerOperations.address, 1, {
         from: alice
       }))
     })
@@ -264,7 +267,7 @@ contract('USDEToken', async accounts => {
       const allowance_A_Before = await usdeTokenTester.allowance(bob, alice)
       assert.equal(allowance_A_Before, '0')
 
-      await usdeTokenTester.increaseAllowance(alice, 100, {
+      await usdeTokenTester.connect(Bob).increaseAllowance(alice, 100, {
         from: bob
       })
 
@@ -328,40 +331,40 @@ contract('USDEToken', async accounts => {
     }
 
     it('transfer(): transferring to a blacklisted address reverts', async () => {
-      await assertRevert(usdeTokenTester.transfer(usdeTokenTester.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(usdeTokenTester.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(ZERO_ADDRESS, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(ZERO_ADDRESS, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(troveManager.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(troveManager.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(stabilityPool.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(stabilityPool.address, 1, {
         from: alice
       }))
-      await assertRevert(usdeTokenTester.transfer(borrowerOperations.address, 1, {
+      await assertRevert(usdeTokenTester.connect(Alice).transfer(borrowerOperations.address, 1, {
         from: alice
       }))
     })
 
     it('decreaseAllowance(): decreases allowance by the expected amount', async () => {
-      await usdeTokenTester.approve(bob, dec(3, 18), {
+      await usdeTokenTester.connect(Alice).approve(bob, dec(3, 18), {
         from: alice
       })
       assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
-      await usdeTokenTester.decreaseAllowance(bob, dec(1, 18), {
+      await usdeTokenTester.connect(Alice).decreaseAllowance(bob, dec(1, 18), {
         from: alice
       })
       assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(2, 18))
     })
 
     it('decreaseAllowance(): fails trying to decrease more than previously allowed', async () => {
-      await usdeTokenTester.approve(bob, dec(3, 18), {
+      await usdeTokenTester.connect(Alice).approve(bob, dec(3, 18), {
         from: alice
       })
       assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
-      await assertRevert(usdeTokenTester.decreaseAllowance(bob, dec(4, 18), {
+      await assertRevert(usdeTokenTester.connect(Alice).decreaseAllowance(bob, dec(4, 18), {
         from: alice
       }))
       assert.equal((await usdeTokenTester.allowance(alice, bob)).toString(), dec(3, 18))
@@ -395,7 +398,7 @@ contract('USDEToken', async accounts => {
         value: 1,
       }
 
-      const buildPermitTx = async (deadline) => {
+      const buildPermitTx = async (deadline, signer) => {
         const nonce = (await usdeTokenTester.nonces(approve.owner)).toString()
 
         // Get the EIP712 digest
@@ -412,7 +415,7 @@ contract('USDEToken', async accounts => {
           s
         } = sign(digest, alicePrivateKey)
 
-        const tx = usdeTokenTester.permit(
+        const tx = usdeTokenTester.connect(signer).permit(
           approve.owner, approve.spender, approve.value,
           deadline, v, hexlify(r), hexlify(s)
         )
@@ -429,14 +432,28 @@ contract('USDEToken', async accounts => {
         const deadline = 100000000000000
 
         // Approve it
+        const nonce = (await usdeTokenTester.nonces(approve.owner)).toString()
+
+        // Get the EIP712 digest
+        const digest = getPermitDigest(
+          tokenName, usdeTokenTester.address,
+          chainId, tokenVersion,
+          approve.owner, approve.spender,
+          approve.value, nonce, deadline
+        )
+
         const {
           v,
           r,
-          s,
-          tx
-        } = await buildPermitTx(deadline)
-        const receipt = await tx
-        const event = receipt.logs[0]
+          s
+        } = sign(digest, alicePrivateKey)
+
+        const tx = await usdeTokenTester.connect(Alice).permit(
+          approve.owner, approve.spender, approve.value,
+          deadline, v, hexlify(r), hexlify(s)
+        )
+        const receipt = await tx.wait()
+        const event = receipt.events[0]
 
         // Check that approval was successful
         assert.equal(event.event, 'Approval')
@@ -461,7 +478,7 @@ contract('USDEToken', async accounts => {
           r,
           s,
           tx
-        } = await buildPermitTx(deadline)
+        } = await buildPermitTx(deadline, Alice)
         await assertRevert(tx, 'USDE: expired deadline')
       })
 
@@ -472,7 +489,7 @@ contract('USDEToken', async accounts => {
           v,
           r,
           s
-        } = await buildPermitTx(deadline)
+        } = await buildPermitTx(deadline, Alice)
 
         const tx = usdeTokenTester.permit(
           carol, approve.spender, approve.value,
@@ -489,11 +506,11 @@ contract('USDEToken', async accounts => {
     })
   })
 
-  describe('Basic token functions, with Proxy', async () => {
-    testCorpus({
-      withProxy: true
-    })
-  })
+  // describe('Basic token functions, with Proxy', async () => {
+  //   testCorpus({
+  //     withProxy: true
+  //   })
+  // })
 })
 
 

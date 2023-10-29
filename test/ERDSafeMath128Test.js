@@ -1,4 +1,4 @@
-const testHelpers = require("../utils/testHelpers.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 
 const ERDSafeMath128Tester = artifacts.require("ERDSafeMath128Tester")

@@ -1,20 +1,10 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const NonPayable = artifacts.require('NonPayable.sol')
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const USDETokenTester = artifacts.require("./USDETokenTester")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 
 const dec = th.dec
 const toBN = th.toBN
-const mv = testHelpers.MoneyValues
-const timeValues = testHelpers.TimeValues
-
-const ZERO_ADDRESS = th.ZERO_ADDRESS
 
 /* NOTE: Some of the borrowing tests do not test for specific USDE fee values. They only test that the
  * fees are non-zero when they should occur, and that they decay over time.
@@ -28,13 +18,11 @@ const ZERO_ADDRESS = th.ZERO_ADDRESS
 contract('newBorrowerOperations', async accounts => {
 
     const [
-        owner, alice, bob, carol, dennis, whale,
-        A, B, C, D, E, F, G, H,
-        // defaulter_1, defaulter_2,
-        frontEnd_1, frontEnd_2, frontEnd_3
-    ] = accounts;
+        owner, alice, bob
+    ] = accounts
 
-    // const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3]
+    let
+        Owner, Alice, Bob
 
     let priceFeedSTETH
     let priceFeedETH
@@ -71,18 +59,6 @@ contract('newBorrowerOperations', async accounts => {
     }) => {
         beforeEach(async () => {
             contracts = await deploymentHelper.deployERDCore()
-            // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-            contracts.troveManager = await TroveManagerTester.new()
-            contracts.collateralManager = await CollateralManagerTester.new()
-            const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-            contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
-
-            await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-            if (withProxy) {
-                const users = [alice, bob, carol, dennis, whale, A, B, C, D, E]
-                await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-            }
 
             priceFeedSTETH = contracts.priceFeedSTETH
             priceFeedETH = contracts.priceFeedETH
@@ -96,25 +72,28 @@ contract('newBorrowerOperations', async accounts => {
             hintHelpers = contracts.hintHelpers
             collateralManager = contracts.collateralManager
 
-            treasury = ERDContracts.treasury
-            liquidityIncentive = ERDContracts.liquidityIncentive
-            communityIssuance = ERDContracts.communityIssuance
+            treasury = contracts.treasury
+            liquidityIncentive = contracts.liquidityIncentive
+            communityIssuance = contracts.communityIssuance
 
             USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
             MIN_NET_DEBT = await collateralManager.getMinNetDebt()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
             await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
             await priceFeedSTETH.setPrice(dec(1, 18))
+            const signers = await ethers.getSigners()
+            Owner = signers[0]
+            Alice = signers[1]
+            Bob = signers[2]
         })
 
         it("addColl(), basic sanity", async () => {
             const amountToMint = toBN(dec(1000, 18));
-
             const _colls = [contracts.weth, contracts.steth];
             const _amounts = [amountToMint, amountToMint]
             const _priceFeeds = [contracts.priceFeedETH, contracts.priceFeedSTETH]
 
-            const stethMintAlice = await th.addERC20(contracts.steth, bob, borrowerOperations.address, amountToMint, {
+            const stethMintAlice = await th.addERC20(contracts.steth, Bob, borrowerOperations.address, amountToMint, {
                 from: bob
             })
             assert.isTrue(stethMintAlice);
@@ -124,6 +103,7 @@ contract('newBorrowerOperations', async accounts => {
                 colls: _colls,
                 amounts: _amounts,
                 extraUSDEAmount: toBN(dec(2000, 18)),
+                signer: Alice,
                 extraParams: {
                     from: alice
                 }
@@ -157,7 +137,7 @@ contract('newBorrowerOperations', async accounts => {
             assert.isTrue(th.toNormalBase(troveDebt) == (params.newTotalVC.div(params.ICR)).toString())
 
             // collsIn, amountsIn, collsOut, amountsOut, 
-            await th.adjustTrove(contracts, [], [], [], [], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+            await th.adjustTrove(contracts, Alice, [], [], [], [], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: alice,
                 value: amountToMint
             })
@@ -170,7 +150,7 @@ contract('newBorrowerOperations', async accounts => {
             console.log("Trove debt2: " + troveDebt2)
 
             // collsIn, amountsIn, collsOut, amountsOut, 
-            await th.adjustTrove(contracts, [], [], [], [], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+            await th.adjustTrove(contracts, Alice, [], [], [], [], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: alice,
                 value: amountToMint
             })
@@ -180,7 +160,7 @@ contract('newBorrowerOperations', async accounts => {
             console.log("trove coll amount " + troveColls3[0])
 
 
-            await th.adjustTrove(contracts, [], [], [], [], th._100pct, toBN(dec(2000, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+            await th.adjustTrove(contracts, Alice, [], [], [], [], th._100pct, toBN(dec(2000, 18)), true, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: alice
             })
 
@@ -203,13 +183,14 @@ contract('newBorrowerOperations', async accounts => {
                 colls: collsBob,
                 amounts: amountsBob,
                 extraUSDEAmount: toBN(dec(2000, 18)),
+                signer: Bob,
                 extraParams: {
                     from: bob
                 }
             })
 
             const aliceWethBefore = toBN(await web3.eth.getBalance(alice))
-            await contracts.borrowerOperations.closeTrove({
+            await contracts.borrowerOperations.connect(Alice).closeTrove({
                 from: alice,
                 gasPrice: 0
             })

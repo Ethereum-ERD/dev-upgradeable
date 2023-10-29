@@ -1,11 +1,8 @@
-const StabilityPool = artifacts.require("./StabilityPool.sol")
-const ActivePool = artifacts.require("./ActivePool.sol")
-const DefaultPool = artifacts.require("./DefaultPool.sol")
 const NonPayable = artifacts.require("./NonPayable.sol")
 const ERC20Token = artifacts.require("./ERC20Token.sol")
 const WETH = artifacts.require("./WETH.sol")
 
-const testHelpers = require("../utils/testHelpers.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 const dec = th.dec
@@ -22,12 +19,13 @@ contract('StabilityPool', async accounts => {
   const [owner, alice] = accounts;
 
   beforeEach(async () => {
-    stabilityPool = await StabilityPool.new()
+    const StabilityPool = await ethers.getContractFactory("StabilityPool");
+    stabilityPool = await upgrades.deployProxy(StabilityPool);
+    await stabilityPool.deployed();
     const mockActivePoolAddress = (await NonPayable.new()).address
     const dumbContractAddress = (await NonPayable.new()).address
     const wethContractAddress = (await WETH.new()).address
     tokenAddress = (await ERC20Token.new("STETH", "stake ETH", 18)).address
-    await stabilityPool.initialize()
     await stabilityPool.setAddresses(dumbContractAddress, dumbContractAddress, mockActivePoolAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, wethContractAddress)
   })
 
@@ -48,11 +46,12 @@ contract('ActivePool', async accounts => {
 
   const [owner, alice] = accounts;
   beforeEach(async () => {
-    activePool = await ActivePool.new()
+    const ActivePool = await ethers.getContractFactory("ActivePool");
+    activePool = await upgrades.deployProxy(ActivePool);
+    await activePool.deployed();
     mockBorrowerOperations = await NonPayable.new()
     const dumbContractAddress = (await NonPayable.new()).address
     tokenAddress = (await ERC20Token.new("STETH", "stake ETH", 18)).address
-    await activePool.initialize()
     await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
@@ -104,7 +103,6 @@ contract('ActivePool', async accounts => {
     // start pool with 2 ether
     //await web3.eth.sendTransaction({ from: mockBorrowerOperationsAddress, to: activePool.address, value: dec(2, 'ether') })
     const tx1 = await mockBorrowerOperations.forward(activePool.address, '0x', {
-      from: owner,
       value: dec(2, 'ether')
     })
     assert.isTrue(tx1.receipt.status)
@@ -118,7 +116,6 @@ contract('ActivePool', async accounts => {
     //await activePool.sendETH(alice, dec(1, 'ether'), { from: mockBorrowerOperationsAddress })
     const sendETHData = th.getTransactionData('sendETH(address,uint256)', [alice, web3.utils.toHex(dec(1, 'ether'))])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, '0x', {
-      from: owner,
       value: dec(1, 18)
     })
     assert.isTrue(tx2.receipt.status)
@@ -139,11 +136,12 @@ contract('DefaultPool', async accounts => {
 
   const [owner, alice] = accounts;
   beforeEach(async () => {
-    defaultPool = await DefaultPool.new()
+    const DefaultPool = await ethers.getContractFactory("DefaultPool");
+    defaultPool = await upgrades.deployProxy(DefaultPool);
+    await defaultPool.deployed();
     mockTroveManager = await NonPayable.new()
     mockActivePool = await NonPayable.new()
     tokenAddress = (await ERC20Token.new("STETH", "stake ETH", 18)).address
-    await defaultPool.initialize()
     await defaultPool.setAddresses(mockTroveManager.address, mockActivePool.address)
   })
 

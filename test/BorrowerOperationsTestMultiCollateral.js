@@ -1,15 +1,8 @@
 const {
     assert
 } = require("chai")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const NonPayable = artifacts.require('NonPayable.sol')
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const USDETokenTester = artifacts.require("./USDETokenTester")
-
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 
 const dec = th.dec
@@ -20,8 +13,6 @@ const SECONDS_IN_ONE_DAY = timeValues.SECONDS_IN_ONE_DAY
 const _1e14BN = toBN(dec(1, 14))
 const ZERO_ADDRESS = th.ZERO_ADDRESS
 const assertRevert = th.assertRevert
-
-
 
 /* NOTE: Some of the borrowing tests do not test for specific USDE fee values. They only test that the
  * fees are non-zero when they should occur, and that they decay over time.
@@ -36,10 +27,11 @@ contract('BorrowerOperations', async accounts => {
 
     const [
         owner, alice, bob, carol, dennis, whale,
-        A, B, C, D, E, F, G, H,
-        // defaulter_1, defaulter_2,
-        frontEnd_1, frontEnd_2, frontEnd_3
-    ] = accounts;
+        A, B, C, D
+    ] = accounts
+
+    let Owner, Alice, Bob, Carol, Dennis, Whale,
+        signerA, signerB, signerC, signerD
 
     let priceFeed
     let priceFeedSTETH
@@ -98,20 +90,7 @@ contract('BorrowerOperations', async accounts => {
     }) => {
         beforeEach(async () => {
             contracts = await deploymentHelper.deployERDCore()
-            // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-            contracts.troveManager = await TroveManagerTester.new()
-            contracts.collateralManager = await CollateralManagerTester.new()
-            ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-            contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
-            await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-            if (withProxy) {
-                const users = [alice, bob, carol, dennis, whale, A, B, C, D, E]
-                await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-            }
-
-            // priceFeed = contracts.priceFeedTestnet
             priceFeedSTETH = contracts.priceFeedSTETH
             priceFeedETH = contracts.priceFeedETH
             priceFeed = priceFeedETH
@@ -127,13 +106,24 @@ contract('BorrowerOperations', async accounts => {
             weth = contracts.weth
             steth = contracts.steth
 
-            treasury = ERDContracts.treasury
-            liquidityIncentive = ERDContracts.liquidityIncentive
-            communityIssuance = ERDContracts.communityIssuance
+            treasury = contracts.treasury
+            liquidityIncentive = contracts.liquidityIncentive
+            communityIssuance = contracts.communityIssuance
 
             USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
             MIN_NET_DEBT = await collateralManager.getMinNetDebt()
             BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
+            const signers = await ethers.getSigners()
+            Owner = signers[0]
+            Alice = signers[1]
+            Bob = signers[2]
+            Carol = signers[3]
+            Dennis = signers[4]
+            Whale = signers[5]
+            signerA = signers[6]
+            signerB = signers[7]
+            signerC = signers[8]
+            signerD = signers[9]
 
             const paramsA = {
                 name: "Token A",
@@ -223,7 +213,7 @@ contract('BorrowerOperations', async accounts => {
         // --- openTrove() --- 
         describe('openTrove() multi collateral', async () => {
             it("Open a trove with multiple collateral types, check if amounts added are correct", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
                     from: alice
                 })
 
@@ -242,7 +232,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(aliceRawBalanceBefore_A.eq(toBN(dec(5, 18))))
                 assert.isTrue(aliceRawBalanceBefore_B.eq(toBN(dec(10, 18))))
                 assert.isTrue(aliceRawBalanceBefore_C.eq(toBN(dec(15, 18))))
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
@@ -270,37 +260,36 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(aliceDebt.eq(toBN(dec(20045000, 14))))
 
                 // Missing token B allocation
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
                     from: bob
                 })
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(11, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Bob).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(11, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                         from: bob
                     }),
                     "You are trying to transfer more tokens than from has"
                 )
-
             })
 
             it("Open various troves with wrong order collateral, check that they have it properly", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenC], [dec(200, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenC], [dec(200, 18)], {
                     from: alice
                 })
-                await borrowerOperations.openTrove([tokenC.address], [dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenC.address], [dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenC, tokenA], [dec(5, 18), dec(10, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenC, tokenA], [dec(5, 18), dec(10, 18)], {
                     from: bob
                 })
-                await borrowerOperations.openTrove([tokenC.address, tokenA.address], [dec(5, 18), dec(10, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([tokenC.address, tokenA.address], [dec(5, 18), dec(10, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
 
-                await th.addMultipleERC20(carol, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
+                await th.addMultipleERC20(Carol, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
                     from: carol
                 })
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Carol).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
                     from: carol
                 })
 
@@ -320,24 +309,24 @@ contract('BorrowerOperations', async accounts => {
 
             it("Open trove multi collat with less balance than you have fails", async () => {
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address], [dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Alice).openTrove([tokenA.address], [dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
                     "You are trying to transfer more tokens than from has"
                 )
 
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address, tokenB.address], [dec(200, 18), dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address], [dec(200, 18), dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
                     "You are trying to transfer more tokens than from has"
                 )
 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA], [dec(400, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA], [dec(400, 18)], {
                     from: alice
                 })
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address, tokenB.address], [dec(200, 18), dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address], [dec(200, 18), dec(200, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
                     "You are trying to transfer more tokens than from has"
@@ -345,27 +334,28 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Open trove after collateral price changes fails ", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA], [dec(400, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA], [dec(400, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(whale, borrowerOperations.address, [tokenA], [dec(400, 18)], {
+                await th.addMultipleERC20(Whale, borrowerOperations.address, [tokenA], [dec(400, 18)], {
                     from: whale
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA], [dec(400, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA], [dec(400, 18)], {
                     from: bob
                 })
-                await borrowerOperations.openTrove([tokenA.address], [dec(300, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Whale).openTrove([tokenA.address], [dec(300, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: whale
                 })
-                await borrowerOperations.openTrove([tokenA.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([tokenA.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
 
                 // priceFeedA.setPrice(dec(100, 18))
-                priceFeedA.setPrice(dec(5, 17))
+                await priceFeedA.setPrice(dec(5, 17))
+
                 // An operation that would result in ICR < MCR is not permitted
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Alice).openTrove([tokenA.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
                     "ICRLessThanMCR"
@@ -375,16 +365,16 @@ contract('BorrowerOperations', async accounts => {
 
         describe('adjustTrove() multi collateral', async () => {
             it("Open a trove with multiple collateral types, then adjust", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC, tokenD], [dec(500, 18), dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC, tokenD], [dec(500, 18), dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
                 const treasury_before = await usdeToken.balanceOf(treasury.address)
@@ -392,7 +382,7 @@ contract('BorrowerOperations', async accounts => {
                 const fee_before = treasury_before.add(liquidityIncentiveUSDE_before)
 
                 // Attempt to adjust with wrong order collateral and with new collateral type
-                await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, 0, false, alice, alice, {
+                await borrowerOperations.connect(Alice).adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, 0, false, alice, alice, {
                     from: alice
                 })
                 const treasury_USDE = await usdeToken.balanceOf(treasury.address)
@@ -408,7 +398,7 @@ contract('BorrowerOperations', async accounts => {
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN) // With interests
 
                 // Should let adjust debt and collateral types
-                await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(100, 18), true, alice, alice, {
+                await borrowerOperations.connect(Alice).adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(100, 18), true, alice, alice, {
                     from: alice
                 })
                 const aliceTokens2 = await getTroveEntireTokens(alice)
@@ -419,7 +409,7 @@ contract('BorrowerOperations', async accounts => {
                 const treasury_before_adjust = await usdeToken.balanceOf(treasury.address)
                 const liquidityIncentive_before_adjust = await usdeToken.balanceOf(liquidityIncentive.address)
                 const fee_before_adjust = treasury_before_adjust.add(liquidityIncentive_before_adjust)
-                await borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(1005, 17), false, alice, alice, {
+                await borrowerOperations.connect(Alice).adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(1005, 17), false, alice, alice, {
                     from: alice
                 })
                 const treasury_after = await usdeToken.balanceOf(treasury.address)
@@ -432,7 +422,7 @@ contract('BorrowerOperations', async accounts => {
                 // But not below debt floor
                 // Trove's net debt must be greater than minimum
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(5, 18), false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenD.address, tokenA.address], [dec(1, 18), dec(3, 18)], [tokenC.address, tokenB.address], [dec(2, 18), dec(1, 18)], th._100pct, dec(5, 18), false, alice, alice, {
                         from: alice
                     }),
                     "TroveDebtLessThanMinDebt"
@@ -440,48 +430,48 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Adjusting trove without doing anything reverts", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
                 // Debt increase requires non-zero debtChange
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, true, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [], [], th._100pct, 0, true, alice, alice, {
                         from: alice
                     }),
                     "DebtIncreaseZero"
                 )
                 // There must be either a collateral change or a debt change
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "MustChangeForCollOrDebt"
                 )
                 // Collateral amount is 0
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [tokenA.address], [0], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [tokenA.address], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "CollAmountZero"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenA.address], [0], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenA.address], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "CollAmountZero"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenA.address, tokenB.address], [0, 0], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenA.address, tokenB.address], [0, 0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "CollAmountZero"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [tokenA.address, tokenB.address], [0, 0], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [tokenA.address, tokenB.address], [0, 0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "CollAmountZero"
@@ -489,43 +479,43 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Adjusting trove by amounts / tokens that do not line up reverts", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
                 // Length mismatch
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [0], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [], [0], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [tokenA.address, tokenB.address], [0], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [tokenA.address, tokenB.address], [0], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [tokenA.address], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [tokenA.address], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenA.address, tokenB.address], [0], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenA.address, tokenB.address], [0], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
@@ -533,22 +523,22 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Adjusting trove by removing and adding same type of collateral does not work", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
                 // Overlap Colls
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenA.address], [toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenA.address], [toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "CollsOverlap"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, dec(1, 18), false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [tokenA.address], [toBN(dec(2, 18))], th._100pct, dec(1, 18), false, alice, alice, {
                         from: alice
                     }),
                     "CollsOverlap"
@@ -556,54 +546,54 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Adjusting or opening trove with duplicate collat does not work", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
                 // Duplicate Colls
                 await assertRevert(
-                    borrowerOperations.openTrove([tokenA.address, tokenA.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenA.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                         from: alice
                     }),
                     "CollsDuplicate"
                 )
 
                 // Can still open normal trove
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
                 // Length mismatch
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenA.address, tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [], [], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenA.address, tokenB.address, tokenA.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [], [], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
                 await assertRevert(
-                    borrowerOperations.adjustTrove([], [], [tokenA.address, tokenA.address, tokenB.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], th._100pct, 0, false, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([], [], [tokenA.address, tokenA.address, tokenB.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], th._100pct, 0, false, alice, alice, {
                         from: alice
                     }),
                     "LengthMismatch"
                 )
 
                 // Can still adjust normal trove
-                await borrowerOperations.adjustTrove([tokenA.address, tokenB.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [], [], th._100pct, 0, false, alice, alice, {
+                await borrowerOperations.connect(Alice).adjustTrove([tokenA.address, tokenB.address], [toBN(dec(1, 18)), toBN(dec(1, 18))], [], [], th._100pct, 0, false, alice, alice, {
                     from: alice
                 })
             })
 
             it("Adjusting a trove with collateral after price drops calculates VC correctly", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(whale, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Whale, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
                     from: whale
                 })
 
                 // 5 low decimal token worth 5 * 200, with only 6 decimals. 
-                await borrowerOperations.openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
-                await borrowerOperations.openTrove([tokenSuperRisky.address, tokenC.address], [dec(450, 18), dec(450, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Whale).openTrove([tokenSuperRisky.address, tokenC.address], [dec(450, 18), dec(450, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: whale
                 })
 
@@ -627,7 +617,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(aliceICRAfter.gt(toBN(dec(19, 17))))
 
                 // Assert ICR = Alice ICR 
-                const aliceVC = await collateralManager.getValue(aliceTokens, aliceColls)
+                const aliceVC = await collateralManager.getValues(aliceTokens, aliceColls)
                 assert.isTrue(aliceVC[0].eq(toBN(dec(4000, 18))))
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN)
 
@@ -643,7 +633,7 @@ contract('BorrowerOperations', async accounts => {
                 // (20-2) * 100 + (5+10) * 110  = 3450 VC Balance, 3450 / 3000 = 150% collateral ratio
                 await priceFeedC.setPrice(toBN(dec(55, 16)))
                 const debtAddition = toBN(dec(1000, 18)).mul(toBN(1000)).div(toBN(1005)) // 1000 adjusted for fees
-                await borrowerOperations.adjustTrove([tokenC.address], [toBN(dec(10, 18))], [tokenSuperRisky.address], [toBN(dec(2, 18))], th._100pct, debtAddition, true, alice, alice, {
+                await borrowerOperations.connect(Alice).adjustTrove([tokenC.address], [toBN(dec(10, 18))], [tokenSuperRisky.address], [toBN(dec(2, 18))], th._100pct, debtAddition, true, alice, alice, {
                     from: alice
                 })
                 const treasuryUSDE = await usdeToken.balanceOf(treasury.address)
@@ -666,7 +656,7 @@ contract('BorrowerOperations', async accounts => {
                 // Reverts if trying to withdraw collateral + debt worth more than above 110%
                 // An operation that would result in ICR < MCR is not permitted
                 await assertRevert(
-                    borrowerOperations.adjustTrove([tokenC.address], [toBN(dec(1, 18))], [tokenSuperRisky.address], [toBN(dec(11, 18))], th._100pct, toBN(dec(500, 18)), true, alice, alice, {
+                    borrowerOperations.connect(Alice).adjustTrove([tokenC.address], [toBN(dec(1, 18))], [tokenSuperRisky.address], [toBN(dec(11, 18))], th._100pct, toBN(dec(500, 18)), true, alice, alice, {
                         from: alice
                     }),
                     "ICRLessThanMCR"
@@ -676,17 +666,17 @@ contract('BorrowerOperations', async accounts => {
 
         describe('check VC, TCR, balances multi collateral', async () => {
             it("Open two multi collateral trove, check if collateral is correct", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([tokenA.address, tokenB.address, tokenC.address], [dec(5, 18), dec(10, 18), dec(15, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
 
@@ -698,10 +688,10 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Open two multi collateral trove, check raw balances of contracts are correct", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
@@ -712,10 +702,10 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(await th.assertCollateralsEqual(ABCAddresses, [0, 0, 0], ABCAddresses, activePool_Coll_Before))
                 assert.isTrue(await th.assertCollateralsEqual(ABCAddresses, [0, 0, 0], ABCAddresses, activePool_RawColl_Before))
 
-                await borrowerOperations.openTrove([tokenA.address, tokenB.address], [dec(55, 18), dec(10, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenB.address], [dec(55, 18), dec(10, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
-                await borrowerOperations.openTrove([tokenA.address, tokenC.address], [dec(20, 18), dec(12, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([tokenA.address, tokenC.address], [dec(20, 18), dec(12, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
 
@@ -743,11 +733,11 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Open multi collateral trove, adjust prices individually, check if VC and TCR change accordingly. Ratio 1 tokens", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
-                await borrowerOperations.openTrove([tokenA.address, tokenC.address, tokenB.address], [dec(10, 18), dec(5, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenA.address, tokenC.address, tokenB.address], [dec(10, 18), dec(5, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
@@ -771,7 +761,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(TCRAfter.gt(toBN(dec(149, 16))))
 
                 // Assert TCR = Alice ICR 
-                const aliceVC = await collateralManager.getValue(aliceTokens, aliceColls)
+                const aliceVC = await collateralManager.getValues(aliceTokens, aliceColls)
                 assert.isTrue(aliceVC[0].eq(toBN(dec(3000, 18))))
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN)
 
@@ -784,11 +774,11 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Ratio < 1, Open multi collateral trove, adjust prices individually, check if VC and TCR change accordingly", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenSuperRisky, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenSuperRisky, tokenB, tokenC], [dec(500, 18), dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
-                await borrowerOperations.openTrove([tokenSuperRisky.address, tokenC.address, tokenB.address], [dec(20, 18), dec(5, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenSuperRisky.address, tokenC.address, tokenB.address], [dec(20, 18), dec(5, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
@@ -812,7 +802,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(TCRAfter.gt(toBN(dec(199, 16))))
 
                 // Assert TCR = Alice ICR 
-                const aliceVC = await collateralManager.getValue(aliceTokens, aliceColls)
+                const aliceVC = await collateralManager.getValues(aliceTokens, aliceColls)
                 assert.isTrue(aliceVC[0].eq(toBN(dec(4000, 18))))
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN)
 
@@ -826,12 +816,12 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("Including low decimal, Open multi collateral trove, adjust prices individually, check if VC and TCR change accordingly", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
                 // 5 low decimal token worth 5 * 200, with only 6 decimals. 
-                await borrowerOperations.openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
@@ -855,7 +845,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(TCRAfter.gt(toBN(dec(299, 16))))
 
                 // Assert TCR = Alice ICR 
-                const aliceVC = await collateralManager.getValue(aliceTokens, aliceColls)
+                const aliceVC = await collateralManager.getValues(aliceTokens, aliceColls)
                 assert.isTrue(aliceVC[0].eq(toBN(dec(6000, 18))))
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN)
 
@@ -869,12 +859,12 @@ contract('BorrowerOperations', async accounts => {
             })
 
             it("When price drops to 0, VC updates accordingly. ", async () => {
-                await th.addMultipleERC20(alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenSuperRisky, tokenC], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
 
                 // 5 low decimal token worth 5 * 200, with only 6 decimals. 
-                await borrowerOperations.openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([tokenSuperRisky.address, tokenC.address], [dec(20, 18), dec(5, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice
                 })
 
@@ -898,7 +888,7 @@ contract('BorrowerOperations', async accounts => {
                 assert.isTrue(TCRAfter.gt(toBN(dec(199, 16))))
 
                 // Assert TCR = Alice ICR 
-                const aliceVC = await collateralManager.getValue(aliceTokens, aliceColls)
+                const aliceVC = await collateralManager.getValues(aliceTokens, aliceColls)
                 assert.isTrue(aliceVC[0].eq(toBN(dec(4000, 18))))
                 th.assertIsApproximatelyEqual(aliceDebt, toBN(dec(20045000, 14)), _1e14BN)
             })
@@ -971,23 +961,25 @@ contract('BorrowerOperations', async accounts => {
 
                 // let accounts = [A, B, C, D, E, F, G, H]
                 let accounts = [A, B, C, D]
+                let signers = [signerA, signerB, signerC, signerD]
                 // let tokens = [contracts.weth, contracts.steth, tokenA, tokenB, tokenC, tokenD, tokenE, tokenF, tokenG, tokenH, tokenI, tokenRisky, tokenSuperRisky, stableCoin]
                 let tokens = [tokenA, tokenB, tokenC, tokenD, tokenRisky, tokenSuperRisky, stableCoin, tokenE, tokenF, tokenG, tokenH, tokenI]
                 await openTrove({
                     extraUSDEAmount: toBN(dec(100000, 30)),
                     ICR: toBN(dec(2, 18)),
                     token: tokenA,
+                    signer: Whale,
                     extraParams: {
                         from: whale
                     }
                 })
-                await th.addTokensToAccountsAndOpenTroveWithICRNew(contracts, toBN(dec(2, 18)), accounts, tokens)
+                await th.addTokensToAccountsAndOpenTroveWithICRNew(contracts, toBN(dec(2, 18)), signers, tokens)
                 console.log("Finished adding tokens and opening all troves. ")
                 console.log("Adjusting troves randomly.")
 
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
 
                 console.log("Adjusting prices and adjusting troves again. ")
                 await priceFeedA.setPrice(toBN(dec(9, 17)))
@@ -1006,9 +998,9 @@ contract('BorrowerOperations', async accounts => {
                 await priceFeedStableCoin.setPrice(toBN(dec(222, 16)))
                 await priceFeed.setPrice(toBN(dec(400, 18)))
 
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
-                await th.adjustTrovesRandomly(contracts, accounts, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
+                await th.adjustTrovesRandomly(contracts, signers, tokens)
             })
         })
 
@@ -1030,28 +1022,28 @@ contract('BorrowerOperations', async accounts => {
                 let priceFeedA = result.priceFeed
 
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [steth], [dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [steth], [dec(500, 18)], {
                     from: bob
                 })
-                await th.addMultipleERC20(carol, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Carol, borrowerOperations.address, [steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: carol
                 })
 
-                await borrowerOperations.openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
 
                 const bobDebt = await troveManager.getTroveDebt(bob)
                 th.assertIsApproximatelyEqual(bobDebt, toBN(dec(20045000, 14)))
 
-                await borrowerOperations.openTrove([contracts.steth.address, tokenA.address], [dec(20, 18), dec(20, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Carol).openTrove([contracts.steth.address, tokenA.address], [dec(20, 18), dec(20, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
                     from: carol
                 })
                 const carolDebt = await troveManager.getTroveDebt(carol)
@@ -1076,23 +1068,23 @@ contract('BorrowerOperations', async accounts => {
                 let priceFeedA = result.priceFeed
 
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
                     from: bob
                 })
-                await th.addMultipleERC20(carol, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Carol, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: carol
                 })
 
-                await borrowerOperations.openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
 
                 // Now steth is 50% of the collateral of the protocol, so the two fee points should be 0.5% and 1.5%, resulting in 1% fee.
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
                 // expect debt to be 2000.4025
@@ -1101,7 +1093,7 @@ contract('BorrowerOperations', async accounts => {
                 // total collateral in the system is 40 + 120 = 160. 
                 // steth is 100 / 160 = 62.5% of total. The fee should be (50% + 62.5%) / 2 => (0.01 + 0.01125) / 2 = 0.010625%
                 // tokenA is 40 / 160 = 25% of total. The fee should be (0% + 25%) / 2 => (0.005 + 0.0075) = 0.00625% 
-                await borrowerOperations.openTrove([contracts.steth.address, tokenA.address], [dec(80, 18), dec(40, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Carol).openTrove([contracts.steth.address, tokenA.address], [dec(80, 18), dec(40, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
                     from: carol
                 })
                 // expect debt to be 2000.4025
@@ -1127,20 +1119,20 @@ contract('BorrowerOperations', async accounts => {
                 let priceFeedA = result.priceFeed
 
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
-                await borrowerOperations.openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
 
                 // Now steth is 50% of the collateral of the protocol, so the two fee points should be 0.5% and 1.5%, resulting in 1% fee.
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob
                 })
                 // expect debt to be VCAmount * (0.005) / 2 + 2000 
@@ -1150,7 +1142,7 @@ contract('BorrowerOperations', async accounts => {
                 // total collateral in the system is 40 + 120 = 160. 
                 // steth is 100 / 160 = 62.5% of total. The fee should be (50% + 62.5%) / 2 => (0.01 + 0.01125) / 2 = 0.010625%
                 // tokenA is 40 / 160 = 25% of total. The fee should be (0% + 25%) / 2 => (0.005 + 0.0075) = 0.00625% 
-                await borrowerOperations.adjustTrove([contracts.steth.address, tokenA.address], [dec(80, 18), dec(40, 18)], [], [], th._100pct, 0, false, bob, bob, {
+                await borrowerOperations.connect(Bob).adjustTrove([contracts.steth.address, tokenA.address], [dec(80, 18), dec(40, 18)], [], [], th._100pct, 0, false, bob, bob, {
                     from: bob
                 })
                 // expect debt to be (80 * 200 * 0.010625 + 40 * 200 * 0.00625) / 2 + 2000 = 2110 + 15 from earlier
@@ -1176,14 +1168,14 @@ contract('BorrowerOperations', async accounts => {
                 let priceFeedA = result.priceFeed
 
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
-                await borrowerOperations.openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([], [], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
@@ -1191,7 +1183,7 @@ contract('BorrowerOperations', async accounts => {
                 const justBelowFeeCap = toBN(dec(30, 18)).add(toBN(dec(1800, 18)).sub(USDEMinAmount)).mul(toBN(dec(1, 18))).div(toBN(dec(4000, 18))).sub(toBN(dec(1, 1)))
                 // bob does not want to pay more than 0.5% fee on his open trove. Now calculated on collateral amount. 
                 th.assertRevert(
-                    borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], justBelowFeeCap, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                    borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], justBelowFeeCap, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                         from: bob
                     }),
                     "TroveIsActive"
@@ -1213,35 +1205,35 @@ contract('BorrowerOperations', async accounts => {
                 let priceFeedA = result.priceFeed
 
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [contracts.steth], [dec(500, 18), dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
 
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
 
                 // bob will pay max fee of 1% here 
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob,
                     value: dec(20, 18)
                 })
                 const bobDebt = await troveManager.getTroveDebt(bob)
                 assert.isFalse(bobDebt.sub(toBN(dec(2000, 18))).eq(toBN(dec(4025, 14))), "maxFee is 1% ")
 
-                await usdeToken.transfer(bob, dec(1500, 18), {
+                await usdeToken.connect(Alice).transfer(bob, dec(1500, 18), {
                     from: alice
                 })
-                await borrowerOperations.closeTrove({
+                await borrowerOperations.connect(Bob).closeTrove({
                     from: bob
                 })
                 // skip fee bootstrap period. 
                 await th.fastForwardTime((SECONDS_IN_ONE_DAY * 14), web3.currentProvider)
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob,
                     value: dec(20, 18)
                 })
@@ -1266,17 +1258,17 @@ contract('BorrowerOperations', async accounts => {
                 let tokenA = result.token
                 let priceFeedA = result.priceFeed
                 // alice will open a trove with a solid amount of tokens, of weth. weth has no additional fee. 
-                await th.addMultipleERC20(alice, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
+                await th.addMultipleERC20(Alice, borrowerOperations.address, [contracts.steth], [dec(500, 18)], {
                     from: alice
                 })
-                await th.addMultipleERC20(bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Bob, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: bob
                 })
-                await th.addMultipleERC20(carol, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
+                await th.addMultipleERC20(Carol, borrowerOperations.address, [contracts.steth, tokenA], [dec(500, 18), dec(500, 18)], {
                     from: carol
                 })
 
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Alice).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, alice, alice, ZERO_ADDRESS, {
                     from: alice,
                     value: dec(20, 18)
                 })
@@ -1284,13 +1276,13 @@ contract('BorrowerOperations', async accounts => {
                 const aliceDebt = await troveManager.getTroveDebt(alice)
 
                 // Bob should pay slightly more than alice due to how the price curve is set up. Set to be around 0.875%. 
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, bob, bob, ZERO_ADDRESS, {
                     from: bob,
                     value: dec(100, 18)
                 })
 
                 // Carol should pay slightly less than 0.875% fee. 
-                await borrowerOperations.openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
+                await borrowerOperations.connect(Carol).openTrove([contracts.steth.address], [dec(20, 18)], th._100pct, USDEMinAmount, carol, carol, ZERO_ADDRESS, {
                     from: carol,
                     value: dec(100, 18)
                 })

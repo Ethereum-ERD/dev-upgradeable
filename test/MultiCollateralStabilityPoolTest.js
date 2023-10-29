@@ -1,26 +1,14 @@
 const {
   assert
 } = require("chai")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const TroveManagerLiquidations = artifacts.require("./TroveManagerLiquidations.sol")
-const USDETokenTester = artifacts.require("./USDETokenTester")
-
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 const dec = th.dec
 const toBN = th.toBN
 const mv = testHelpers.MoneyValues
-const timeValues = testHelpers.TimeValues
-
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const USDEToken = artifacts.require("USDEToken")
-const NonPayable = artifacts.require('NonPayable.sol')
 const _1e14BN = toBN(dec(1, 14))
-const ZERO = toBN('0')
 const ZERO_ADDRESS = th.ZERO_ADDRESS
-const maxBytes32 = th.maxBytes32
 
 contract('StabilityPool', async accounts => {
 
@@ -30,9 +18,15 @@ contract('StabilityPool', async accounts => {
     alice, bob, carol, dennis, erin, flyn,
     A, B, C, D, E, F,
     frontEnd_1, frontEnd_2, frontEnd_3,
-  ] = accounts;
+  ] = accounts
 
-  const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3]
+  let Owner,
+    Defaulter_1, Defaulter_2, Defaulter_3,
+    Whale, Alice, Bob, Carol, Dennis, Erin, Flyn,
+    signerA, signerB, signerC, signerD, signerE, signerF,
+    FrontEnd_1, FrontEnd_2, FrontEnd_3
+
+  let FrontEnds
   let contracts
   let priceFeed
   let usdeToken
@@ -83,17 +77,6 @@ contract('StabilityPool', async accounts => {
 
     beforeEach(async () => {
       contracts = await deploymentHelper.deployERDCore()
-      contracts.collateralManager = await CollateralManagerTester.new()
-      // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-      contracts.troveManager = await TroveManagerTester.new()
-
-      // contracts.usdeToken = await USDETokenTester.new(contracts.troveManager.address,
-      //     contracts.troveManagerLiquidations.address,
-      //     contracts.troveManagerRedemptions.address,
-      //     contracts.stabilityPool.address,
-      //     contracts.borrowerOperations.address),
-      const ERDContracts = await deploymentHelper.deployERDContracts()
-      contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
 
       priceFeedETH = contracts.priceFeedETH
       priceFeedSTETH = contracts.priceFeedSTETH
@@ -111,16 +94,36 @@ contract('StabilityPool', async accounts => {
       troveManagerRedemptions = contracts.troveManagerRedemptions
       collateralManager = contracts.collateralManager
 
-      treasury = ERDContracts.treasury
-      liquidityIncentive = ERDContracts.liquidityIncentive
-      communityIssuance = ERDContracts.communityIssuance
-
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+      treasury = contracts.treasury
+      liquidityIncentive = contracts.liquidityIncentive
+      communityIssuance = contracts.communityIssuance
 
       await collateralManager.addCollateral(contracts.steth.address, priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
       await priceFeedSTETH.setPrice(dec(1, 18))
+      const signers = await ethers.getSigners()
+      Owner = signers[0]
+      Defaulter_1 = signers[1]
+      Defaulter_2 = signers[2]
+      Defaulter_3 = signers[3]
+      Whale = signers[4]
+      Alice = signers[5]
+      Bob = signers[6]
+      Carol = signers[7]
+      Dennis = signers[8]
+      Erin = signers[9]
+      Flyn = signers[10]
+      signerA = signers[11]
+      signerB = signers[12]
+      signerC = signers[13]
+      signerD = signers[14]
+      signerE = signers[15]
+      signerF = signers[16]
+      FrontEnd_1 = signers[17]
+      FrontEnd_2 = signers[18]
+      FrontEnd_3 = signers[19]
+      FrontEnds = [FrontEnd_1, FrontEnd_2, FrontEnd_3]
       // Register 3 front ends
-      await th.registerFrontEnds(frontEnds, stabilityPool)
+      await th.registerFrontEnds(FrontEnds, stabilityPool)
 
       const paramsA = {
         name: "Token A",
@@ -209,8 +212,7 @@ contract('StabilityPool', async accounts => {
 
     it("MULTICOLLATERAL withdrawFromSP(): partial retrieval - retrieves correct USDE amount and the entire ETH Gain, and updates deposit", async () => {
       // --- SETUP ---
-
-      await th.addERC20(steth, whale, borrowerOperations.address, toBN(dec(2, 24)), {
+      await th.addERC20(steth, Whale, borrowerOperations.address, toBN(dec(2, 24)), {
         from: whale
       })
 
@@ -218,7 +220,7 @@ contract('StabilityPool', async accounts => {
       const aliceInSP = toBN(dec(2000, 18));
       const bobInSP = toBN(dec(3000, 18));
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Whale).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -230,14 +232,13 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-
       // Whale deposits 10000 USDE in StabilityPool
-      await stabilityPool.provideToSP(whaleInSP, frontEnd_1, {
+      await stabilityPool.connect(Whale).provideToSP(whaleInSP, frontEnd_1, {
         from: whale
       })
 
       // // 2 Troves opened
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_1).openTrove(
         [],
         [],
         th._100pct,
@@ -249,10 +250,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addERC20(steth, defaulter_2, borrowerOperations.address, toBN(dec(21, 18)), {
+      await th.addERC20(steth, Defaulter_2, borrowerOperations.address, toBN(dec(21, 18)), {
         from: defaulter_2
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_2).openTrove(
         [steth.address],
         [dec(21, 'ether')],
         th._100pct,
@@ -263,10 +264,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addERC20(steth, alice, borrowerOperations.address, toBN(dec(230, 18)), {
+      await th.addERC20(steth, Alice, borrowerOperations.address, toBN(dec(230, 18)), {
         from: alice
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Alice).openTrove(
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
@@ -285,7 +286,7 @@ contract('StabilityPool', async accounts => {
       // // --- TEST ---
 
       // Alice makes deposit #1: 2000 USDE
-      await stabilityPool.provideToSP(aliceInSP, frontEnd_1, {
+      await stabilityPool.connect(Alice).provideToSP(aliceInSP, frontEnd_1, {
         from: alice
       })
 
@@ -300,20 +301,18 @@ contract('StabilityPool', async accounts => {
       const whale_pre_STETH_balance = await steth.balanceOf(whale);
 
       // // 2 users with Trove with 170 USDE drawn are closed
-      const liquidationTX_1 = await troveManager.liquidate(defaulter_1, {
-        from: owner
-      }) // 170 USDE closed
-      const liquidationTX_2 = await troveManager.liquidate(defaulter_2, {
-        from: owner
-      }) // 170 USDE closed
+      const liquidationTX_1 = await troveManager.liquidate(defaulter_1) // 170 USDE closed
+      const liquidationTX_2 = await troveManager.liquidate(defaulter_2) // 170 USDE closed
+      const liquidationTX_1Res = await liquidationTX_1.wait()
+      const liquidationTX_2Res = await liquidationTX_2.wait()
 
       const [liquidatedDebt_1, usdeGasComp_1, liquidatedCollAmounts_1,
         totalCollGasCompAmounts_1
-      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1);
+      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1Res);
 
       const [liquidatedDebt_2, usdeGasComp_2, liquidatedCollAmounts_2,
         totalCollGasCompAmounts_2
-      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2);
+      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2Res);
 
       // Alice USDELoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
 
@@ -325,7 +324,7 @@ contract('StabilityPool', async accounts => {
 
       assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_A, compoundedUSDEDeposit_A), 100000)
       // Alice retrieves part of her entitled USDE: 1800 USDEer
-      await stabilityPool.withdrawFromSP(dec(1000, 18), {
+      await stabilityPool.connect(Alice).withdrawFromSP(dec(1000, 18), {
         from: alice,
         gasPrice: 0
       })
@@ -369,7 +368,7 @@ contract('StabilityPool', async accounts => {
 
       assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_Whale, compoundedUSDEDeposit_Whale), 100000)
 
-      await stabilityPool.withdrawFromSP(dec(1000, 18), {
+      await stabilityPool.connect(Whale).withdrawFromSP(dec(1000, 18), {
         from: whale,
         gasPrice: 0
       }) // whale withdraws 1000 USDE from SP
@@ -406,7 +405,7 @@ contract('StabilityPool', async accounts => {
 
     it("open, deposit into SP, liquidate, deposit into SP #2, liquidate", async () => {
       // --- SETUP ---
-      await th.addERC20(steth, whale, borrowerOperations.address, toBN(dec(20000, 24)), {
+      await th.addERC20(steth, Whale, borrowerOperations.address, toBN(dec(20000, 24)), {
         from: whale
       })
 
@@ -415,11 +414,11 @@ contract('StabilityPool', async accounts => {
       const carolInSP = toBN(dec(2000, 18));
       const bobInSP = toBN(dec(2000, 18));
 
-      await th.addERC20(steth, bob, borrowerOperations.address, toBN(dec(2200, 24)), {
+      await th.addERC20(steth, Bob, borrowerOperations.address, toBN(dec(2200, 24)), {
         from: bob
       })
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Bob).openTrove(
         [steth.address],
         [dec(1000, 'ether')],
         th._100pct,
@@ -431,11 +430,11 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await stabilityPool.provideToSP(bobInSP, frontEnd_1, {
+      await stabilityPool.connect(Bob).provideToSP(bobInSP, frontEnd_1, {
         from: bob
       })
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Whale).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -449,12 +448,12 @@ contract('StabilityPool', async accounts => {
 
 
       // Whale deposits 10000 USDE in StabilityPool
-      await stabilityPool.provideToSP(whaleInSP, frontEnd_1, {
+      await stabilityPool.connect(Whale).provideToSP(whaleInSP, frontEnd_1, {
         from: whale
       })
 
       // // 2 Troves opened
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_1).openTrove(
         [],
         [],
         th._100pct,
@@ -466,10 +465,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addERC20(steth, defaulter_2, borrowerOperations.address, toBN(dec(210000, 18)), {
+      await th.addERC20(steth, Defaulter_2, borrowerOperations.address, toBN(dec(210000, 18)), {
         from: defaulter_2
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_2).openTrove(
         [steth.address],
         [dec(21, 'ether')],
         th._100pct,
@@ -480,10 +479,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addERC20(steth, alice, borrowerOperations.address, toBN(dec(230000, 18)), {
+      await th.addERC20(steth, Alice, borrowerOperations.address, toBN(dec(230000, 18)), {
         from: alice
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Alice).openTrove(
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
@@ -503,7 +502,7 @@ contract('StabilityPool', async accounts => {
       // // --- TEST ---
 
       // Alice makes deposit #1: 2000 USDE
-      await stabilityPool.provideToSP(aliceInSP, frontEnd_1, {
+      await stabilityPool.connect(Alice).provideToSP(aliceInSP, frontEnd_1, {
         from: alice,
         gasPrice: 0
       })
@@ -522,20 +521,18 @@ contract('StabilityPool', async accounts => {
       const whale_pre_STETH_balance = await steth.balanceOf(whale);
 
       // // 2 users with Trove with 170 USDE drawn are closed
-      const liquidationTX_1 = await troveManager.liquidate(defaulter_1, {
-        from: owner
-      }) // 170 USDE closed
-      const liquidationTX_2 = await troveManager.liquidate(defaulter_2, {
-        from: owner
-      }) // 170 USDE closed
+      const liquidationTX_1 = await troveManager.liquidate(defaulter_1) // 170 USDE closed
+      const liquidationTX_2 = await troveManager.liquidate(defaulter_2) // 170 USDE closed
+      const liquidationTX_1Res = await liquidationTX_1.wait()
+      const liquidationTX_2Res = await liquidationTX_2.wait()
 
       const [liquidatedDebt_1, usdeGasComp_1, liquidatedCollAmounts_1,
         totalCollGasCompAmounts_1
-      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1);
+      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_1Res);
 
       const [liquidatedDebt_2, usdeGasComp_2, liquidatedCollAmounts_2,
         totalCollGasCompAmounts_2
-      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2);
+      ] = await th.getEmittedLiquidationValuesMulti(liquidationTX_2Res);
 
       // Alice USDELoss is ((2000/(10000 + 2000)) * liquidatedDebt), for each liquidation
 
@@ -548,7 +545,7 @@ contract('StabilityPool', async accounts => {
       assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_A, compoundedUSDEDeposit_A), 100000)
 
       // Alice retrieves part of her entitled USDE: 1800 USDEer
-      await stabilityPool.withdrawFromSP(dec(1000, 18), {
+      await stabilityPool.connect(Alice).withdrawFromSP(dec(1000, 18), {
         from: alice,
         gasPrice: 0
       })
@@ -594,10 +591,10 @@ contract('StabilityPool', async accounts => {
       assert.isAtMost(th.getDifference(expectedCompoundedUSDEDeposit_Whale, compoundedUSDEDeposit_Whale), 100000)
 
       // new depositor to stability pool
-      await th.addERC20(steth, carol, borrowerOperations.address, toBN(dec(230, 18)), {
+      await th.addERC20(steth, Carol, borrowerOperations.address, toBN(dec(230, 18)), {
         from: carol
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Carol).openTrove(
         [steth.address],
         [dec(230, 'ether')],
         th._100pct,
@@ -609,29 +606,29 @@ contract('StabilityPool', async accounts => {
       )
 
       // carol makes deposit #1: 2000 USDE
-      await stabilityPool.provideToSP(carolInSP, frontEnd_1, {
+      await stabilityPool.connect(Carol).provideToSP(carolInSP, frontEnd_1, {
         from: carol
       })
     })
 
     it("withdrawFromSP(): doesn't impact any troves, including the caller's trove", async () => {
-      await th.addERC20(steth, whale, borrowerOperations.address, toBN(dec(2, 24)), {
+      await th.addERC20(steth, Whale, borrowerOperations.address, toBN(dec(2, 24)), {
         from: whale
       })
 
-      await th.addERC20(steth, alice, borrowerOperations.address, toBN(dec(232, 24)), {
+      await th.addERC20(steth, Alice, borrowerOperations.address, toBN(dec(232, 24)), {
         from: alice
       })
 
-      await th.addERC20(steth, bob, borrowerOperations.address, toBN(dec(22, 24)), {
+      await th.addERC20(steth, Bob, borrowerOperations.address, toBN(dec(22, 24)), {
         from: bob
       })
 
-      await th.addERC20(steth, carol, borrowerOperations.address, toBN(dec(22, 24)), {
+      await th.addERC20(steth, Carol, borrowerOperations.address, toBN(dec(22, 24)), {
         from: carol
       })
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Whale).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -643,7 +640,7 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Alice).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -655,7 +652,7 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Bob).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -667,7 +664,7 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Carol).openTrove(
         [steth.address],
         [dec(100, 'ether')],
         th._100pct,
@@ -680,13 +677,13 @@ contract('StabilityPool', async accounts => {
       )
 
       // A, B and C provide to SP
-      await stabilityPool.provideToSP(dec(10000, 18), frontEnd_1, {
+      await stabilityPool.connect(Alice).provideToSP(dec(10000, 18), frontEnd_1, {
         from: alice
       })
-      await stabilityPool.provideToSP(dec(20000, 18), frontEnd_1, {
+      await stabilityPool.connect(Bob).provideToSP(dec(20000, 18), frontEnd_1, {
         from: bob
       })
-      await stabilityPool.provideToSP(dec(30000, 18), frontEnd_1, {
+      await stabilityPool.connect(Carol).provideToSP(dec(30000, 18), frontEnd_1, {
         from: carol
       })
 
@@ -717,7 +714,7 @@ contract('StabilityPool', async accounts => {
 
       // Carol withdraws her Stability deposit 
       assert.equal(((await stabilityPool.deposits(carol))[0]).toString(), dec(30000, 18))
-      await stabilityPool.withdrawFromSP(dec(30000, 18), {
+      await stabilityPool.connect(Carol).withdrawFromSP(dec(30000, 18), {
         from: carol,
         gasPrice: 0
       })
@@ -759,14 +756,14 @@ contract('StabilityPool', async accounts => {
     it("provideToSP(), new deposit: depositor does not receive any collateral gains", async () => {
       const addresses = [alice, whale, C, D]
 
-      await th.addMultipleERC20(alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
+      await th.addMultipleERC20(Alice, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
         from: alice
       })
-      await th.addMultipleERC20(whale, borrowerOperations.address, [tokenB, tokenD, tokenA], [dec(234, 18), dec(114000, 18), dec(11445, 18)], {
+      await th.addMultipleERC20(Whale, borrowerOperations.address, [tokenB, tokenD, tokenA], [dec(234, 18), dec(114000, 18), dec(11445, 18)], {
         from: whale
       })
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Alice).openTrove(
         [tokenA.address, tokenB.address, tokenC.address],
         [dec(5, 18), dec(10, 18), dec(15, 18)],
         th._100pct,
@@ -776,7 +773,7 @@ contract('StabilityPool', async accounts => {
           from: alice
         }
       )
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Whale).openTrove(
         [tokenB.address, tokenD.address, tokenA.address],
         [dec(234, 18), dec(114000, 18), dec(11445, 18)],
         th._100pct,
@@ -788,22 +785,22 @@ contract('StabilityPool', async accounts => {
       )
 
       // Whale transfers USDE to A, B
-      await usdeToken.transfer(A, dec(100, 18), {
+      await usdeToken.connect(Whale).transfer(A, dec(100, 18), {
         from: whale
       })
-      await usdeToken.transfer(B, dec(200, 18), {
+      await usdeToken.connect(Whale).transfer(B, dec(200, 18), {
         from: whale
       })
 
       // C, D open troves
-      await th.addMultipleERC20(C, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(4, 18), dec(3, 18), dec(20, 18)], {
+      await th.addMultipleERC20(signerC, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(4, 18), dec(3, 18), dec(20, 18)], {
         from: C
       })
-      await th.addMultipleERC20(D, borrowerOperations.address, [tokenB, tokenD], [dec(500, 18), dec(4, 18)], {
+      await th.addMultipleERC20(signerD, borrowerOperations.address, [tokenB, tokenD], [dec(500, 18), dec(4, 18)], {
         from: D
       })
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(signerC).openTrove(
         [tokenA.address, tokenB.address, tokenC.address],
         [dec(4, 18), dec(3, 18), dec(20, 18)],
         th._100pct,
@@ -813,7 +810,7 @@ contract('StabilityPool', async accounts => {
           from: C
         }
       )
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(signerD).openTrove(
         [tokenB.address, tokenD.address],
         [dec(500, 18), dec(4, 18)],
         th._100pct,
@@ -843,19 +840,19 @@ contract('StabilityPool', async accounts => {
       }
 
       // A, B, C, D provide to SP
-      await stabilityPool.provideToSP(dec(100, 18), frontEnd_1, {
+      await stabilityPool.connect(Whale).provideToSP(dec(100, 18), frontEnd_1, {
         from: whale,
         gasPrice: 0
       })
-      await stabilityPool.provideToSP(dec(200, 18), ZERO_ADDRESS, {
+      await stabilityPool.connect(Alice).provideToSP(dec(200, 18), ZERO_ADDRESS, {
         from: alice,
         gasPrice: 0
       })
-      await stabilityPool.provideToSP(dec(300, 18), frontEnd_2, {
+      await stabilityPool.connect(signerC).provideToSP(dec(300, 18), frontEnd_2, {
         from: C,
         gasPrice: 0
       })
-      await stabilityPool.provideToSP(dec(400, 18), ZERO_ADDRESS, {
+      await stabilityPool.connect(signerD).provideToSP(dec(400, 18), ZERO_ADDRESS, {
         from: D,
         gasPrice: 0
       })
@@ -880,10 +877,10 @@ contract('StabilityPool', async accounts => {
     })
 
     it("provideToSP(): doesn't impact other users' deposits or ETH gains", async () => {
-      await th.addMultipleERC20(whale, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
+      await th.addMultipleERC20(Whale, borrowerOperations.address, [tokenA, tokenB, tokenC], [dec(5, 18), dec(10, 18), dec(15, 18)], {
         from: whale
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Whale).openTrove(
         [tokenA.address, tokenB.address, tokenC.address],
         [dec(5, 18), dec(10, 18), dec(15, 18)],
         th._100pct,
@@ -894,7 +891,7 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_1).openTrove(
         [],
         [],
         th._100pct,
@@ -906,7 +903,7 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_2).openTrove(
         [],
         [],
         th._100pct,
@@ -921,6 +918,7 @@ contract('StabilityPool', async accounts => {
       await openTrove({
         extraUSDEAmount: toBN(dec(1000, 18)),
         ICR: toBN(dec(2, 18)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
@@ -928,6 +926,7 @@ contract('StabilityPool', async accounts => {
       await openTrove({
         extraUSDEAmount: toBN(dec(2000, 18)),
         ICR: toBN(dec(2, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
@@ -935,18 +934,19 @@ contract('StabilityPool', async accounts => {
       await openTrove({
         extraUSDEAmount: toBN(dec(3000, 18)),
         ICR: toBN(dec(2, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
       })
 
-      await stabilityPool.provideToSP(dec(1000, 18), frontEnd_1, {
+      await stabilityPool.connect(Alice).provideToSP(dec(1000, 18), frontEnd_1, {
         from: alice
       })
-      await stabilityPool.provideToSP(dec(2000, 18), frontEnd_1, {
+      await stabilityPool.connect(Bob).provideToSP(dec(2000, 18), frontEnd_1, {
         from: bob
       })
-      await stabilityPool.provideToSP(dec(3000, 18), frontEnd_1, {
+      await stabilityPool.connect(Carol).provideToSP(dec(3000, 18), frontEnd_1, {
         from: carol
       })
 
@@ -954,6 +954,7 @@ contract('StabilityPool', async accounts => {
       await openTrove({
         extraUSDEAmount: toBN(dec(300, 18)),
         ICR: toBN(dec(2, 18)),
+        signer: Dennis,
         extraParams: {
           from: dennis
         }
@@ -987,7 +988,7 @@ contract('StabilityPool', async accounts => {
       assert.isTrue(ETHinSP.gt(mv._zeroBN))
 
       // D makes an SP deposit
-      await stabilityPool.provideToSP(dec(1000, 18), frontEnd_1, {
+      await stabilityPool.connect(Dennis).provideToSP(dec(1000, 18), frontEnd_1, {
         from: dennis
       })
       assert.equal((await stabilityPool.getCompoundedUSDEDeposit(dennis)).toString(), dec(1000, 18))
@@ -1016,10 +1017,10 @@ contract('StabilityPool', async accounts => {
       // await priceFeedSTETH.setPrice(dec(1, 18))
       // await priceFeedETH.setPrice(dec(400, 18))
 
-      await th.addMultipleERC20(defaulter_1, borrowerOperations.address, [steth], [dec(100, 18)], {
+      await th.addMultipleERC20(Defaulter_1, borrowerOperations.address, [steth], [dec(100, 18)], {
         from: defaulter_1
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Defaulter_1).openTrove(
         [steth.address],
         [dec(100, 18)],
         th._100pct,
@@ -1031,10 +1032,10 @@ contract('StabilityPool', async accounts => {
         }
       )
       // A, B, C open troves and make Stability Pool deposits
-      await th.addMultipleERC20(alice, borrowerOperations.address, [steth], [dec(100, 18)], {
+      await th.addMultipleERC20(Alice, borrowerOperations.address, [steth], [dec(100, 18)], {
         from: alice
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Alice).openTrove(
         [steth.address],
         [dec(100, 18)],
         th._100pct,
@@ -1046,10 +1047,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addMultipleERC20(bob, borrowerOperations.address, [steth], [dec(100, 18)], {
+      await th.addMultipleERC20(Bob, borrowerOperations.address, [steth], [dec(100, 18)], {
         from: bob
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Bob).openTrove(
         [steth.address],
         [dec(100, 18)],
         th._100pct,
@@ -1061,10 +1062,10 @@ contract('StabilityPool', async accounts => {
         }
       )
 
-      await th.addMultipleERC20(carol, borrowerOperations.address, [steth], [dec(100, 18)], {
+      await th.addMultipleERC20(Carol, borrowerOperations.address, [steth], [dec(100, 18)], {
         from: carol
       })
-      await borrowerOperations.openTrove(
+      await borrowerOperations.connect(Carol).openTrove(
         [steth.address],
         [dec(100, 18)],
         th._100pct,
@@ -1080,13 +1081,13 @@ contract('StabilityPool', async accounts => {
       // console.log("TCR", TCR.toString());
 
       // A, B, C provides 10000, 5000, 3000 USDE to SP
-      await stabilityPool.provideToSP(dec(2000, 18), frontEnd_1, {
+      await stabilityPool.connect(Alice).provideToSP(dec(2000, 18), frontEnd_1, {
         from: alice
       })
-      await stabilityPool.provideToSP(dec(2000, 18), frontEnd_1, {
+      await stabilityPool.connect(Bob).provideToSP(dec(2000, 18), frontEnd_1, {
         from: bob
       })
-      await stabilityPool.provideToSP(dec(2000, 18), frontEnd_1, {
+      await stabilityPool.connect(Carol).provideToSP(dec(2000, 18), frontEnd_1, {
         from: carol
       })
 
@@ -1107,9 +1108,9 @@ contract('StabilityPool', async accounts => {
       const bob_USDE_Balance_Before = await usdeToken.balanceOf(bob)
       const carol_USDE_Balance_Before = await usdeToken.balanceOf(carol)
 
-      const alice_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(alice))
-      const bob_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(bob))
-      const carol_ETH_Balance_Before = web3.utils.toBN(await web3.eth.getBalance(carol))
+      const alice_ETH_Balance_Before = toBN(await web3.eth.getBalance(alice))
+      const bob_ETH_Balance_Before = toBN(await web3.eth.getBalance(bob))
+      const carol_ETH_Balance_Before = toBN(await web3.eth.getBalance(carol))
 
       const alice_Deposit_Before = await stabilityPool.getCompoundedUSDEDeposit(alice)
       const bob_Deposit_Before = await stabilityPool.getCompoundedUSDEDeposit(bob)
@@ -1127,15 +1128,15 @@ contract('StabilityPool', async accounts => {
       assert.isTrue(await th.checkRecoveryMode(contracts))
 
       // A, B, C withdraw their full deposits from the Stability Pool
-      await stabilityPool.withdrawFromSP(dec(2000, 18), {
+      await stabilityPool.connect(Alice).withdrawFromSP(dec(2000, 18), {
         from: alice,
         gasPrice: 0
       })
-      await stabilityPool.withdrawFromSP(dec(2000, 18), {
+      await stabilityPool.connect(Bob).withdrawFromSP(dec(2000, 18), {
         from: bob,
         gasPrice: 0
       })
-      await stabilityPool.withdrawFromSP(dec(2000, 18), {
+      await stabilityPool.connect(Carol).withdrawFromSP(dec(2000, 18), {
         from: carol,
         gasPrice: 0
       })

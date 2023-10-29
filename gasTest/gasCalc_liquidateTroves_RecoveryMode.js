@@ -6,8 +6,8 @@
 */
 const fs = require('fs')
 
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 const dec = th.dec
@@ -77,7 +77,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters' troves fall below MCR
     await priceFeed.setPrice(dec(100, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Account 500 is liquidated, creates pending distribution rewards for all
     await troveManager.liquidate(accounts[500], { from: accounts[0] })
@@ -499,7 +499,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -562,7 +562,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -623,7 +623,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -683,7 +683,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -744,7 +744,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -804,7 +804,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -865,7 +865,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -925,7 +925,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -985,7 +985,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1060,7 +1060,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1133,7 +1133,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1207,7 +1207,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1280,7 +1280,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1353,7 +1353,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1426,7 +1426,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1499,7 +1499,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1572,7 +1572,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))
@@ -1645,7 +1645,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops, defaulters falls below MCR
     await priceFeed.setPrice(dec(120, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     // Check Recovery Mode is true
     assert.isTrue(await troveManager.checkRecoveryMode(await priceFeed.getPrice()))

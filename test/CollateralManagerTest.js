@@ -1,16 +1,8 @@
 const {
     assert
 } = require("chai")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-const CollaterlaManager = artifacts.require("./CollateralManager.sol")
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const NonPayable = artifacts.require('NonPayable.sol')
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const USDETokenTester = artifacts.require("./USDETokenTester")
-
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 
 const dec = th.dec
@@ -33,13 +25,9 @@ const assertRevert = th.assertRevert
 contract('newBorrowerOperations', async accounts => {
 
     const [
-        owner, alice, bob, carol, dennis, whale,
-        A, B, C, D, E, F, G, H,
-        // defaulter_1, defaulter_2,
-        frontEnd_1, frontEnd_2, frontEnd_3
-    ] = accounts;
-
-    // const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3]
+        owner, alice, bob, carol, dennis
+    ] = accounts
+    let Owner, Alice, Bob, Carol, Dennis
 
     let priceFeedSTETH
     let priceFeedETH
@@ -79,18 +67,6 @@ contract('newBorrowerOperations', async accounts => {
     }) => {
         beforeEach(async () => {
             contracts = await deploymentHelper.deployERDCore()
-            // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-            contracts.troveManager = await TroveManagerTester.new()
-            contracts.collateralManager = await CollateralManagerTester.new()
-            const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-            contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
-
-            await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-            if (withProxy) {
-                const users = [alice, bob, carol, dennis, whale, A, B, C, D, E]
-                await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-            }
 
             priceFeedSTETH = contracts.priceFeedSTETH
             priceFeedETH = contracts.priceFeedETH
@@ -105,9 +81,9 @@ contract('newBorrowerOperations', async accounts => {
             collateralManager = contracts.collateralManager
             weth = contracts.weth
             steth = contracts.steth
-            treasury = ERDContracts.treasury
-            liquidityIncentive = ERDContracts.liquidityIncentive
-            communityIssuance = ERDContracts.communityIssuance
+            treasury = contracts.treasury
+            liquidityIncentive = contracts.liquidityIncentive
+            communityIssuance = contracts.communityIssuance
 
             var params = {
                 _collateral: contracts.weth.address,
@@ -126,6 +102,12 @@ contract('newBorrowerOperations', async accounts => {
             await priceFeedSTETH.setPrice(dec(1, 18))
             tokensToOracles.set(contracts.weth.address, priceFeedETH);
             tokensToOracles.set(contracts.steth.address, priceFeedSTETH);
+            const signers = await ethers.getSigners()
+            Owner = signers[0]
+            Alice = signers[1]
+            Bob = signers[2]
+            Carol = signers[3]
+            Dennis = signers[4]
         })
 
         it("removeCollateral(), loop through valid collateral and delete", async () => {
@@ -178,6 +160,7 @@ contract('newBorrowerOperations', async accounts => {
         it("Check after paused of collateral that people cannot open trove with that collateral, but it still works inside the system with adjust.", async () => {
             await openTrove({
                 ICR: toBN(dec(2, 18)),
+                signer: Alice,
                 extraParams: {
                     from: alice
                 }
@@ -185,10 +168,10 @@ contract('newBorrowerOperations', async accounts => {
             await collateralManager.pauseCollateral(contracts.steth.address)
             await collateralManager.removeCollateral(contracts.steth.address)
             const collTopUp = dec(100, 18)
-            await th.addERC20(contracts.steth, bob, contracts.borrowerOperations.address, toBN(collTopUp), {
+            await th.addERC20(contracts.steth, Bob, contracts.borrowerOperations.address, toBN(collTopUp), {
                 from: bob
             })
-            const openTxAPromise = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
+            const openTxAPromise = borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
             // Collateral does not active or is paused
@@ -198,26 +181,28 @@ contract('newBorrowerOperations', async accounts => {
             // 1 ETH : 1 STETH
             await priceFeedSTETH.setPrice(toBN(dec(1, 18)))
 
-            const tx = await borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
+            const tx = await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
-            assert.isTrue(tx.receipt.status)
+            const txRes = await tx.wait()
+            assert.isTrue(txRes.status === 1)
 
             await collateralManager.pauseCollateral(contracts.steth.address)
 
-            await th.addERC20(contracts.steth, carol, contracts.borrowerOperations.address, toBN(collTopUp), {
+            await th.addERC20(contracts.steth, Carol, contracts.borrowerOperations.address, toBN(collTopUp), {
                 from: carol
             })
-            const openTx_C = borrowerOperations.openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), bob, bob, ZERO_ADDRESS, {
+            const openTx_C = borrowerOperations.connect(Carol).openTrove([contracts.steth.address], [collTopUp], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), bob, bob, ZERO_ADDRESS, {
                 from: carol
             })
             // Collateral does not active or is paused
             await assertRevert(openTx_C, "CollNotActive")
 
-            const tx_B = await borrowerOperations.adjustTrove([], [], [contracts.steth.address], [toBN(dec(1, 18))], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+            const tx_B = await borrowerOperations.connect(Bob).adjustTrove([], [], [contracts.steth.address], [toBN(dec(1, 18))], th._100pct, 0, false, th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
                 from: bob
             })
-            assert.isTrue(tx_B.receipt.status)
+            const txBRes = await tx_B.wait()
+            assert.isTrue(txBRes.status === 1)
         })
 
         it("Check after paused of collateral that people cannot open trove with that collateral, but it still works inside the system.", async () => {
@@ -235,6 +220,7 @@ contract('newBorrowerOperations', async accounts => {
                 collateral: a_amounts
             } = await openTrove({
                 ICR: toBN(dec(2, 18)),
+                signer: Alice,
                 extraParams: {
                     from: alice,
                     value: a_wethToMint
@@ -246,10 +232,10 @@ contract('newBorrowerOperations', async accounts => {
             let b_colls = [contracts.steth];
             let b_amounts = [b_stethToMint];
 
-            await th.addERC20(contracts.steth, bob, contracts.borrowerOperations.address, b_stethToMint, {
+            await th.addERC20(contracts.steth, Bob, contracts.borrowerOperations.address, b_stethToMint, {
                 from: bob
             })
-            await borrowerOperations.openTrove([contracts.steth.address], [b_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
+            await borrowerOperations.connect(Bob).openTrove([contracts.steth.address], [b_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: bob
             })
 
@@ -258,10 +244,10 @@ contract('newBorrowerOperations', async accounts => {
 
             let c_colls = [contracts.weth, contracts.steth];
             let c_amounts = [c_wethToMint, c_stethToMint];
-            await th.addERC20(contracts.steth, carol, contracts.borrowerOperations.address, c_stethToMint, {
+            await th.addERC20(contracts.steth, Carol, contracts.borrowerOperations.address, c_stethToMint, {
                 from: carol
             })
-            await borrowerOperations.openTrove([contracts.steth.address], [c_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
+            await borrowerOperations.connect(Carol).openTrove([contracts.steth.address], [c_stethToMint], th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN('1'))), alice, alice, ZERO_ADDRESS, {
                 from: carol,
                 value: c_wethToMint
             })
@@ -276,6 +262,7 @@ contract('newBorrowerOperations', async accounts => {
             await assertRevert(
                 openTrove({
                     ICR: toBN(dec(2, 18)),
+                    signer: Dennis,
                     extraParams: {
                         from: dennis,
                         value: d_wethToMint
@@ -287,25 +274,25 @@ contract('newBorrowerOperations', async accounts => {
             const addedColl1 = toBN(dec(1, 'ether'))
             // ETH does not active
             await assertRevert(
-                borrowerOperations.addColl([], [], alice, alice, {
+                borrowerOperations.connect(Alice).addColl([], [], alice, alice, {
                     from: alice,
                     value: addedColl1
                 }),
                 "ETHNotActive"
             )
 
-            await borrowerOperations.withdrawColl([contracts.weth.address], [addedColl1], carol, carol, {
+            await borrowerOperations.connect(Carol).withdrawColl([contracts.weth.address], [addedColl1], carol, carol, {
                 from: carol
             });
 
             await steth.mint(carol, addedColl1)
-            await steth.approve(borrowerOperations.address, addedColl1, {
+            await steth.connect(Carol).approve(borrowerOperations.address, addedColl1, {
                 from: carol
             });
-            await borrowerOperations.addColl([steth.address], [addedColl1], carol, carol, {
+            await borrowerOperations.connect(Carol).addColl([steth.address], [addedColl1], carol, carol, {
                 from: carol
             });
-            await borrowerOperations.withdrawColl([steth.address], [addedColl1], carol, carol, {
+            await borrowerOperations.connect(Carol).withdrawColl([steth.address], [addedColl1], carol, carol, {
                 from: carol
             });
             // // Price drops to 100 $/E
@@ -317,7 +304,8 @@ contract('newBorrowerOperations', async accounts => {
 
             // L1: C liquidated
             const txB = await troveManager.liquidate(carol)
-            assert.isTrue(txB.receipt.status)
+            const txBRes = await txB.wait()
+            assert.isTrue(txBRes.status === 1)
             assert.isFalse(await sortedTroves.contains(carol))
 
 
@@ -353,14 +341,15 @@ contract('newBorrowerOperations', async accounts => {
             aliceCTS = (await contracts.troveManager.getCurrentTroveAmounts(alice))
 
             await usdeToken.unprotectedMint(alice, toBN(dec(1300, 18)))
-            await usdeToken.approve(borrowerOperations.address, toBN(dec(1300, 18)), {
+            await usdeToken.connect(Alice).approve(borrowerOperations.address, toBN(dec(1300, 18)), {
                 from: alice
             });
 
-            const txAlice = await borrowerOperations.closeTrove({
+            const txAlice = await borrowerOperations.connect(Alice).closeTrove({
                 from: alice
             })
-            assert.isTrue(txAlice.receipt.status)
+            const txAliceRes = await txAlice.wait()
+            assert.isTrue(txAliceRes.status === 1)
 
             const B_STETHAfterL1 = b_amounts[0].add(th.applyLiquidationFee(c_amounts[1]))
             assert.isAtMost(th.getDifference(bob_STETH, B_STETHAfterL1), Number(dec(150, 20)))

@@ -2,8 +2,8 @@
   Note: uses Mocha testing structure, but simply prints gas costs of transactions. No assertions.
 */
 const fs = require('fs')
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const {TestHelper: th, TimeValues: timeValues } = testHelpers
 const dec = th.dec
@@ -542,7 +542,7 @@ contract('Gas cost tests', async accounts => {
     const randUSDEAmount = th.randAmountInWei(1, 180)
     await borrowerOperations.withdrawUSDE(_100pct, randUSDEAmount, accounts[1], ZERO_ADDRESS, { from: accounts[1] })
 
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
     const tx = await functionCaller.troveManager_getCurrentICR(accounts[1], price)
 
     const gas = th.gasUsed(tx) - 21000
@@ -598,7 +598,7 @@ contract('Gas cost tests', async accounts => {
     await priceFeed.setPrice(dec(100, 18))
     await troveManager.liquidate(accounts[999], { from: accounts[0] })
 
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
     const tx = await functionCaller.troveManager_getCurrentICR(accounts[1], price)
 
     const gas = th.gasUsed(tx) - 21000
@@ -1791,7 +1791,7 @@ contract('Gas cost tests', async accounts => {
 
     // Price drops too $100, accounts 99 and 100 ICR fall below MCR
     await priceFeed.setPrice(dec(100, 18))
-    const price = await priceFeed.getPrice()
+    const price = toBN(await priceFeed.getPrice())
 
     /* Liquidate account 97. Account 97 is completely offset against SP and removed from system.
     This creates SP gains for accounts 99 and 7. */
@@ -1863,7 +1863,7 @@ contract('Gas cost tests', async accounts => {
   //   const CR = web3.utils.toWei('3', 'ether')
   //   const address_0 = '0x0000000000000000000000000000000000000000'
 
-  //   const price = await priceFeed.getPrice()
+  //   const price = toBN(await priceFeed.getPrice())
   //   const tx = await functionCaller.sortedTroves_findInsertPosition(CR, address_0, address_0)
   //   const gas = th.gasUsed(tx) - 21000
   //   th.logGas(gas, message)
@@ -1881,7 +1881,7 @@ contract('Gas cost tests', async accounts => {
   //   const CR = web3.utils.toWei('3', 'ether')
   //   const address_0 = '0x0000000000000000000000000000000000000000'
 
-  //   const price = await priceFeed.getPrice()
+  //   const price = toBN(await priceFeed.getPrice())
   //   const tx = await functionCaller.sortedTroves_findInsertPosition(CR, price, address_0, address_0)
   //   const gas = th.gasUsed(tx) - 21000
   //   th.logGas(gas, message)
@@ -1901,7 +1901,7 @@ contract('Gas cost tests', async accounts => {
   //   const CR = web3.utils.toWei('2', 'ether')
   //   const address_0 = '0x0000000000000000000000000000000000000000'
 
-  //   const price = await priceFeed.getPrice()
+  //   const price = toBN(await priceFeed.getPrice())
   //   const tx = await functionCaller.sortedTroves_findInsertPosition(CR, price, address_0, address_0)
   //   const gas = th.gasUsed(tx) - 21000
   //   th.logGas(gas, message)
@@ -1918,7 +1918,7 @@ contract('Gas cost tests', async accounts => {
   //   // 200% ICR, lower than Trove at tail of list
   //   const CR = web3.utils.toWei('2', 'ether')
 
-  //   const price = await priceFeed.getPrice()
+  //   const price = toBN(await priceFeed.getPrice())
   //   const tx = await functionCaller.sortedTroves_findInsertPosition(CR, price, address_0, address_0)
   //   const gas = th.gasUsed(tx) - 21000
   //   th.logGas(gas, message)
@@ -1935,7 +1935,7 @@ contract('Gas cost tests', async accounts => {
   //   // 200% ICR, lower than Trove at tail of list
   //   const CR = web3.utils.toWei('2', 'ether')
 
-  //   const price = await priceFeed.getPrice()
+  //   const price = toBN(await priceFeed.getPrice())
   //   const tx = await functionCaller.sortedTroves_findInsertPosition(CR, price, address_0, address_0)
   //   const gas = th.gasUsed(tx) - 21000
   //   th.logGas(gas, message)

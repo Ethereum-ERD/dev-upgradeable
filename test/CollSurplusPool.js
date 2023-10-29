@@ -1,9 +1,8 @@
 const {
   web3
 } = require("hardhat")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-const NonPayable = artifacts.require('NonPayable.sol')
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 const dec = th.dec
@@ -11,15 +10,12 @@ const toBN = th.toBN
 const mv = testHelpers.MoneyValues
 const timeValues = testHelpers.TimeValues
 
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const USDEToken = artifacts.require("USDEToken")
-
 contract('CollSurplusPool', async accounts => {
   const [
     owner,
-    A, B, C, D, E
-  ] = accounts;
+    A, B
+  ] = accounts
+  let Owner, signerA, signerB
 
   let borrowerOperations
   let collateralManager
@@ -36,26 +32,18 @@ contract('CollSurplusPool', async accounts => {
 
   beforeEach(async () => {
     contracts = await deploymentHelper.deployERDCore()
-    contracts.troveManager = await TroveManagerTester.new()
-    contracts.collateralManager = await CollateralManagerTester.new()
-    contracts.usdeToken = await USDEToken.new(
-      contracts.troveManager.address,
-      contracts.troveManagerLiquidations.address,
-      contracts.troveManagerRedemptions.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
-    )
-    const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = contracts.priceFeedETH
     collSurplusPool = contracts.collSurplusPool
     borrowerOperations = contracts.borrowerOperations
     weth = contracts.weth;
     collateralManager = contracts.collateralManager
-    treasury = ERDContracts.treasury
-    liquidityIncentive = ERDContracts.liquidityIncentive
-
-    await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+    treasury = contracts.treasury
+    liquidityIncentive = contracts.liquidityIncentive
+    const signers = await ethers.getSigners()
+    Owner = signers[0]
+    signerA = signers[1]
+    signerB = signers[2]
   })
 
   it("CollSurplusPool::getETH(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {
@@ -70,6 +58,7 @@ contract('CollSurplusPool', async accounts => {
       netDebt: B_netDebt
     } = await openTrove({
       ICR: toBN(dec(200, 16)),
+      signer: signerB,
       extraParams: {
         from: B
       }
@@ -77,6 +66,7 @@ contract('CollSurplusPool', async accounts => {
 
     await openTrove({
       extraUSDEAmount: B_netDebt.add(toBN(dec(500, 18))),
+      signer: signerA,
       extraParams: {
         from: A,
         value: dec(3000, 'ether')
@@ -88,7 +78,7 @@ contract('CollSurplusPool', async accounts => {
     await contracts.troveManager.setBaseRate(toBN(dec(1, 16)))
     const debt_B = await contracts.troveDebt.balanceOf(B)
     // At ETH:USD = 100, this redemption should leave 1 ether of coll surplus
-    await th.redeemCollateralAndGetTxObject(A, contracts, B_netDebt.add(toBN(dec(500, 18))))
+    await th.redeemCollateralAndGetTxObject(signerA, contracts, B_netDebt.add(toBN(dec(500, 18))))
     const fee = toBN(await contracts.weth.balanceOf(treasury.address))
     const ETH_2 = await collSurplusPool.getCollateralAmount(weth.address)
     th.assertIsApproximatelyEqual(ETH_2, B_coll.sub(debt_B.mul(mv._1e18BN).div(price)), toBN(dec(1, 12)))
@@ -96,21 +86,21 @@ contract('CollSurplusPool', async accounts => {
 
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
     // Caller is not Borrower Operations
-    await th.assertRevert(collSurplusPool.claimColl(A, {
+    await th.assertRevert(collSurplusPool.connect(signerA).claimColl(A, {
       from: A
     }), 'Caller_NotBO')
   })
 
   it("CollSurplusPool: claimColl(): Reverts if nothing to claim", async () => {
     // No collateral available to claim
-    await th.assertRevert(borrowerOperations.claimCollateral({
+    await th.assertRevert(borrowerOperations.connect(signerA).claimCollateral({
       from: A
     }), 'CannotClaim')
   })
 
   it('CollSurplusPool: accountSurplus: reverts if caller is not Trove Manager', async () => {
     // Caller is not TML nor TMR
-    await th.assertRevert(collSurplusPool.accountSurplus(A, [1]), 'Caller_NotTMLOrTMR')
+    await th.assertRevert(collSurplusPool.connect(signerA).accountSurplus(A, [1]), 'Caller_NotTMLOrTMR')
   })
 })
 

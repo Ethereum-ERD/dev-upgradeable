@@ -1,12 +1,9 @@
 const Decimal = require("decimal.js");
-const deploymentHelper = require("../utils/deploymentHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
 const {
   BNConverter
 } = require("../utils/BNConverter.js")
-const testHelpers = require("../utils/testHelpers.js")
-const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
-const ERDMathTester = artifacts.require("./ERDMathTester.sol")
-
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 const timeValues = testHelpers.TimeValues
 const dec = th.dec
@@ -328,41 +325,20 @@ contract('Fee arithmetic tests', async accounts => {
   ]
 
   before(async () => {
-    troveManagerTester = await TroveManagerTester.new()
-    TroveManagerTester.setAsDeployed(troveManagerTester)
-
-    mathTester = await ERDMathTester.new()
-    ERDMathTester.setAsDeployed(mathTester)
+    contracts = await deploymentHelper.deployERDCore()
+    troveManagerTester = contracts.troveManager
+    const ERDMathTester = await ethers.getContractFactory("ERDMathTester");
+    mathTester = await ERDMathTester.deploy();
+    await mathTester.deployed();
   })
 
   beforeEach(async () => {
     contracts = await deploymentHelper.deployERDCore()
-    const ERDContracts = await deploymentHelper.deployERDContracts()
-
-    await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+    troveManagerTester = contracts.troveManager
+    const ERDMathTester = await ethers.getContractFactory("ERDMathTester");
+    mathTester = await ERDMathTester.deploy();
+    await mathTester.deployed();
   })
-
-  // it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {
-  //   await troveManagerTester.setLastFeeOpTimeToNow()
-  //   const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
-
-  //   assert.equal(minutesPassed, '0')
-  // })
-
-  // it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
-  //   for (testPair of secondsToMinutesRoundedDown) {
-  //     await troveManagerTester.setLastFeeOpTimeToNow()
-
-  //     const seconds = testPair[0]
-  //     const expectedHoursPassed = testPair[1]
-
-  //     await th.fastForwardTime(seconds, web3.currentProvider)
-
-  //     const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
-
-  //     assert.equal(expectedHoursPassed.toString(), minutesPassed.toString())
-  //   }
-  // })
 
   it("decayBaseRateFromBorrowing(): returns the initial base rate for no time increase", async () => {
     await troveManagerTester.setBaseRate(dec(5, 17))
@@ -447,7 +423,6 @@ contract('Fee arithmetic tests', async accounts => {
 
       await troveManagerTester.unprotectedDecayBaseRateFromBorrowing()
       const decayedBaseRate = await troveManagerTester.baseRate()
-
       const minutesPassed = secondsPassed / 60
 
       const error = decayedBaseRate.sub(toBN(expectedDecayedBaseRate))
@@ -746,14 +721,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -772,14 +748,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -798,14 +775,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -824,14 +802,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -850,14 +829,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -876,14 +856,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -902,14 +883,15 @@ contract('Fee arithmetic tests', async accounts => {
         let expected = Decimal.pow(baseAsDecimal, exponent).toFixed(18)
         expected = BNConverter.makeBN(expected)
 
-        const res = await mathTester.callDecPow(base, exponent)
+        let res = await mathTester.callDecPow(base, exponent)
+        res = BNConverter.makeBN(res)
 
         const error = expected.sub(res).abs()
 
         // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
 
         try {
-          assert.isAtMost(getDifference(expected, res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
+          assert.isAtMost(getDifference(expected.toString(), res.toString()), 1000000000) // allow absolute error tolerance of 1e-9
         } catch (error) {
           console.log(`run: ${i}. base: ${base}, exp: ${exponent}, expected: ${expected}, res: ${res}, error: ${error}`)
         }
@@ -938,9 +920,12 @@ contract('Fee arithmetic tests', async accounts => {
     //     expected = BNConverter.makeBN(expected)
 
     //     const response = await mathTester.callDecPowTx(base, exponent) // non-view call, to check reversion
-    //     assert.isTrue(response.receipt.status)
+    //     let responseRes = await response.wait()    
+    //     assert.isTrue(responseRes.status === 1)
 
     //     const result = await mathTester.callDecPow(base, exponent)
+    //     let result = await mathTester.callDecPow(base, exponent)
+    //     result = BNConverter.makeBN(res)
 
     //     const error = expected.sub(result).abs()
 
@@ -957,9 +942,11 @@ contract('Fee arithmetic tests', async accounts => {
     //     expected = BNConverter.makeBN(expected)
 
     //     const response = await mathTester.callDecPowTx(base, exponent) // non-view call, to check reversion
-    //     assert.isTrue(response.receipt.status)
+    //     responseRes = await response.wait()    
+    //     assert.isTrue(responseRes.status === 1)
 
-    //     const result = await mathTester.callDecPow(base, exponent)
+    //     let result = await mathTester.callDecPow(base, exponent)
+    //     result = BNConverter.makeBN(res)
 
     //     const error = expected.sub(result).abs()
 

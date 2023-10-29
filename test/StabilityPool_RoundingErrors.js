@@ -1,15 +1,8 @@
-const deploymentHelpers = require("../utils/truffleDeploymentHelpers.js")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-
-const deployERD = deploymentHelpers.deployERD
-const getAddresses = deploymentHelpers.getAddresses
-const connectContracts = deploymentHelpers.connectContracts
-
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
+const {
+  ethers
+} = require("hardhat")
 const th = testHelpers.TestHelper
 const dec = th.dec
 const toBN = th.toBN
@@ -33,18 +26,6 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
 
   beforeEach(async () => {
     contracts = await deploymentHelper.deployERDCore()
-    // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-    contracts.troveManager = await TroveManagerTester.new()
-    contracts.collateralManager = await CollateralManagerTester.new()
-    const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-    contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
-
-    await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-    if (withProxy) {
-      const users = [alice, bob, carol, dennis, whale, A, B, C, D, E]
-      await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-    }
 
     priceFeedSTETH = contracts.priceFeedSTETH
     priceFeedETH = contracts.priceFeedETH
@@ -59,9 +40,9 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     hintHelpers = contracts.hintHelpers
     collateralManager = contracts.collateralManager
 
-    treasury = ERDContracts.treasury
-    liquidityIncentive = ERDContracts.liquidityIncentive
-    communityIssuance = ERDContracts.communityIssuance
+    treasury = contracts.treasury
+    liquidityIncentive = contracts.liquidityIncentive
+    communityIssuance = contracts.communityIssuance
 
     USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
     MIN_NET_DEBT = await collateralManager.getMinNetDebt()
@@ -71,22 +52,24 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
   // skipped to not slow down CI
   it("Rounding errors: 100 deposits of 100USDE into SP, then 200 liquidations of 49USDE", async () => {
     // it.skip("Rounding errors: 100 deposits of 100USDE into SP, then 200 liquidations of 49USDE", async () => {
-    const owner = accounts[0]
+    const signers = await ethers.getSigners()
+    const owner = signers[0]
     // const depositors = accounts.slice(1, 101)
     // const defaulters = accounts.slice(101, 301)
-    const depositors = accounts.slice(1, 10)
-    const defaulters = accounts.slice(11, 30)
+    const depositors = signers.slice(1, 10)
+    const defaulters = signers.slice(11, 30)
 
-    for (let account of depositors) {
+    for (let depositor of depositors) {
       await openTrove({
         extraUSDEAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
+        signer: depositor,
         extraParams: {
-          from: account
+          from: depositor.address
         }
       })
-      await stabilityPool.provideToSP(dec(100, 18), ZERO_ADDRESS, {
-        from: account
+      await stabilityPool.connect(depositor).provideToSP(dec(100, 18), ZERO_ADDRESS, {
+        from: depositor.address
       })
     }
 
@@ -94,8 +77,9 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
     for (let defaulter of defaulters) {
       await openTrove({
         ICR: toBN(dec(2, 18)),
+        signer: defaulter,
         extraParams: {
-          from: defaulter
+          from: defaulter.address
         }
       })
     }
@@ -105,15 +89,13 @@ contract('Pool Manager: Sum-Product rounding errors', async accounts => {
 
     // Defaulters liquidated
     for (let defaulter of defaulters) {
-      await troveManager.liquidate(defaulter, {
-        from: owner
-      });
+      await troveManager.liquidate(defaulter.address);
     }
 
     const SP_TotalDeposits = await stabilityPool.getTotalUSDEDeposits()
     const SP_ETH = await stabilityPool.getCollateralAmount(contracts.weth.address)
-    const compoundedDeposit = await stabilityPool.getCompoundedUSDEDeposit(depositors[0])
-    const ETH_Gain = await stabilityPool.getDepositorCollateralGain(depositors[0])
+    const compoundedDeposit = await stabilityPool.getCompoundedUSDEDeposit(depositors[0].address)
+    const ETH_Gain = await stabilityPool.getDepositorCollateralGain(depositors[0].address)
 
     // Check depostiors receive their share without too much error
     assert.isAtMost(th.getDifference(SP_TotalDeposits.div(th.toBN(depositors.length)), compoundedDeposit), 100000)

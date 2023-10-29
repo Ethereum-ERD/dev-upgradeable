@@ -1,17 +1,8 @@
 const {
   zeroAddress
 } = require("ethereumjs-util")
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-const SortedTroves = artifacts.require("SortedTroves")
-const SortedTrovesTester = artifacts.require("SortedTrovesTester")
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-// const SortedTrovesBOTester = artifacts.require("./SortedTrovesBOTester.sol")
-const USDEToken = artifacts.require("USDEToken")
-
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 const th = testHelpers.TestHelper
 const dec = th.dec
 const toBN = th.toBN
@@ -20,11 +11,8 @@ const mv = testHelpers.MoneyValues
 contract('SortedTroves', async accounts => {
 
   const assertSortedListIsOrdered = async (contracts) => {
-    //const price = await contracts.priceFeedTestnet.getPrice()
-
     let trove = await contracts.sortedTroves.getLast()
     while (trove !== (await contracts.sortedTroves.getFirst())) {
-
       // Get the adjacent upper trove ("prev" moves up the list, from lower ICR -> higher ICR)
       const prevTrove = await contracts.sortedTroves.getPrev(trove)
 
@@ -40,12 +28,14 @@ contract('SortedTroves', async accounts => {
 
   const [
     owner,
-    alice, bob, carol, dennis, erin, flyn, graham, harriet, ida,
-    defaulter_1, defaulter_2, defaulter_3, defaulter_4,
+    alice, bob, carol, dennis, erin,
+    defaulter_1,
     A, B, C, D, E, F, G, H, I, J, whale
-  ] = accounts;
-
-  //let priceFeed
+  ] = accounts
+  let Owner,
+    Alice, Bob, Carol, Dennis, Erin,
+    Defaulter_1,
+    signerA, signerB, signerC, signerD, signerE, signerF, signerG, signerH, signerI, signerJ, Whale
   let sortedTroves
   let troveManager
   let troveManagerRedemptions
@@ -68,41 +58,50 @@ contract('SortedTroves', async accounts => {
   describe('SortedTroves', () => {
     beforeEach(async () => {
       contracts = await deploymentHelper.deployERDCore()
-      contracts.troveManager = await TroveManagerTester.new()
-      contracts.collateralManager = await CollateralManagerTester.new()
-      // contracts.usdeToken = await USDEToken.new(
-      //   contracts.troveManager.address,
-      //   contracts.troveManagerLiquidations.address,
-      //   contracts.troveManagerRedemptions.address,
-      //   contracts.stabilityPool.address,
-      //   contracts.borrowerOperations.address
-      // )
-
-      const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-
       sortedTroves = contracts.sortedTroves
       troveManager = contracts.troveManager
       collateralManager = contracts.collateralManager
       borrowerOperations = contracts.borrowerOperations
       usdeToken = contracts.usdeToken
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
+      const signers = await ethers.getSigners()
+      Owner = signers[0]
+      Alice = signers[1]
+      Bob = signers[2]
+      Carol = signers[3]
+      Dennis = signers[4]
+      Erin = signers[5]
+      Defaulter_1 = signers[6]
+      signerA = signers[7]
+      signerB = signers[8]
+      signerC = signers[9]
+      signerD = signers[10]
+      signerE = signers[11]
+      signerF = signers[12]
+      signerG = signers[13]
+      signerH = signers[14]
+      signerI = signers[15]
+      signerJ = signers[16]
+      Whale = signers[17]
     })
 
     it('contains(): returns true for addresses that have opened troves', async () => {
       await openTrove({
         ICR: toBN(dec(150, 18)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await openTrove({
         ICR: toBN(dec(20, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
       })
       await openTrove({
         ICR: toBN(dec(2000, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
@@ -122,18 +121,21 @@ contract('SortedTroves', async accounts => {
     it('contains(): returns false for addresses that have not opened troves', async () => {
       await openTrove({
         ICR: toBN(dec(150, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await openTrove({
         ICR: toBN(dec(20, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
       })
       await openTrove({
         ICR: toBN(dec(2000, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
@@ -152,6 +154,7 @@ contract('SortedTroves', async accounts => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
         extraUSDEAmount: toBN(dec(3000, 18)),
+        signer: Whale,
         extraParams: {
           from: whale
         }
@@ -159,42 +162,45 @@ contract('SortedTroves', async accounts => {
 
       await openTrove({
         ICR: toBN(dec(150, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await openTrove({
         ICR: toBN(dec(20, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
       })
       await openTrove({
         ICR: toBN(dec(2000, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
       })
 
       // to compensate borrowing fees
-      await usdeToken.transfer(alice, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(alice, dec(1000, 18), {
         from: whale
       })
-      await usdeToken.transfer(bob, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(bob, dec(1000, 18), {
         from: whale
       })
-      await usdeToken.transfer(carol, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(carol, dec(1000, 18), {
         from: whale
       })
 
       // A, B, C close troves
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Alice).closeTrove({
         from: alice
       })
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Bob).closeTrove({
         from: bob
       })
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Carol).closeTrove({
         from: carol
       })
 
@@ -214,6 +220,7 @@ contract('SortedTroves', async accounts => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
         extraUSDEAmount: toBN(dec(3000, 18)),
+        signer: Whale,
         extraParams: {
           from: whale
         }
@@ -221,42 +228,45 @@ contract('SortedTroves', async accounts => {
 
       await openTrove({
         ICR: toBN(dec(150, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await openTrove({
         ICR: toBN(dec(20, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
       })
       await openTrove({
         ICR: toBN(dec(2000, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
       })
 
       // to compensate borrowing fees
-      await usdeToken.transfer(alice, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(alice, dec(1000, 18), {
         from: whale
       })
-      await usdeToken.transfer(bob, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(bob, dec(1000, 18), {
         from: whale
       })
-      await usdeToken.transfer(carol, dec(1000, 18), {
+      await usdeToken.connect(Whale).transfer(carol, dec(1000, 18), {
         from: whale
       })
 
       // A, B, C close troves
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Alice).closeTrove({
         from: alice
       })
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Bob).closeTrove({
         from: bob
       })
-      await borrowerOperations.closeTrove({
+      await borrowerOperations.connect(Carol).closeTrove({
         from: carol
       })
 
@@ -267,18 +277,21 @@ contract('SortedTroves', async accounts => {
 
       await openTrove({
         ICR: toBN(dec(1000, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await openTrove({
         ICR: toBN(dec(2000, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
       })
       await openTrove({
         ICR: toBN(dec(3000, 18)),
+        signer: Carol,
         extraParams: {
           from: carol
         }
@@ -306,6 +319,7 @@ contract('SortedTroves', async accounts => {
     it('contains(): true when list size is 1 and the trove the only one in system', async () => {
       await openTrove({
         ICR: toBN(dec(150, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
@@ -318,6 +332,7 @@ contract('SortedTroves', async accounts => {
     it('contains(): false when list size is 1 and trove is not in the system', async () => {
       await openTrove({
         ICR: toBN(dec(150, 16)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
@@ -330,7 +345,6 @@ contract('SortedTroves', async accounts => {
 
     it("getMaxSize(): Returns the maximum list size", async () => {
       const max = await sortedTroves.getMaxSize()
-
       assert.equal(web3.utils.toHex(max), th.maxBytes32)
     })
 
@@ -338,59 +352,56 @@ contract('SortedTroves', async accounts => {
     // infinte ICR (zero collateral) is not possible anymore, therefore, skipping
     it.skip("stays ordered after troves with 'infinite' ICR receive a redistribution", async () => {
       // make several troves with 0 debt and collateral, in random order
-      await borrowerOperations.openTrove([], [], th._100pct, 0, whale, whale, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(Whale).openTrove([], [], th._100pct, 0, whale, whale, th.ZERO_ADDRESS, {
         from: whale,
         value: dec(50, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, A, A, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerA).openTrove([], [], th._100pct, 0, A, A, th.ZERO_ADDRESS, {
         from: A,
         value: dec(1, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, B, B, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerB).openTrove([], [], th._100pct, 0, B, B, th.ZERO_ADDRESS, {
         from: B,
         value: dec(37, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, C, C, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerC).openTrove([], [], th._100pct, 0, C, C, th.ZERO_ADDRESS, {
         from: C,
         value: dec(5, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, D, D, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerD).openTrove([], [], th._100pct, 0, D, D, th.ZERO_ADDRESS, {
         from: D,
         value: dec(4, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, 0, E, E, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerE).openTrove([], [], th._100pct, 0, E, E, th.ZERO_ADDRESS, {
         from: E,
         value: dec(19, 'ether')
       })
 
       // Make some troves with non-zero debt, in random order
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 19), F, F, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerF).openTrove([], [], th._100pct, dec(5, 19), F, F, th.ZERO_ADDRESS, {
         from: F,
         value: dec(1, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(3, 18), G, G, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerG).openTrove([], [], th._100pct, dec(3, 18), G, G, th.ZERO_ADDRESS, {
         from: G,
         value: dec(37, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(2, 20), H, H, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerH).openTrove([], [], th._100pct, dec(2, 20), H, H, th.ZERO_ADDRESS, {
         from: H,
         value: dec(5, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(17, 18), I, I, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerI).openTrove([], [], th._100pct, dec(17, 18), I, I, th.ZERO_ADDRESS, {
         from: I,
         value: dec(4, 'ether')
       })
-      await borrowerOperations.openTrove([], [], th._100pct, dec(5, 21), J, J, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(signerJ).openTrove([], [], th._100pct, dec(5, 21), J, J, th.ZERO_ADDRESS, {
         from: J,
         value: dec(1345, 'ether')
       })
-
-      const price_1 = await priceFeed.getPrice()
-
       // Check troves are ordered
       await assertSortedListIsOrdered(contracts)
 
-      await borrowerOperations.openTrove([], [], th._100pct, dec(100, 18), defaulter_1, defaulter_1, th.ZERO_ADDRESS, {
+      await borrowerOperations.connect(Defaulter_1).openTrove([], [], th._100pct, dec(100, 18), defaulter_1, defaulter_1, th.ZERO_ADDRESS, {
         from: defaulter_1,
         value: dec(1, 'ether')
       })
@@ -398,7 +409,6 @@ contract('SortedTroves', async accounts => {
 
       // Price drops
       await priceFeed.setPrice(dec(100, 18))
-      const price_2 = await priceFeed.getPrice()
 
       // Liquidate a trove
       await troveManager.liquidate(defaulter_1)
@@ -412,29 +422,11 @@ contract('SortedTroves', async accounts => {
   describe('SortedTroves with mock dependencies', () => {
     beforeEach(async () => {
       contracts = await deploymentHelper.deployERDCore()
-      contracts.troveManager = await TroveManagerTester.new()
-      // contracts.borrowerOperations = await SortedTrovesBOTester.new()
-      //contracts.borrowerOperations = await BorrowerOperationsTester.new()
-      // contracts.usdeToken = await USDEToken.new(
-      //   contracts.troveManager.address,
-      //   contracts.troveManagerLiquidations.address,
-      //   contracts.troveManagerRedemptions.address,
-      //   contracts.stabilityPool.address,
-      //   contracts.borrowerOperations.address
-      // )
-
-      const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-
       sortedTroves = contracts.sortedTroves
+      sortedTrovesTester = contracts.sortedTroves
       troveManager = contracts.troveManager
       borrowerOperations = contracts.borrowerOperations
       usdeToken = contracts.usdeToken
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-      sortedTrovesTester = await SortedTrovesTester.new()
-      sortedTrovesTester.initialize()
-
-      // borrowerOperations.resetSortedTroves(sortedTrovesTester.address)
     })
 
     context('when params are wrongly set', () => {
@@ -494,36 +486,20 @@ contract('SortedTroves', async accounts => {
         assert.equal(pos[0], alice, 'prevId result should be nextId param')
         assert.equal(pos[1], th.ZERO_ADDRESS, 'nextId result should be zero')
       })
-
-
     })
   })
 
   describe('Check position, re-insert multi-collateral multi-ratio, selective update, etc. ', () => {
     beforeEach(async () => {
       contracts = await deploymentHelper.deployERDCore()
-      contracts.troveManager = await TroveManagerTester.new()
-      contracts.collateralManager = await CollateralManagerTester.new()
-      // contracts.borrowerOperations = await SortedTrovesBOTester.new()
-      // contracts.usdeToken = await USDEToken.new(
-      //   contracts.troveManager.address,
-      //   contracts.troveManagerLiquidations.address,
-      //   contracts.troveManagerRedemptions.address,
-      //   contracts.stabilityPool.address,
-      //   contracts.borrowerOperations.address
-      // )
-      const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
 
-      sortedTrovesTester = await SortedTrovesTester.new()
-
-      contracts.sortedTroves = sortedTrovesTester
       sortedTroves = contracts.sortedTroves
+      sortedTrovesTester = contracts.sortedTroves
       troveManager = contracts.troveManager
       collateralManager = contracts.collateralManager
       borrowerOperations = contracts.borrowerOperations
       usdeToken = contracts.usdeToken
       troveManagerRedemptions = contracts.troveManagerRedemptions
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
 
       // Deploy new trove manager
       await collateralManager.addCollateral(contracts.steth.address, contracts.priceFeedSTETH.address, contracts.eTokenSTETH.address, toBN(dec(1, 18)))
@@ -713,7 +689,6 @@ contract('SortedTroves', async accounts => {
 
   })
 
-
   // Sequentially add coll and withdraw USDE, 1 account at a time
   const makeTrovesInSequence = async () => {
     // const makeTrovesInSequence = async () => {
@@ -741,6 +716,7 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(250, 16)),
       colls: whaleColls,
       amounts: whaleAmounts,
+      signer: Whale,
       extraParams: {
         from: whale
       }
@@ -749,6 +725,7 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(200, 16)),
       colls: AColls,
       amounts: AAmounts,
+      signer: signerA,
       extraParams: {
         from: A
       }
@@ -757,6 +734,7 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(150, 16)),
       colls: BColls,
       amounts: BAmounts,
+      signer: signerB,
       extraParams: {
         from: B
       }
@@ -765,6 +743,7 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(130, 16)),
       colls: CColls,
       amounts: CAmounts,
+      signer: signerC,
       extraParams: {
         from: C
       }
@@ -773,6 +752,7 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(140, 16)),
       colls: DColls,
       amounts: DAmounts,
+      signer: signerD,
       extraParams: {
         from: D
       }
@@ -781,11 +761,10 @@ contract('SortedTroves', async accounts => {
       ICR: toBN(dec(125, 16)),
       colls: EColls,
       amounts: EAmounts,
+      signer: signerE,
       extraParams: {
         from: E
       }
     })
   }
-
-
 })

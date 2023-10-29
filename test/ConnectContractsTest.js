@@ -1,4 +1,4 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
 
 contract('Deployment script - Sets correct contract addresses dependencies after deployment', async accounts => {
   const [owner] = accounts;
@@ -18,7 +18,6 @@ contract('Deployment script - Sets correct contract addresses dependencies after
 
   before(async () => {
     const coreContracts = await deploymentHelper.deployERDCore()
-    const ERDContracts = await deploymentHelper.deployERDContracts()
 
     priceFeed = coreContracts.priceFeedTestnet
     usdeToken = coreContracts.usdeToken
@@ -29,12 +28,9 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     defaultPool = coreContracts.defaultPool
     functionCaller = coreContracts.functionCaller
     borrowerOperations = coreContracts.borrowerOperations
-
-    treasury = ERDContracts.treasury
-    liquidityIncentive = ERDContracts.liquidityIncentive
-    communityIssuance = ERDContracts.communityIssuance
-
-    await deploymentHelper.connectCoreContracts(coreContracts, ERDContracts)
+    treasury = coreContracts.treasury
+    liquidityIncentive = coreContracts.liquidityIncentive
+    communityIssuance = coreContracts.communityIssuance
   })
 
   it('Sets the correct USDEToken address in TroveManager', async () => {

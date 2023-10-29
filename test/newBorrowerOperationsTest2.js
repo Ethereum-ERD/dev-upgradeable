@@ -1,11 +1,5 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
-const testHelpers = require("../utils/testHelpers.js")
-
-// const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol")
-const NonPayable = artifacts.require('NonPayable.sol')
-const TroveManagerTester = artifacts.require("TroveManagerTester")
-const CollateralManagerTester = artifacts.require("CollateralManagerTester")
-const USDETokenTester = artifacts.require("./USDETokenTester")
+const deploymentHelper = require("../utils/deploymentHelpersUpgrade.js")
+const testHelpers = require("../utils/testHelpersUpgrade.js")
 
 const th = testHelpers.TestHelper
 
@@ -30,11 +24,10 @@ const STETH_ADDRESS = ZERO_ADDRESS;
 contract('BorrowerOperations', async accounts => {
 
   const [
-    owner, alice, bob, carol, dennis, whale,
-    A, B, C, D, E, F, G, H,
-    // defaulter_1, defaulter_2,
-    frontEnd_1, frontEnd_2, frontEnd_3
-  ] = accounts;
+    owner, alice, bob
+  ] = accounts
+  let
+    Owner, Alice, Bob
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
 
@@ -72,18 +65,6 @@ contract('BorrowerOperations', async accounts => {
   }) => {
     beforeEach(async () => {
       contracts = await deploymentHelper.deployERDCore()
-      // contracts.borrowerOperations = await BorrowerOperationsTester.new()
-      contracts.troveManager = await TroveManagerTester.new()
-      contracts.collateralManager = await CollateralManagerTester.new()
-      const ERDContracts = await deploymentHelper.deployERDTesterContractsHardhat()
-      contracts = await deploymentHelper.deployUSDETokenTester(contracts, ERDContracts)
-
-      await deploymentHelper.connectCoreContracts(contracts, ERDContracts)
-
-      if (withProxy) {
-        const users = [alice, bob, carol, dennis, whale, A, B, C, D, E]
-        await deploymentHelper.deployProxyScripts(contracts, ERDContracts, owner, users)
-      }
 
       priceFeedSTETH = contracts.priceFeedSTETH
       priceFeed = contracts.priceFeedETH
@@ -97,13 +78,17 @@ contract('BorrowerOperations', async accounts => {
       hintHelpers = contracts.hintHelpers
       collateralManager = contracts.collateralManager
 
-      treasury = ERDContracts.treasury
-      liquidityIncentive = ERDContracts.liquidityIncentive
-      communityIssuance = ERDContracts.communityIssuance
+      treasury = contracts.treasury
+      liquidityIncentive = contracts.liquidityIncentive
+      communityIssuance = contracts.communityIssuance
 
       USDE_GAS_COMPENSATION = await borrowerOperations.USDE_GAS_COMPENSATION()
       MIN_NET_DEBT = await collateralManager.getMinNetDebt()
       BORROWING_FEE_FLOOR = await collateralManager.getBorrowingFeeFloor()
+      const signers = await ethers.getSigners()
+      Owner = signers[0]
+      Alice = signers[1]
+      Bob = signers[2]
     })
 
 
@@ -111,12 +96,14 @@ contract('BorrowerOperations', async accounts => {
       // alice creates a Trove and adds first collateral
       await th.openTrove(contracts, {
         ICR: toBN(dec(2, 18)),
+        signer: Alice,
         extraParams: {
           from: alice
         }
       })
       await th.openTrove(contracts, {
         ICR: toBN(dec(10, 18)),
+        signer: Bob,
         extraParams: {
           from: bob
         }
@@ -130,7 +117,7 @@ contract('BorrowerOperations', async accounts => {
 
       const collTopUp = toBN(dec(1, 18)) // 1 wei top up
       // An operation that would result in ICR < MCR is not permitted
-      await assertRevert(borrowerOperations.addColl([], [], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
+      await assertRevert(borrowerOperations.connect(Alice).addColl([], [], th.ZERO_ADDRESS, th.ZERO_ADDRESS, {
           from: alice,
           value: collTopUp
         }), //th.addColl(contracts, toBN(dec(collTopUp, 18), alice)),
