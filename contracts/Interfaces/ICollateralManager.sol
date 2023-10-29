@@ -143,11 +143,6 @@ interface ICollateralManager {
 
     function getValue(
         address[] memory _collaterals,
-        uint256[] memory _amounts
-    ) external view returns (uint256, uint256[] memory);
-
-    function getValue(
-        address[] memory _collaterals,
         uint256[] memory _amounts,
         uint256 _price
     ) external view returns (uint256, uint256[] memory);

@@ -630,7 +630,8 @@ contract TroveManagerLiquidations is
             uint256[] memory singleValues
         ) = collateralManager.getValue(
                 vars.collaterals,
-                totals.totalCollToRedistributes
+                totals.totalCollToRedistributes,
+                vars.price
             );
 
         uint256 singleLen = singleValues.length;
@@ -917,7 +918,8 @@ contract TroveManagerLiquidations is
             uint256[] memory singleValues
         ) = collateralManager.getValue(
                 vars.collaterals,
-                totals.totalCollToRedistributes
+                totals.totalCollToRedistributes,
+                vars.price
             );
 
         uint256 singleLen = singleValues.length;

@@ -284,19 +284,6 @@ contract CollateralManager is
 
     function getValue(
         address[] memory _collaterals,
-        uint256[] memory _amounts
-    )
-        public
-        view
-        override
-        returns (uint256 totalValue, uint256[] memory values)
-    {
-        uint256 price = priceFeed.fetchPrice_view();
-        return getValue(_collaterals, _amounts, price);
-    }
-
-    function getValue(
-        address[] memory _collaterals,
         uint256[] memory _amounts,
         uint256 _price
     )
