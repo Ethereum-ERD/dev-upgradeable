@@ -21,8 +21,6 @@ contract CollateralManager is
 {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
-    // error BadValue();
-    // error AtLeastOneCollateral();
 
     // During bootsrap period redemptions are not allowed
     uint256 public BOOTSTRAP_PERIOD;
